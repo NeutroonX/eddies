@@ -51,28 +51,39 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingVertical: EddiesSpacing.sm,
+    paddingVertical: EddiesSpacing.sm + 2,
     gap: EddiesSpacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: '#1A1A1C',
   },
-  rank: { width: 18, marginTop: 2 },
-  body: { flex: 1, gap: EddiesSpacing.xs },
+  rank: {
+    width: 18,
+    marginTop: 2,
+  },
+  body: {
+    flex: 1,
+    gap: EddiesSpacing.xs,
+  },
   labelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  right: { flexDirection: 'row', alignItems: 'center', gap: EddiesSpacing.sm },
-  pct: { width: 28, textAlign: 'right' },
+  right: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: EddiesSpacing.sm,
+  },
+  pct: {
+    width: 28,
+    textAlign: 'right',
+  },
   track: {
-    height: 4,
-    backgroundColor: EddiesColors.surface,
+    height: 2,
+    backgroundColor: EddiesColors.steel + '22',
     overflow: 'hidden',
-    borderRadius: 2,
   },
   fill: {
     height: '100%',
     backgroundColor: EddiesColors.alert,
+    opacity: 0.7,
   },
 });

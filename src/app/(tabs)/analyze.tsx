@@ -9,7 +9,7 @@ import { CapProgress } from '@/components/ui/cap-progress';
 import { MonoLabel } from '@/components/ui/mono-label';
 import { Numerals } from '@/components/ui/numerals';
 import { SpendBar } from '@/components/ui/spend-bar';
-import { EddiesColors, EddiesFonts, EddiesRadius, EddiesSpacing } from '@/constants/theme';
+import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
 import { formatMinor } from '@/lib/format';
 import { useCurrencySymbol } from '@/hooks/use-currency-symbol';
 import {
@@ -105,31 +105,30 @@ export default function AnalyzeScreen() {
   }
 
   const netPositive = inOut.net >= 0;
-  const totalFlow = inOut.inflow + inOut.outflow;
-  const outPct = totalFlow > 0 ? (inOut.outflow / totalFlow) * 100 : 0;
   const totalDays = getPeriodTotalDays(activePeriod as Period);
-  const daysElapsed = burn.daysInPeriod;
+  const daysElapsed = Math.max(1, burn.daysInPeriod);
   const dayPct = Math.min((daysElapsed / totalDays) * 100, 100);
-  const periodLabel = activePeriod === 'week' ? 'THIS WEEK' : 'THIS MONTH';
 
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
 
-        {/* ── Header ─────────────────────────────────── */}
+        {/* Header */}
         <View style={s.header}>
           <View style={s.headerLeft}>
-            <MonoLabel size={9} letterSpacing={2} color={EddiesColors.steel}>EDDIES // INTEL 03-A</MonoLabel>
+            <MonoLabel size={9} letterSpacing={2} color={EddiesColors.steel}>
+              EDDIES // INTEL 03-A
+            </MonoLabel>
             <BarcodeMark height={12} color={EddiesColors.steel} />
           </View>
-          <View style={s.periodToggle}>
+          <View style={s.toggle}>
             {(['week', 'month'] as Period[]).map((p) => {
               const active = activePeriod === p;
               return (
                 <Pressable
                   key={p}
                   onPress={() => setActivePeriod(p)}
-                  style={[s.periodBtn, active && s.periodBtnActive]}
+                  style={[s.toggleBtn, active && s.toggleBtnActive]}
                   accessibilityRole="button"
                   accessibilityState={{ selected: active }}
                 >
@@ -147,136 +146,109 @@ export default function AnalyzeScreen() {
           </View>
         </View>
 
-        {/* ── FLOW panel ─────────────────────────────── */}
-        <View style={s.panel}>
-          <View style={s.panelHeader}>
-            <MonoLabel size={9} letterSpacing={2} color={EddiesColors.steel}>FLOW</MonoLabel>
-            <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel + '80'}>{periodLabel}</MonoLabel>
+        {/* ── FLOW ─────────────────────────────────────── */}
+        <Divider label="FLOW" />
+        <View style={s.flowBlock}>
+          <View style={s.ledgerRow}>
+            <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel} style={s.ledgerLabel}>
+              OUTFLOW
+            </MonoLabel>
+            <Numerals size={44} color={EddiesColors.alert} weight="bold">
+              {sym}{formatMinor(inOut.outflow)}
+            </Numerals>
           </View>
-
-          <View style={s.flowAccent} />
-
-          <View style={s.flowRows}>
-            {/* Outflow */}
-            <View style={s.flowLine}>
-              <View style={[s.flowDot, { backgroundColor: EddiesColors.alert }]} />
-              <Numerals size={40} color={EddiesColors.alert} weight="bold">
-                {sym}{formatMinor(inOut.outflow)}
-              </Numerals>
-              <View style={s.flowLineSpacer} />
-              <MonoLabel size={9} letterSpacing={2} color={EddiesColors.alert}>OUT</MonoLabel>
-            </View>
-
-            {/* Inflow */}
-            <View style={s.flowLine}>
-              <View style={[s.flowDot, { backgroundColor: EddiesColors.bone }]} />
-              <Numerals size={24} color={EddiesColors.bone} weight="semibold">
-                {sym}{formatMinor(inOut.inflow)}
-              </Numerals>
-              <View style={s.flowLineSpacer} />
-              <MonoLabel size={9} letterSpacing={2} color={EddiesColors.steel}>IN</MonoLabel>
-            </View>
+          <View style={s.ledgerRow}>
+            <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel} style={s.ledgerLabel}>
+              INFLOW
+            </MonoLabel>
+            <Numerals size={28} color={EddiesColors.bone} weight="semibold">
+              {sym}{formatMinor(inOut.inflow)}
+            </Numerals>
           </View>
-
-          <View style={s.panelHairline} />
-
-          {/* NET row */}
-          <View style={s.netRow}>
-            <MonoLabel size={9} letterSpacing={2} color={EddiesColors.steel}>NET</MonoLabel>
+          <View style={s.hairline} />
+          <View style={s.ledgerRow}>
+            <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel} style={s.ledgerLabel}>
+              NET
+            </MonoLabel>
             <Numerals
-              size={16}
+              size={20}
               color={netPositive ? EddiesColors.bone : EddiesColors.alert}
               weight="bold"
             >
               {inOut.net >= 0 ? '+' : '−'}{sym}{formatMinor(Math.abs(inOut.net))}
             </Numerals>
           </View>
-
-          {/* Ratio bar: outflow vs inflow split */}
-          {totalFlow > 0 && (
-            <View style={s.ratioTrack}>
-              <View style={[s.ratioOut, { flex: outPct }]} />
-              <View style={[s.ratioIn, { flex: 100 - outPct }]} />
-            </View>
-          )}
-          {totalFlow > 0 && (
-            <View style={s.ratioLabels}>
-              <MonoLabel size={8} letterSpacing={1} color={EddiesColors.alert}>
-                OUT {outPct.toFixed(0)}%
-              </MonoLabel>
-              <MonoLabel size={8} letterSpacing={1} color={EddiesColors.steel}>
-                IN {(100 - outPct).toFixed(0)}%
-              </MonoLabel>
-            </View>
-          )}
         </View>
 
-        {/* ── BURN RATE panel ────────────────────────── */}
-        <View style={s.panel}>
-          <View style={s.panelHeader}>
-            <MonoLabel size={9} letterSpacing={2} color={EddiesColors.steel}>BURN RATE</MonoLabel>
-            <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel + '80'}>
-              DAY {daysElapsed} / {totalDays}
-            </MonoLabel>
-          </View>
-
-          <View style={s.burnRate}>
-            <Numerals size={36} color={EddiesColors.alert} weight="bold">
+        {/* ── BURN ─────────────────────────────────────── */}
+        <Divider label="BURN" />
+        <View style={s.burnBlock}>
+          <View style={s.burnRateRow}>
+            <Numerals size={38} color={EddiesColors.alert} weight="bold">
               {sym}{formatMinor(burn.avgDailyMinor)}
             </Numerals>
-            <MonoLabel size={10} letterSpacing={1} color={EddiesColors.steel} style={s.burnUnit}>
+            <MonoLabel size={11} letterSpacing={1} color={EddiesColors.steel} style={s.burnUnit}>
               / DAY
             </MonoLabel>
           </View>
 
-          {/* Day progress bar */}
-          <View style={s.dayTrack}>
-            <View style={[s.dayFill, { width: `${dayPct}%` }]} />
+          <View style={s.dayRow}>
+            <View style={s.dayTrack}>
+              <View style={[s.dayFill, { width: `${dayPct}%` }]} />
+            </View>
+            <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel} style={s.dayLabel}>
+              {daysElapsed} / {totalDays}
+            </MonoLabel>
           </View>
 
-          <View style={s.panelHairline} />
-
-          <View style={s.projRow}>
-            <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.steel}>PROJ. END</MonoLabel>
-            <Numerals size={14} color={EddiesColors.bone} weight="semibold">
+          <View style={s.hairline} />
+          <View style={s.ledgerRow}>
+            <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel} style={s.ledgerLabel}>
+              PROJ. END
+            </MonoLabel>
+            <Numerals size={16} color={EddiesColors.bone} weight="semibold">
               {sym}{formatMinor(burn.projectedMonthEndMinor)}
             </Numerals>
           </View>
         </View>
 
-        {/* ── SPEND ──────────────────────────────────── */}
+        {/* ── SPEND ────────────────────────────────────── */}
         {spending.length > 0 && (
           <View>
-            <SectionLabel label="SPEND" />
-            {spending.map((cat, i) => (
-              <SpendBar
-                key={cat.category_id}
-                rank={i + 1}
-                sym={sym}
-                categoryName={cat.category_name}
-                amount={cat.total_minor}
-                percentage={cat.percentage}
-              />
-            ))}
+            <Divider label="SPEND" />
+            <View>
+              {spending.map((cat, i) => (
+                <SpendBar
+                  key={cat.category_id}
+                  rank={i + 1}
+                  sym={sym}
+                  categoryName={cat.category_name}
+                  amount={cat.total_minor}
+                  percentage={cat.percentage}
+                />
+              ))}
+            </View>
           </View>
         )}
 
-        {/* ── CAPS ───────────────────────────────────── */}
+        {/* ── CAPS ─────────────────────────────────────── */}
         {caps.length > 0 && (
           <View>
-            <SectionLabel label="CAPS" />
-            {caps.map((cap) => (
-              <CapProgress
-                key={cap.cap_id}
-                categoryName={cap.category_name}
-                spent={cap.spent_minor}
-                cap={cap.cap_amount_minor}
-                percentage={cap.percentage}
-                isOver={cap.is_over}
-                onEdit={() => router.push(`/(modals)/cap?capId=${cap.cap_id}`)}
-                onDelete={() => handleDeleteCap(cap)}
-              />
-            ))}
+            <Divider label="CAPS" />
+            <View>
+              {caps.map((cap) => (
+                <CapProgress
+                  key={cap.cap_id}
+                  categoryName={cap.category_name}
+                  spent={cap.spent_minor}
+                  cap={cap.cap_amount_minor}
+                  percentage={cap.percentage}
+                  isOver={cap.is_over}
+                  onEdit={() => router.push(`/(modals)/cap?capId=${cap.cap_id}`)}
+                  onDelete={() => handleDeleteCap(cap)}
+                />
+              ))}
+            </View>
           </View>
         )}
 
@@ -290,7 +262,6 @@ export default function AnalyzeScreen() {
 
       </ScrollView>
 
-      {/* Undo bar */}
       {pendingDelete && (
         <View style={s.undoBar}>
           <MonoLabel size={11} color={EddiesColors.bone} style={{ flex: 1 }}>
@@ -305,23 +276,27 @@ export default function AnalyzeScreen() {
   );
 }
 
-function SectionLabel({ label }: { label: string }) {
+function Divider({ label }: { label: string }) {
   return (
-    <View style={sl.row}>
+    <View style={d.row}>
       <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel}>{label}</MonoLabel>
-      <View style={sl.line} />
+      <View style={d.line} />
     </View>
   );
 }
 
-const sl = StyleSheet.create({
+const d = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: EddiesSpacing.sm,
-    marginBottom: EddiesSpacing.sm,
   },
-  line: { flex: 1, height: 1, backgroundColor: EddiesColors.surface },
+  line: {
+    flex: 1,
+    height: 1,
+    backgroundColor: EddiesColors.steel,
+    opacity: 0.12,
+  },
 });
 
 const s = StyleSheet.create({
@@ -330,7 +305,7 @@ const s = StyleSheet.create({
     paddingHorizontal: EddiesSpacing.md,
     paddingTop: EddiesSpacing.md,
     paddingBottom: EddiesSpacing.xxl,
-    gap: EddiesSpacing.xl,
+    gap: EddiesSpacing.lg,
   },
 
   // Header
@@ -344,128 +319,78 @@ const s = StyleSheet.create({
     flex: 1,
     marginRight: EddiesSpacing.md,
   },
-  periodToggle: {
+  toggle: {
     flexDirection: 'row',
     gap: 1,
     backgroundColor: EddiesColors.surface,
     padding: 2,
-    borderRadius: EddiesRadius.panel,
   },
-  periodBtn: {
+  toggleBtn: {
     paddingHorizontal: EddiesSpacing.md,
-    paddingVertical: EddiesSpacing.xs + 2,
-    borderRadius: EddiesRadius.panel,
+    paddingVertical: EddiesSpacing.xs,
   },
-  periodBtnActive: {
-    backgroundColor: EddiesColors.steel + '2A',
+  toggleBtnActive: {
+    backgroundColor: EddiesColors.steel + '22',
   },
 
-  // Panel shared
-  panel: {
-    backgroundColor: EddiesColors.surface,
-    borderRadius: EddiesRadius.card,
-    borderWidth: 1,
-    borderColor: EddiesColors.steel + '18',
-    overflow: 'hidden',
-    gap: EddiesSpacing.sm,
-    paddingBottom: EddiesSpacing.sm,
-  },
-  panelHeader: {
+  // Shared ledger row: label left, value right-aligned
+  ledgerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: EddiesSpacing.md,
-    paddingTop: EddiesSpacing.sm,
+    alignItems: 'flex-end',
   },
-  panelHairline: {
+  ledgerLabel: {
+    marginBottom: 5,
+  },
+
+  hairline: {
     height: 1,
-    backgroundColor: EddiesColors.steel + '18',
-    marginHorizontal: EddiesSpacing.md,
+    backgroundColor: EddiesColors.steel,
+    opacity: 0.12,
   },
 
   // FLOW
-  flowAccent: {
-    height: 2,
-    backgroundColor: EddiesColors.alert,
-    marginHorizontal: EddiesSpacing.md,
-    borderRadius: 1,
+  flowBlock: {
+    gap: EddiesSpacing.sm,
   },
-  flowRows: {
-    paddingHorizontal: EddiesSpacing.md,
+
+  // BURN
+  burnBlock: {
+    gap: EddiesSpacing.sm,
+  },
+  burnRateRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
     gap: EddiesSpacing.xs,
   },
-  flowLine: {
+  burnUnit: {
+    marginBottom: 7,
+  },
+  dayRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: EddiesSpacing.sm,
   },
-  flowDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  flowLineSpacer: { flex: 1 },
-  netRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: EddiesSpacing.md,
-  },
-  ratioTrack: {
-    flexDirection: 'row',
-    height: 4,
-    marginHorizontal: EddiesSpacing.md,
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  ratioOut: {
-    height: '100%',
-    backgroundColor: EddiesColors.alert,
-  },
-  ratioIn: {
-    height: '100%',
-    backgroundColor: EddiesColors.steel + '55',
-  },
-  ratioLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: EddiesSpacing.md,
-  },
-
-  // BURN
-  burnRate: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: EddiesSpacing.xs,
-    paddingHorizontal: EddiesSpacing.md,
-  },
-  burnUnit: {
-    marginBottom: 6,
-  },
   dayTrack: {
+    flex: 1,
     height: 3,
     backgroundColor: EddiesColors.steel + '22',
-    marginHorizontal: EddiesSpacing.md,
-    borderRadius: 1,
     overflow: 'hidden',
   },
   dayFill: {
     height: '100%',
     backgroundColor: EddiesColors.steel + '66',
-    borderRadius: 1,
   },
-  projRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: EddiesSpacing.md,
+  dayLabel: {
+    width: 48,
+    textAlign: 'right',
   },
 
   // Add cap
   addCap: {
     paddingVertical: EddiesSpacing.md,
     borderTopWidth: 1,
-    borderTopColor: EddiesColors.surface,
+    borderTopColor: EddiesColors.steel + '12',
     alignItems: 'center',
   },
 
