@@ -81,12 +81,12 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
           </View>
 
 
-          <Numerals size={26} weight="bold" color={EddiesColors.ink} style={s.name}>
+          <Numerals size={20} weight="bold" color={EddiesColors.ink} style={s.name}>
             {account.name.toUpperCase()}
           </Numerals>
 
           <Numerals
-            size={42}
+            size={34}
             weight="bold"
             color={isNegative ? EddiesColors.alert : EddiesColors.ink}
             style={s.balance}
@@ -118,11 +118,11 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
 const s = StyleSheet.create({
   wrapper: {
     paddingHorizontal: EddiesSpacing.md,
-    paddingVertical: EddiesSpacing.sm,
+    paddingVertical: EddiesSpacing.xs,
     backgroundColor: EddiesColors.ink,
   },
   card: {
-    gap: EddiesSpacing.xs,
+    gap: 2,
     overflow: 'hidden',
   },
   cardActive: {
@@ -157,7 +157,7 @@ const s = StyleSheet.create({
     marginHorizontal: -EddiesSpacing.md,
   },
   barcode: {
-    marginTop: EddiesSpacing.sm,
+    marginTop: EddiesSpacing.xs,
     marginHorizontal: -EddiesSpacing.md,
   },
   footer: {
