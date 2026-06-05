@@ -34,57 +34,66 @@ export function CommandTabBar({ state, navigation }: TabBarProps) {
   }
 
   return (
-    <View style={[s.bar, { paddingBottom: Math.max(insets.bottom, 6) }]}>
-      <View style={s.row}>
-        {state.routes.map((route, index) => {
-          const isFocused = state.index === index;
-          const isLog = route.name === 'log';
-          const label = LABELS[route.name] ?? route.name.toUpperCase();
+    <View style={[s.wrapper, { paddingBottom: Math.max(insets.bottom + 8, 16) }]}>
+      <View style={s.bar}>
+        <View style={s.row}>
+          {state.routes.map((route, index) => {
+            const isFocused = state.index === index;
+            const isLog = route.name === 'log';
+            const label = LABELS[route.name] ?? route.name.toUpperCase();
 
-          return (
-            <Pressable
-              key={route.key}
-              style={s.item}
-              onPress={() => pressTab(route.name, isFocused)}
-              accessibilityRole={isLog ? 'button' : 'tab'}
-              accessibilityState={isLog ? undefined : { selected: isFocused }}
-              accessibilityLabel={isLog ? 'Log entry' : label}
-            >
-              <View
-                style={[
-                  s.chip,
-                  isFocused && !isLog && s.chipActive,
-                  isLog && s.chipLog,
-                ]}
+            return (
+              <Pressable
+                key={route.key}
+                style={s.item}
+                onPress={() => pressTab(route.name, isFocused)}
+                accessibilityRole={isLog ? 'button' : 'tab'}
+                accessibilityState={isLog ? undefined : { selected: isFocused }}
+                accessibilityLabel={isLog ? 'Log entry' : label}
               >
-                <MonoLabel
-                  size={9}
-                  weight="bold"
-                  letterSpacing={isLog ? 0.5 : 1.5}
-                  color={
-                    isLog
-                      ? EddiesColors.bone
-                      : isFocused
-                        ? EddiesColors.ink
-                        : EddiesColors.steel
-                  }
+                <View
+                  style={[
+                    s.chip,
+                    isFocused && !isLog && s.chipActive,
+                    isLog && s.chipLog,
+                  ]}
                 >
-                  {label}
-                </MonoLabel>
-              </View>
-            </Pressable>
-          );
-        })}
+                  <MonoLabel
+                    size={9}
+                    weight="bold"
+                    letterSpacing={isLog ? 0.5 : 1.5}
+                    color={
+                      isLog
+                        ? EddiesColors.bone
+                        : isFocused
+                          ? EddiesColors.ink
+                          : EddiesColors.steel
+                    }
+                  >
+                    {label}
+                  </MonoLabel>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
     </View>
   );
 }
 
 const s = StyleSheet.create({
+  wrapper: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: EddiesSpacing.md,
+    paddingTop: EddiesSpacing.sm,
+  },
   bar: {
-    backgroundColor: EddiesColors.ink,
-    borderTopWidth: 1,
-    borderTopColor: EddiesColors.steel + '1A',
+    backgroundColor: EddiesColors.surface,
+    borderWidth: 1,
+    borderColor: EddiesColors.steel + '33',
+    borderRadius: 4,
+    overflow: 'hidden',
   },
   row: {
     flexDirection: 'row',
