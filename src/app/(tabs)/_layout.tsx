@@ -1,15 +1,23 @@
 import { Tabs, router } from 'expo-router';
-import { Pressable, StyleSheet } from 'react-native';
+import { Platform, Pressable, StyleSheet } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 
 import { MonoLabel } from '@/components/ui/mono-label';
 import { EddiesColors, EddiesFonts, EddiesRadius, EddiesSpacing } from '@/constants/theme';
 
+type IconProps = { color: string; name: string };
+function TabIcon({ name, color }: IconProps) {
+  if (Platform.OS === 'ios') {
+    return <SymbolView name={name as any} size={18} tintColor={color} type="monochrome" />;
+  }
+  // Android/web: mono text glyph as fallback
+  return <MonoLabel size={16} color={color}>{name[0].toUpperCase()}</MonoLabel>;
+}
+
 function LogFAB() {
   return (
     <Pressable onPress={() => router.push('/(modals)/entry')} style={styles.fab}>
-      <MonoLabel size={24} weight="bold" color={EddiesColors.bone}>
-        +
-      </MonoLabel>
+      <MonoLabel size={24} weight="bold" color={EddiesColors.bone}>+</MonoLabel>
     </Pressable>
   );
 }
@@ -22,7 +30,6 @@ export default function TabsLayout() {
         tabBarStyle: styles.tabBar,
         tabBarActiveTintColor: EddiesColors.bone,
         tabBarInactiveTintColor: EddiesColors.steel,
-        tabBarShowIcon: false,
         tabBarLabelStyle: {
           fontFamily: EddiesFonts.mono,
           fontSize: 9,
@@ -30,17 +37,38 @@ export default function TabsLayout() {
         },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'LEDGER' }} />
-      <Tabs.Screen name="analyze" options={{ title: 'INTEL' }} />
       <Tabs.Screen
-        name="log"
+        name="index"
         options={{
-          title: '',
-          tabBarButton: () => <LogFAB />,
+          title: 'LEDGER',
+          tabBarIcon: ({ color }) => <TabIcon name="list.bullet" color={color} />,
         }}
       />
-      <Tabs.Screen name="vaults" options={{ title: 'VAULTS' }} />
-      <Tabs.Screen name="settings" options={{ title: 'SYSTEM' }} />
+      <Tabs.Screen
+        name="analyze"
+        options={{
+          title: 'INTEL',
+          tabBarIcon: ({ color }) => <TabIcon name="chart.bar.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="log"
+        options={{ title: '', tabBarButton: () => <LogFAB /> }}
+      />
+      <Tabs.Screen
+        name="vaults"
+        options={{
+          title: 'VAULTS',
+          tabBarIcon: ({ color }) => <TabIcon name="creditcard.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'SYSTEM',
+          tabBarIcon: ({ color }) => <TabIcon name="gearshape.fill" color={color} />,
+        }}
+      />
     </Tabs>
   );
 }

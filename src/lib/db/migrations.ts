@@ -65,7 +65,6 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
   }
 
   if (current < 2) {
-    // Seed default categories and user-facing settings on first run.
     await db.execAsync(`
       INSERT OR IGNORE INTO categories (id,name,kind,glyph,color,sort) VALUES
         ('cat_food',      'Food',      'expense', 'fork.knife',         '#E5484D', 1),
@@ -81,5 +80,21 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
         ('haptics_enabled',   'true');
     `);
     await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 2);
+  }
+
+  if (current < 3) {
+    // Seed a default Cash vault if the user has no accounts yet (pre-onboarding).
+    const accRow = await db.getFirstAsync<{ cnt: number }>(
+      'SELECT COUNT(*) AS cnt FROM accounts WHERE archived = 0'
+    );
+    if (!accRow || accRow.cnt === 0) {
+      await db.runAsync(
+        `INSERT OR IGNORE INTO accounts
+           (id,name,type,currency,opening_balance_minor,color,archived,created_at)
+         VALUES (?,?,?,?,?,?,?,?)`,
+        'acc_default', 'Cash', 'cash', 'USD', 0, '#F2F0EB', 0, Date.now()
+      );
+    }
+    await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 3);
   }
 }
