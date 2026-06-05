@@ -64,3 +64,60 @@ export const SettingSchema = z.object({
   value: z.string(),
 });
 export type Setting = z.infer<typeof SettingSchema>;
+
+// ── Analytics ─────────────────────────────────────────────────────────────────
+export const CategorySpendSchema = z.object({
+  category_id: z.string(),
+  category_name: z.string(),
+  total_minor: z.number().int().nonnegative(),
+  percentage: z.number().nonnegative(),
+});
+export type CategorySpend = z.infer<typeof CategorySpendSchema>;
+
+export const InflowOutflowSchema = z.object({
+  inflow: z.number().int().nonnegative(),
+  outflow: z.number().int().nonnegative(),
+  net: z.number().int(),
+});
+export type InflowOutflow = z.infer<typeof InflowOutflowSchema>;
+
+export const DailyBurnSchema = z.object({
+  avgDailyMinor: z.number().int().nonnegative(),
+  projectedMonthEndMinor: z.number().int().nonnegative(),
+  daysInPeriod: z.number().int().positive(),
+});
+export type DailyBurn = z.infer<typeof DailyBurnSchema>;
+
+export const NetWorthPointSchema = z.object({
+  date: z.number().int(),
+  balance: z.number().int(),
+});
+export type NetWorthPoint = z.infer<typeof NetWorthPointSchema>;
+
+export const CategoryTopSchema = z.object({
+  category_id: z.string(),
+  category_name: z.string(),
+  total_minor: z.number().int().nonnegative(),
+  transaction_count: z.number().int().nonnegative(),
+});
+export type CategoryTop = z.infer<typeof CategoryTopSchema>;
+
+export const PeriodSummarySchema = z.object({
+  total_inflow: z.number().int().nonnegative(),
+  total_outflow: z.number().int().nonnegative(),
+  net: z.number().int(),
+  daily_burn: z.number().int().nonnegative(),
+  days_in_period: z.number().int().positive(),
+});
+export type PeriodSummary = z.infer<typeof PeriodSummarySchema>;
+
+export const CapProgressSchema = z.object({
+  cap_id: z.string(),
+  category_id: z.string(),
+  category_name: z.string(),
+  cap_amount_minor: z.number().int().positive(),
+  spent_minor: z.number().int().nonnegative(),
+  percentage: z.number().nonnegative(),
+  is_over: z.boolean(),
+});
+export type CapProgress = z.infer<typeof CapProgressSchema>;

@@ -34,6 +34,37 @@ export async function createBudget(db: SQLiteDatabase, data: NewBudget): Promise
   return budget;
 }
 
+export async function updateBudget(
+  db: SQLiteDatabase,
+  id: string,
+  data: Partial<Omit<Budget, 'id'>>
+): Promise<void> {
+  const updates: string[] = [];
+  const values: unknown[] = [];
+
+  if (data.category_id !== undefined) {
+    updates.push('category_id = ?');
+    values.push(data.category_id);
+  }
+  if (data.period !== undefined) {
+    updates.push('period = ?');
+    values.push(data.period);
+  }
+  if (data.amount_minor !== undefined) {
+    updates.push('amount_minor = ?');
+    values.push(data.amount_minor);
+  }
+  if (data.start_date !== undefined) {
+    updates.push('start_date = ?');
+    values.push(data.start_date);
+  }
+
+  if (updates.length === 0) return;
+
+  values.push(id);
+  await db.runAsync(`UPDATE budgets SET ${updates.join(', ')} WHERE id = ?`, ...values);
+}
+
 export async function deleteBudget(db: SQLiteDatabase, id: string): Promise<void> {
   await db.runAsync('DELETE FROM budgets WHERE id = ?', id);
 }
