@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
@@ -13,6 +13,7 @@ import { useAccounts } from '@/hooks/use-accounts';
 import { useAccountBalance } from '@/hooks/use-account-balance';
 import { archiveAccount } from '@/lib/db/repos/accounts';
 import { useStore } from '@/store/index';
+import type { Account } from '@/lib/schemas';
 
 interface PendingArchive {
   id: string;
@@ -31,22 +32,22 @@ function VaultsHeader() {
   );
 }
 
-function VaultItem({ accountId, lastVaultId, onArchive }: { accountId: string; lastVaultId: string | null; onArchive: (id: string) => void }) {
-  const { accounts } = useAccounts();
-  const { balance } = useAccountBalance(accountId);
+function VaultItem({ account, lastVaultId, onArchive }: { account: Account; lastVaultId: string | null; onArchive: (id: string) => void }) {
+  const { balance, reload: reloadBalance } = useAccountBalance(account.id);
   const setLastVaultId = useStore(s => s.setLastVaultId);
 
-  const account = accounts.find(a => a.id === accountId);
-  if (!account) return null;
+  useFocusEffect(useCallback(() => {
+    reloadBalance();
+  }, [reloadBalance]));
 
   return (
     <VaultCard
       account={account}
       balance={balance}
-      isActive={lastVaultId === accountId}
-      onPress={() => setLastVaultId(accountId)}
-      onEdit={() => router.push(`/(modals)/vault?mode=edit&id=${accountId}`)}
-      onDelete={() => onArchive(accountId)}
+      isActive={lastVaultId === account.id}
+      onPress={() => setLastVaultId(account.id)}
+      onEdit={() => router.push(`/(modals)/vault?mode=edit&id=${account.id}`)}
+      onDelete={() => onArchive(account.id)}
     />
   );
 }
@@ -73,9 +74,9 @@ export default function VaultsScreen() {
   const pendingIdRef = useRef<string | null>(null);
   const [pending, setPending] = useState<PendingArchive | null>(null);
 
-  useFocusEffect(() => {
+  useFocusEffect(useCallback(() => {
     reload();
-  });
+  }, [reload]));
 
   function handleArchive(accountId: string) {
     if (archiveTimerRef.current && pendingIdRef.current) {
@@ -111,11 +112,12 @@ export default function VaultsScreen() {
         keyExtractor={a => a.id}
         renderItem={({ item }) => (
           <VaultItem
-            accountId={item.id}
+            account={item}
             lastVaultId={lastVaultId}
             onArchive={handleArchive}
           />
         )}
+        extraData={lastVaultId}
         ListHeaderComponent={<VaultsHeader />}
         scrollEnabled={displayAccounts.length > 0}
         contentContainerStyle={{ paddingBottom: 100 }}

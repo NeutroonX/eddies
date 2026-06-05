@@ -47,6 +47,18 @@ export default function RootLayout() {
               name="(modals)/vault"
               options={{ presentation: 'modal', gestureEnabled: false }}
             />
+            <Stack.Screen
+              name="(modals)/settings"
+              options={{ presentation: 'modal', gestureEnabled: false }}
+            />
+            <Stack.Screen
+              name="(modals)/cap"
+              options={{ presentation: 'modal', gestureEnabled: false }}
+            />
+            <Stack.Screen
+              name="(modals)/export"
+              options={{ presentation: 'modal', gestureEnabled: false }}
+            />
           </Stack>
         </ThemeProvider>
       </SQLiteProvider>

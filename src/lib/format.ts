@@ -15,9 +15,11 @@ export function getCurrencySymbol(currency: string): string {
     EUR: '€',
     GBP: '£',
     JPY: '¥',
+    AUD: 'A$',
+    CAD: 'C$',
     INR: '₹',
   };
-  return symbols[currency] ?? '$';
+  return symbols[currency] ?? currency;
 }
 
 export function formatPercentage(percentage: number, decimals: number = 1): string {

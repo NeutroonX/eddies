@@ -6,6 +6,7 @@ import { MonoLabel } from '@/components/ui/mono-label';
 import { Numerals } from '@/components/ui/numerals';
 import { EddiesColors, EddiesRadius, EddiesSpacing } from '@/constants/theme';
 import { formatAmountTabular } from '@/lib/money';
+import { useCurrencySymbol } from '@/hooks/use-currency-symbol';
 import type { Account } from '@/lib/schemas';
 
 interface VaultCardProps {
@@ -41,6 +42,7 @@ function DeleteAction() {
 
 export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelete }: VaultCardProps) {
   const isNegative = balance < 0;
+  const sym = useCurrencySymbol();
 
   return (
     <Swipeable
@@ -51,7 +53,6 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
         </Pressable>
       )}
       renderRightActions={() => <DeleteAction />}
-      onSwipeableLeftOpen={onEdit}
       onSwipeableRightOpen={onDelete}
     >
       <Pressable onPress={onPress} style={[s.card, isActive && s.cardActive]}>
@@ -73,7 +74,7 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
             weight="semibold"
             color={isNegative ? EddiesColors.alert : EddiesColors.bone}
           >
-            {isNegative ? '−' : ''}{formatAmountTabular(Math.abs(balance))}
+            {isNegative ? '−' : ''}{sym}{formatAmountTabular(Math.abs(balance))}
           </Numerals>
         </View>
       </Pressable>

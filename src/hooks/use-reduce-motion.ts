@@ -5,13 +5,11 @@ export function useReduceMotion(): boolean {
   const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-
-    const sub = AccessibilityInfo.addEventListener(
-      'reduceMotionChanged',
-      setReduceMotion
-    );
-    return () => sub.remove();
+    AccessibilityInfo.isScreenReaderEnabled().then((isEnabled) => {
+      setReduceMotion(isEnabled);
+    }).catch(() => {
+      setReduceMotion(false);
+    });
   }, []);
 
   return reduceMotion;

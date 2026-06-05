@@ -29,7 +29,6 @@ export function CapProgress({ categoryName, spent, cap, percentage, isOver, onEd
           <MonoLabel size={11} weight="bold" color={EddiesColors.bone}>DELETE</MonoLabel>
         </Pressable>
       )}
-      onSwipeableLeftOpen={onEdit}
       onSwipeableRightOpen={onDelete}
     >
       <Pressable

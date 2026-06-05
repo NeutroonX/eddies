@@ -4,6 +4,7 @@ import { SymbolView } from 'expo-symbols';
 
 import { MonoLabel } from '@/components/ui/mono-label';
 import { EddiesColors, EddiesFonts, EddiesRadius, EddiesSpacing } from '@/constants/theme';
+import { useInitSettings } from '@/hooks/use-init-settings';
 
 type IconProps = { color: string; name: string };
 function TabIcon({ name, color }: IconProps) {
@@ -23,6 +24,7 @@ function LogFAB() {
 }
 
 export default function TabsLayout() {
+  useInitSettings();
   return (
     <Tabs
       screenOptions={{

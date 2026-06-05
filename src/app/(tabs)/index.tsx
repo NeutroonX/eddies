@@ -13,10 +13,12 @@ import { EddiesColors, EddiesSpacing } from '@/constants/theme';
 import { useLedger, type DaySection, type LedgerRow } from '@/hooks/use-ledger';
 import { deleteTransaction } from '@/lib/db/repos/transactions';
 import { formatAmountTabular } from '@/lib/money';
+import { useCurrencySymbol } from '@/hooks/use-currency-symbol';
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function LedgerHeader({ balance, sections }: { balance: number; sections: DaySection[] }) {
+  const sym = useCurrencySymbol();
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
   const monthNet = sections
@@ -30,10 +32,10 @@ function LedgerHeader({ balance, sections }: { balance: number; sections: DaySec
       <SectionTag label="EDDIES // LEDGER 02-A" />
       <BarcodeMark height={16} />
       <Numerals size={52} color={balance < 0 ? EddiesColors.alert : EddiesColors.bone}>
-        {balance < 0 ? '−' : ''}{formatAmountTabular(Math.abs(balance))}
+        {balance < 0 ? '−' : ''}{sym}{formatAmountTabular(Math.abs(balance))}
       </Numerals>
       <MonoLabel size={11} color={netPositive ? EddiesColors.bone : EddiesColors.alert}>
-        {netPositive ? '+' : '−'}{formatAmountTabular(Math.abs(monthNet))} THIS MONTH
+        {netPositive ? '+' : '−'}{sym}{formatAmountTabular(Math.abs(monthNet))} THIS MONTH
       </MonoLabel>
     </View>
   );

@@ -10,6 +10,7 @@ import { Numerals } from '@/components/ui/numerals';
 import { SpendBar } from '@/components/ui/spend-bar';
 import { EddiesColors, EddiesSpacing } from '@/constants/theme';
 import { formatMinor } from '@/lib/format';
+import { useCurrencySymbol } from '@/hooks/use-currency-symbol';
 import {
   getDailyBurn,
   getInflowVsOutflow,
@@ -42,6 +43,7 @@ export default function AnalyzeScreen() {
   const db = useSQLiteContext();
   const activePeriod = useStore((s) => s.activePeriod);
   const setActivePeriod = useStore((s) => s.setActivePeriod);
+  const sym = useCurrencySymbol();
 
   const [inOut, setInOut] = useState({ inflow: 0, outflow: 0, net: 0 });
   const [burn, setBurn] = useState({ avgDailyMinor: 0, projectedMonthEndMinor: 0 });
@@ -130,18 +132,18 @@ export default function AnalyzeScreen() {
 
         <View style={s.flowBlock}>
           <View style={s.flowRow}>
-            <Numerals size={48} color={EddiesColors.alert} weight="bold">${formatMinor(inOut.outflow)}</Numerals>
+            <Numerals size={48} color={EddiesColors.alert} weight="bold">{sym}{formatMinor(inOut.outflow)}</Numerals>
             <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.alert} style={s.flowTag}>OUTFLOW</MonoLabel>
           </View>
           <View style={[s.flowRow, s.inflowRow]}>
-            <Numerals size={28} color={EddiesColors.bone} weight="bold">${formatMinor(inOut.inflow)}</Numerals>
+            <Numerals size={28} color={EddiesColors.bone} weight="bold">{sym}{formatMinor(inOut.inflow)}</Numerals>
             <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.steel} style={s.flowTag}>INFLOW</MonoLabel>
           </View>
           <View style={s.hairline} />
           <View style={s.netRow}>
             <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.steel}>NET</MonoLabel>
             <Numerals size={18} color={netPositive ? EddiesColors.bone : EddiesColors.alert} weight="bold">
-              {inOut.net >= 0 ? '+' : '−'}${formatMinor(Math.abs(inOut.net))}
+              {inOut.net >= 0 ? '+' : '−'}{sym}{formatMinor(Math.abs(inOut.net))}
             </Numerals>
           </View>
         </View>
@@ -150,11 +152,11 @@ export default function AnalyzeScreen() {
 
         <View style={s.burnBlock}>
           <View style={s.flowRow}>
-            <Numerals size={32} color={EddiesColors.alert} weight="bold">${formatMinor(burn.avgDailyMinor)}</Numerals>
+            <Numerals size={32} color={EddiesColors.alert} weight="bold">{sym}{formatMinor(burn.avgDailyMinor)}</Numerals>
             <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel} style={s.flowTag}>/ DAY</MonoLabel>
           </View>
           <MonoLabel size={9} letterSpacing={0.5} color={EddiesColors.steel}>
-            ƒ AT THIS RATE → MONTH-END ≈ ${formatMinor(burn.projectedMonthEndMinor)}
+            ƒ AT THIS RATE → MONTH-END ≈ {sym}{formatMinor(burn.projectedMonthEndMinor)}
           </MonoLabel>
         </View>
 

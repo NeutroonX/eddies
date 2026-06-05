@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View, Keyboard } from 'react-native';
 
 import { MonoLabel } from '@/components/ui/mono-label';
 import { Pill } from '@/components/ui/pill';
 import { StampButton } from '@/components/ui/stamp-button';
 import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
-import type { Account, AccountTypeSchema, NewAccount } from '@/lib/schemas';
+import type { Account, NewAccount } from '@/lib/schemas';
 
 interface VaultFormProps {
   initialData?: Account;
-  onSave: (data: NewAccount) => void;
+  onSave: (data: NewAccount) => Promise<void> | void;
   onCancel: () => void;
 }
 
@@ -21,7 +21,7 @@ export function VaultForm({ initialData, onSave, onCancel }: VaultFormProps) {
   const [type, setType] = useState<typeof ACCOUNT_TYPES[number]>(
     (initialData?.type as typeof ACCOUNT_TYPES[number]) ?? 'cash'
   );
-  const [currency, setCurrency] = useState(initialData?.currency ?? 'USD');
+  const currency = initialData?.currency ?? 'USD';
   const [rawBalance, setRawBalance] = useState(
     initialData ? (initialData.opening_balance_minor / 100).toString() : '0'
   );
@@ -49,7 +49,7 @@ export function VaultForm({ initialData, onSave, onCancel }: VaultFormProps) {
     try {
       const balanceNum = parseFloat(rawBalance || '0');
       const balanceMinor = Math.round(balanceNum * 100);
-      onSave({
+      await onSave({
         name: name.trim(),
         type,
         currency,
@@ -62,7 +62,12 @@ export function VaultForm({ initialData, onSave, onCancel }: VaultFormProps) {
   }
 
   return (
-    <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent}>
+    <ScrollView
+      style={s.scroll}
+      contentContainerStyle={s.scrollContent}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
+    >
       <View style={s.section}>
         <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel}>NAME</MonoLabel>
         <TextInput
@@ -139,6 +144,7 @@ export function VaultForm({ initialData, onSave, onCancel }: VaultFormProps) {
             handleSave();
           }}
           disabled={!isValid || saving}
+          loading={saving}
         />
       </View>
     </ScrollView>
