@@ -7,7 +7,6 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { EddiesColors, EddiesFonts, EddiesRadius, EddiesSpacing } from '@/constants/theme';
-import { useReduceMotion } from '@/hooks/use-reduce-motion';
 
 type StampButtonProps = {
   label: string;
@@ -18,19 +17,16 @@ type StampButtonProps = {
 
 export function StampButton({ label, onPress, disabled = false, loading = false }: StampButtonProps) {
   const scale = useSharedValue(1);
-  const reduceMotion = useReduceMotion();
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
   function handlePress() {
-    if (!reduceMotion) {
-      scale.value = withSequence(
-        withTiming(0.93, { duration: 80 }),
-        withTiming(1, { duration: 120 })
-      );
-    }
+    scale.value = withSequence(
+      withTiming(0.93, { duration: 80 }),
+      withTiming(1, { duration: 120 })
+    );
     onPress();
   }
 

@@ -59,6 +59,48 @@ export async function createTransaction(
   return tx;
 }
 
+export async function updateTransaction(
+  db: SQLiteDatabase,
+  id: string,
+  data: Partial<Omit<Transaction, 'id' | 'created_at'>>
+): Promise<void> {
+  const updates: string[] = [];
+  const values: unknown[] = [];
+
+  if (data.account_id !== undefined) {
+    updates.push('account_id = ?');
+    values.push(data.account_id);
+  }
+  if (data.category_id !== undefined) {
+    updates.push('category_id = ?');
+    values.push(data.category_id);
+  }
+  if (data.kind !== undefined) {
+    updates.push('kind = ?');
+    values.push(data.kind);
+  }
+  if (data.amount_minor !== undefined) {
+    updates.push('amount_minor = ?');
+    values.push(data.amount_minor);
+  }
+  if (data.note !== undefined) {
+    updates.push('note = ?');
+    values.push(data.note);
+  }
+  if (data.occurred_at !== undefined) {
+    updates.push('occurred_at = ?');
+    values.push(data.occurred_at);
+  }
+  if (data.transfer_group_id !== undefined) {
+    updates.push('transfer_group_id = ?');
+    values.push(data.transfer_group_id);
+  }
+
+  if (updates.length === 0) return;
+  values.push(id);
+  await db.runAsync(`UPDATE transactions SET ${updates.join(', ')} WHERE id = ?`, ...values);
+}
+
 export async function deleteTransaction(db: SQLiteDatabase, id: string): Promise<void> {
   await db.runAsync('DELETE FROM transactions WHERE id = ?', id);
 }
