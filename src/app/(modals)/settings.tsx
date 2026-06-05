@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, Keyboard, ActivityIndicator } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View, Keyboard, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -20,6 +20,7 @@ const APP_VERSION = '1.0.0';
 export default function SettingsModal() {
   const db = useSQLiteContext();
   const { currency, firstDayOfWeek, hapticsEnabled, setCurrency, setFirstDayOfWeek, setHapticsEnabled, showToast } = useStore();
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -95,6 +96,55 @@ export default function SettingsModal() {
 
   async function handleRestoreBackup() {
     showToast('Restore coming soon');
+  }
+
+  function handleDeleteAllData() {
+    Alert.alert(
+      'DELETE ALL DATA',
+      'This will permanently erase all transactions, vaults, caps and custom categories.\n\nYour name and join date will be kept.\n\nThis cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'DELETE EVERYTHING',
+          style: 'destructive',
+          onPress: confirmDeleteAllData,
+        },
+      ]
+    );
+  }
+
+  async function confirmDeleteAllData() {
+    setDeleteLoading(true);
+    try {
+      await db.withTransactionAsync(async () => {
+        await db.runAsync('DELETE FROM transactions');
+        await db.runAsync('DELETE FROM monthly_archives');
+        await db.runAsync('DELETE FROM budgets');
+        await db.runAsync('DELETE FROM accounts');
+        await db.runAsync(
+          `DELETE FROM categories WHERE id NOT IN ('cat_food','cat_transport','cat_rent','cat_utilities','cat_fun','cat_health','cat_income')`
+        );
+        await db.runAsync(`UPDATE settings SET value='USD' WHERE key='currency'`);
+        await db.runAsync(`UPDATE settings SET value='1' WHERE key='first_day_of_week'`);
+        await db.runAsync(`UPDATE settings SET value='true' WHERE key='haptics_enabled'`);
+        await db.runAsync(
+          `INSERT OR IGNORE INTO accounts (id,name,type,currency,opening_balance_minor,color,archived,created_at) VALUES (?,?,?,?,?,?,?,?)`,
+          'acc_default', 'Cash', 'cash', 'USD', 0, '#F2F0EB', 0, Date.now()
+        );
+      });
+      setCurrency('USD');
+      setFirstDayOfWeek(1);
+      setHapticsEnabled(true);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showToast('All data cleared');
+      router.back();
+    } catch (err) {
+      console.error('Delete all data error:', err);
+      showToast('Failed to delete data', 'err');
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setDeleteLoading(false);
+    }
   }
 
   return (
@@ -213,6 +263,21 @@ export default function SettingsModal() {
               >
                 <Text style={s.controlText}>RESTORE FROM BACKUP</Text>
               </Pressable>
+              <View style={s.hairline} />
+              <Pressable
+                style={[s.controlDestructive, (deleteLoading || backupLoading) && s.controlDisabled]}
+                onPress={handleDeleteAllData}
+                disabled={deleteLoading || backupLoading}
+              >
+                {deleteLoading ? (
+                  <ActivityIndicator color={EddiesColors.alert} size="small" />
+                ) : (
+                  <>
+                    <Text style={s.controlTextDestructive}>DELETE ALL DATA</Text>
+                    <Text style={s.controlDestructiveHint}>Keeps name & join date</Text>
+                  </>
+                )}
+              </Pressable>
             </View>
 
             {/* App Version */}
@@ -273,6 +338,29 @@ const s = StyleSheet.create({
   },
   controlValue: { fontWeight: '600' },
   controlHint: { color: EddiesColors.steel, fontSize: 10 },
+  hairline: { height: 1, backgroundColor: EddiesColors.steel + '1A', marginVertical: EddiesSpacing.xs },
+  controlDestructive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: EddiesSpacing.md,
+    paddingVertical: EddiesSpacing.sm,
+    backgroundColor: EddiesColors.alert + '12',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: EddiesColors.alert + '40',
+  },
+  controlTextDestructive: {
+    fontFamily: 'SpaceMono_400Regular',
+    fontSize: 12,
+    color: EddiesColors.alert,
+    fontWeight: '600',
+  },
+  controlDestructiveHint: {
+    fontFamily: 'SpaceMono_400Regular',
+    fontSize: 10,
+    color: EddiesColors.alert + '88',
+  },
   dropdown: {
     marginTop: EddiesSpacing.xs,
     backgroundColor: EddiesColors.surface,
