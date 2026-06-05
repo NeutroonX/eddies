@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { SymbolView } from 'expo-symbols';
@@ -33,6 +34,7 @@ type Props = {
 
 export function EntryRow({ row, isPendingDelete = false, onPress, onEdit, onDelete }: Props) {
   const sym = useCurrencySymbol();
+  const swipeRef = useRef<Swipeable>(null);
   const isOutflow = row.kind === 'outflow';
   const isTransfer = row.kind === 'transfer';
   const amountColor = isOutflow ? EddiesColors.alert : isTransfer ? EddiesColors.steel : EddiesColors.bone;
@@ -42,18 +44,31 @@ export function EntryRow({ row, isPendingDelete = false, onPress, onEdit, onDele
   });
   const sign = isOutflow ? '−' : isTransfer ? '⇄' : '+';
 
+  function triggerEdit() {
+    swipeRef.current?.close();
+    onEdit();
+  }
+
+  function triggerDelete() {
+    swipeRef.current?.close();
+    onDelete();
+  }
+
   return (
     <Swipeable
+      ref={swipeRef}
       renderLeftActions={() => (
-        <Pressable onPress={onEdit} style={styles.editBtn}>
+        <Pressable onPress={triggerEdit} style={styles.editBtn}>
           <MonoLabel size={10} letterSpacing={2} color={EddiesColors.bone}>EDIT</MonoLabel>
         </Pressable>
       )}
       renderRightActions={() => (
-        <Pressable onPress={onDelete} style={styles.deleteBtn}>
+        <Pressable onPress={triggerDelete} style={styles.deleteBtn}>
           <MonoLabel size={10} letterSpacing={2} color={EddiesColors.bone}>DEL</MonoLabel>
         </Pressable>
       )}
+      onSwipeableLeftOpen={triggerEdit}
+      onSwipeableRightOpen={triggerDelete}
       overshootFriction={8}
     >
       <Pressable onPress={onPress} style={[styles.row, isPendingDelete && styles.fading]}>

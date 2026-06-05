@@ -1,7 +1,11 @@
+import { useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { EddiesColors, EddiesSpacing } from '@/constants/theme';
+
+import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
 import { MonoLabel } from './mono-label';
+import { Numerals } from './numerals';
+import { useCurrencySymbol } from '@/hooks/use-currency-symbol';
 
 interface CapProgressProps {
   categoryName: string;
@@ -14,109 +18,155 @@ interface CapProgressProps {
 }
 
 export function CapProgress({ categoryName, spent, cap, percentage, isOver, onEdit, onDelete }: CapProgressProps) {
+  const sym = useCurrencySymbol();
+  const swipeRef = useRef<Swipeable>(null);
   const fill = Math.min(percentage, 100);
+
+  // Track color: bone under 80%, alert from 80%+, full alert when over
+  const trackColor = isOver
+    ? EddiesColors.alert
+    : percentage >= 80
+      ? EddiesColors.bone
+      : EddiesColors.bone + 'AA';
+
+  function triggerEdit() {
+    swipeRef.current?.close();
+    onEdit?.();
+  }
+
+  function triggerDelete() {
+    swipeRef.current?.close();
+    onDelete?.();
+  }
+
+  const overAmount = isOver ? ((spent - cap) / 100).toFixed(0) : null;
 
   return (
     <Swipeable
+      ref={swipeRef}
       overshootFriction={8}
       renderLeftActions={() => (
-        <Pressable style={s.editAction} onPress={onEdit}>
-          <MonoLabel size={11} weight="bold" color={EddiesColors.bone}>EDIT</MonoLabel>
+        <Pressable style={s.editAction} onPress={triggerEdit}>
+          <MonoLabel size={10} weight="bold" color={EddiesColors.bone} letterSpacing={1}>EDIT</MonoLabel>
         </Pressable>
       )}
       renderRightActions={() => (
-        <Pressable style={s.deleteAction}>
-          <MonoLabel size={11} weight="bold" color={EddiesColors.bone}>DELETE</MonoLabel>
+        <Pressable style={s.deleteAction} onPress={triggerDelete}>
+          <MonoLabel size={10} weight="bold" color={EddiesColors.bone} letterSpacing={1}>DEL</MonoLabel>
         </Pressable>
       )}
-      onSwipeableRightOpen={onDelete}
+      onSwipeableLeftOpen={triggerEdit}
+      onSwipeableRightOpen={triggerDelete}
     >
-      <Pressable
+      <View
         style={s.row}
-        onPress={onEdit}
-        accessibilityRole="button"
-        accessibilityLabel={`${categoryName}: $${(spent / 100).toFixed(2)} of $${(cap / 100).toFixed(2)}${isOver ? ', over limit' : ''}`}
-        accessibilityHint="Swipe left to edit, swipe right to delete"
+        accessibilityLabel={`${categoryName}: ${sym}${(spent / 100).toFixed(2)} of ${sym}${(cap / 100).toFixed(2)}${isOver ? ', over limit' : ''}`}
+        accessibilityHint="Swipe right to edit, swipe left to delete"
       >
-        <View style={s.labelRow}>
-          <MonoLabel size={11} weight="bold" color={isOver ? EddiesColors.alert : EddiesColors.bone}>
+        {/* Header: name + over badge + percentage */}
+        <View style={s.headerRow}>
+          <MonoLabel
+            size={11}
+            weight="bold"
+            color={isOver ? EddiesColors.alert : EddiesColors.bone}
+            letterSpacing={0.5}
+          >
             {categoryName.toUpperCase()}
           </MonoLabel>
-          <View style={s.right}>
+
+          <View style={s.headerRight}>
             {isOver && (
-              <MonoLabel size={8} letterSpacing={1} color={EddiesColors.alert} weight="bold">
-                OVER
+              <View style={s.overBadge}>
+                <MonoLabel size={7} weight="bold" letterSpacing={2} color={EddiesColors.bone}>
+                  OVER
+                </MonoLabel>
+              </View>
+            )}
+            <Numerals
+              size={16}
+              color={isOver ? EddiesColors.alert : EddiesColors.bone}
+              weight="bold"
+            >
+              {percentage.toFixed(0)}%
+            </Numerals>
+          </View>
+        </View>
+
+        {/* Gauge track */}
+        <View style={s.track}>
+          <View style={[s.fill, { width: `${fill}%`, backgroundColor: trackColor }]} />
+        </View>
+
+        {/* Meta: spent · cap · over amount */}
+        <View style={s.metaRow}>
+          <MonoLabel size={9} letterSpacing={0.5} color={EddiesColors.steel}>
+            {sym}{(spent / 100).toFixed(0)} SPENT
+          </MonoLabel>
+          <View style={s.metaRight}>
+            {overAmount && (
+              <MonoLabel size={9} letterSpacing={0.5} color={EddiesColors.alert}>
+                +{sym}{overAmount} OVER ·{' '}
               </MonoLabel>
             )}
-            <MonoLabel size={9} color={EddiesColors.steel}>
-              ${(spent / 100).toFixed(0)} / ${(cap / 100).toFixed(0)}
+            <MonoLabel size={9} letterSpacing={0.5} color={EddiesColors.steel}>
+              {sym}{(cap / 100).toFixed(0)} CAP
             </MonoLabel>
           </View>
         </View>
-
-        <View style={s.track}>
-          <View
-            style={[
-              s.fill,
-              { width: `${fill}%`, backgroundColor: isOver ? EddiesColors.alert : EddiesColors.bone },
-            ]}
-          />
-        </View>
-
-        {isOver && (
-          <View style={s.overRow}>
-            {Array.from({ length: 12 }).map((_, i) => (
-              <View
-                key={i}
-                style={[s.stripe, { backgroundColor: i % 2 === 0 ? EddiesColors.alert : 'transparent' }]}
-              />
-            ))}
-          </View>
-        )}
-      </Pressable>
+      </View>
     </Swipeable>
   );
 }
 
 const s = StyleSheet.create({
   row: {
-    paddingVertical: EddiesSpacing.sm,
-    gap: EddiesSpacing.xs,
-    borderTopWidth: 1,
-    borderTopColor: '#1A1A1C',
     backgroundColor: EddiesColors.ink,
+    paddingHorizontal: EddiesSpacing.md,
+    paddingVertical: EddiesSpacing.md,
+    gap: EddiesSpacing.xs + 2,
   },
-  labelRow: {
+  headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  right: { flexDirection: 'row', alignItems: 'center', gap: EddiesSpacing.sm },
-  track: {
-    height: 3,
-    backgroundColor: '#1A1A1C',
-    overflow: 'hidden',
-  },
-  fill: { height: '100%' },
-  overRow: {
+  headerRight: {
     flexDirection: 'row',
-    height: 3,
-    overflow: 'hidden',
-    marginTop: 2,
+    alignItems: 'center',
+    gap: EddiesSpacing.sm,
   },
-  stripe: { flex: 1 },
+  overBadge: {
+    backgroundColor: EddiesColors.alert,
+    paddingHorizontal: EddiesSpacing.xs + 2,
+    paddingVertical: 2,
+  },
+  track: {
+    height: 5,
+    backgroundColor: EddiesColors.steel + '22',
+    overflow: 'hidden',
+  },
+  fill: {
+    height: '100%',
+  },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  metaRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   editAction: {
-    backgroundColor: EddiesColors.steel,
+    backgroundColor: EddiesColors.steel + 'AA',
     justifyContent: 'center',
-    paddingHorizontal: EddiesSpacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: '#1A1A1C',
+    alignItems: 'center',
+    width: 72,
   },
   deleteAction: {
     backgroundColor: EddiesColors.alert,
     justifyContent: 'center',
-    paddingHorizontal: EddiesSpacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: '#1A1A1C',
+    alignItems: 'center',
+    width: 72,
   },
 });
