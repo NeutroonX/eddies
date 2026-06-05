@@ -3,7 +3,6 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { SymbolView } from 'expo-symbols';
 
 import { MonoLabel } from '@/components/ui/mono-label';
-import { EddiesColors } from '@/constants/theme';
 import { Numerals } from '@/components/ui/numerals';
 import { EddiesColors, EddiesRadius, EddiesSpacing } from '@/constants/theme';
 import { formatAmountTabular } from '@/lib/money';
