@@ -7,16 +7,20 @@ export type ToastEntry = { message: string; type: 'ok' | 'err' };
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
+export type ArchivePrompt = { year: number; month: number };
+
 export type UISlice = {
   activePeriod: ActivePeriod;
   lastVaultId: string | null;
   customRange: { from: number; to: number } | null;
   toast: ToastEntry | null;
+  archivePrompt: ArchivePrompt | null;
   setActivePeriod: (period: ActivePeriod) => void;
   setLastVaultId: (id: string) => void;
   setCustomRange: (range: { from: number; to: number } | null) => void;
   showToast: (message: string, type?: 'ok' | 'err') => void;
   hideToast: () => void;
+  setArchivePrompt: (prompt: ArchivePrompt | null) => void;
 };
 
 export const createUISlice: StateCreator<Store, [], [], UISlice> = (set) => ({
@@ -24,6 +28,7 @@ export const createUISlice: StateCreator<Store, [], [], UISlice> = (set) => ({
   lastVaultId: null,
   customRange: null,
   toast: null,
+  archivePrompt: null,
   setActivePeriod: (period) => set({ activePeriod: period }),
   setLastVaultId: (id) => set({ lastVaultId: id }),
   setCustomRange: (range) => set({ customRange: range }),
@@ -40,4 +45,5 @@ export const createUISlice: StateCreator<Store, [], [], UISlice> = (set) => ({
     toastTimer = null;
     set({ toast: null });
   },
+  setArchivePrompt: (prompt) => set({ archivePrompt: prompt }),
 });

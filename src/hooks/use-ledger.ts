@@ -67,6 +67,7 @@ export function useLedger() {
         FROM transactions t
         LEFT JOIN categories c ON c.id = t.category_id
         LEFT JOIN accounts   a ON a.id = t.account_id
+        WHERE t.archived = 0
         ORDER BY t.occurred_at DESC
         LIMIT 500
       `),

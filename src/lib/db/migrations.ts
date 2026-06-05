@@ -82,6 +82,27 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
     await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 2);
   }
 
+  if (current < 4) {
+    await db.execAsync(`
+      ALTER TABLE transactions ADD COLUMN archived INTEGER NOT NULL DEFAULT 0;
+      CREATE INDEX IF NOT EXISTS idx_tx_archived ON transactions(archived);
+      CREATE TABLE IF NOT EXISTS monthly_archives (
+        id            TEXT    PRIMARY KEY NOT NULL,
+        year          INTEGER NOT NULL,
+        month         INTEGER NOT NULL,
+        label         TEXT    NOT NULL,
+        total_inflow  INTEGER NOT NULL DEFAULT 0,
+        total_outflow INTEGER NOT NULL DEFAULT 0,
+        tx_count      INTEGER NOT NULL DEFAULT 0,
+        exported_csv  INTEGER NOT NULL DEFAULT 0,
+        exported_pdf  INTEGER NOT NULL DEFAULT 0,
+        archived_at   INTEGER,
+        UNIQUE(year, month)
+      );
+    `);
+    await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 4);
+  }
+
   if (current < 3) {
     // Seed a default Cash vault if the user has no accounts yet (pre-onboarding).
     const accRow = await db.getFirstAsync<{ cnt: number }>(
