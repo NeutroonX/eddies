@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import {
+  Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
   View,
-  Keyboard,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,7 +13,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import * as Haptics from 'expo-haptics';
 
 import { MonoLabel } from '@/components/ui/mono-label';
-import { SectionTag } from '@/components/ui/section-tag';
+import { Numerals } from '@/components/ui/numerals';
 import { StampButton } from '@/components/ui/stamp-button';
 import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
 import { useCategories } from '@/hooks/use-categories';
@@ -34,22 +34,14 @@ export default function CapModal() {
   const [existingCap, setExistingCap] = useState<Budget | null>(null);
 
   useEffect(() => {
-    if (params.capId) {
-      // Load existing cap for editing
-      async function loadCap() {
-        const row = await db.getFirstAsync<Budget>(
-          'SELECT * FROM budgets WHERE id = ?',
-          params.capId
-        );
-        if (row) {
-          setExistingCap(row);
-          setCategoryId(row.category_id);
-          setPeriod(row.period);
-          setRawAmount((row.amount_minor / 100).toString());
-        }
-      }
-      loadCap();
-    }
+    if (!params.capId) return;
+    db.getFirstAsync<Budget>('SELECT * FROM budgets WHERE id = ?', params.capId).then((row) => {
+      if (!row) return;
+      setExistingCap(row);
+      setCategoryId(row.category_id);
+      setPeriod(row.period);
+      setRawAmount((row.amount_minor / 100).toString());
+    });
   }, [params.capId, db]);
 
   async function handleSave() {
@@ -57,34 +49,18 @@ export default function CapModal() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       return;
     }
-
     setSaving(true);
     Keyboard.dismiss();
-
     try {
-      const minorAmount = toMinorUnits(parseFloat(rawAmount));
-      const now = Date.now();
-
+      const amount = toMinorUnits(parseFloat(rawAmount));
       if (existingCap) {
-        await updateBudget(db, existingCap.id, {
-          category_id: categoryId,
-          period,
-          amount_minor: minorAmount,
-          start_date: existingCap.start_date,
-        });
+        await updateBudget(db, existingCap.id, { category_id: categoryId, period, amount_minor: amount, start_date: existingCap.start_date });
       } else {
-        await createBudget(db, {
-          category_id: categoryId,
-          period,
-          amount_minor: minorAmount,
-          start_date: now,
-        });
+        await createBudget(db, { category_id: categoryId, period, amount_minor: amount, start_date: Date.now() });
       }
-
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
-    } catch (err) {
-      console.error('Failed to save cap:', err);
+    } catch {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setSaving(false);
@@ -93,16 +69,13 @@ export default function CapModal() {
 
   async function handleDelete() {
     if (!existingCap) return;
-
     setDeleting(true);
     Keyboard.dismiss();
-
     try {
       await deleteBudget(db, existingCap.id);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
-    } catch (err) {
-      console.error('Failed to delete cap:', err);
+    } catch {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setDeleting(false);
@@ -110,185 +83,196 @@ export default function CapModal() {
   }
 
   const expenseCategories = categories.filter((c) => c.kind === 'expense');
+  const canSave = !!categoryId && !!rawAmount && !saving;
 
   return (
-    <SafeAreaView style={styles.safe} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <SectionTag label={existingCap ? 'EDDIES // CAP EDIT' : 'EDDIES // CAP NEW'} />
-        </View>
+    <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
 
-        <View style={styles.section}>
-          <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel}>
-            CATEGORY
-          </MonoLabel>
-          <View style={styles.categoryGrid}>
-            {expenseCategories.map((cat) => (
-              <Pressable
-                key={cat.id}
-                style={[
-                  styles.categoryButton,
-                  categoryId === cat.id && styles.categoryButtonActive,
-                ]}
-                onPress={() => setCategoryId(cat.id)}
-              >
-                <MonoLabel
-                  size={11}
-                  weight={categoryId === cat.id ? 'bold' : 'regular'}
-                  color={categoryId === cat.id ? EddiesColors.alert : EddiesColors.steel}
-                >
-                  {cat.name}
-                </MonoLabel>
-              </Pressable>
-            ))}
-          </View>
-        </View>
+      {/* ── Toolbar ── */}
+      <View style={s.toolbar}>
+        <MonoLabel size={9} letterSpacing={2} color={EddiesColors.steel}>
+          {existingCap ? 'EDDIES // CAP EDIT' : 'EDDIES // CAP NEW'}
+        </MonoLabel>
+        <Pressable onPress={() => { Keyboard.dismiss(); router.back(); }} hitSlop={12}>
+          <MonoLabel size={12} color={EddiesColors.steel}>✕</MonoLabel>
+        </Pressable>
+      </View>
 
-        <View style={styles.section}>
-          <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel}>
-            PERIOD
-          </MonoLabel>
-          <View style={styles.periodButtons}>
-            {(['weekly', 'monthly'] as const).map((p) => (
-              <Pressable
-                key={p}
-                style={[
-                  styles.periodButton,
-                  period === p && styles.periodButtonActive,
-                ]}
-                onPress={() => setPeriod(p)}
-              >
-                <MonoLabel
-                  size={11}
-                  weight={period === p ? 'bold' : 'regular'}
-                  color={period === p ? EddiesColors.bone : EddiesColors.steel}
-                >
-                  {p.toUpperCase()}
-                </MonoLabel>
-              </Pressable>
-            ))}
-          </View>
-        </View>
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={s.body}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
 
-        <View style={styles.section}>
-          <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel}>
-            AMOUNT
-          </MonoLabel>
+        {/* Amount — big number input */}
+        <View style={s.amountBlock}>
+          <Numerals size={52} color={rawAmount ? EddiesColors.bone : EddiesColors.steel} weight="bold">
+            $
+          </Numerals>
           <TextInput
-            style={styles.amountInput}
+            style={s.amountInput}
             placeholder="0.00"
             placeholderTextColor={EddiesColors.steel}
             keyboardType="decimal-pad"
             value={rawAmount}
             onChangeText={setRawAmount}
             editable={!saving}
+            autoFocus={!existingCap}
           />
         </View>
 
-        <View style={styles.actions}>
-          <StampButton
-            label="SUBMIT"
-            onPress={handleSave}
-            disabled={!categoryId || !rawAmount || saving}
-            loading={saving}
-          />
+        <View style={s.hairline} />
+
+        {/* Period */}
+        <View style={s.field}>
+          <MonoLabel size={9} letterSpacing={2} color={EddiesColors.steel}>PERIOD</MonoLabel>
+          <View style={s.segRow}>
+            {(['weekly', 'monthly'] as const).map((p) => {
+              const active = period === p;
+              return (
+                <Pressable
+                  key={p}
+                  style={[s.seg, active && s.segActive]}
+                  onPress={() => setPeriod(p)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                >
+                  <MonoLabel
+                    size={11}
+                    letterSpacing={1}
+                    weight={active ? 'bold' : 'regular'}
+                    color={active ? EddiesColors.bone : EddiesColors.steel}
+                  >
+                    {p.toUpperCase()}
+                  </MonoLabel>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={s.hairline} />
+
+        {/* Category */}
+        <View style={s.field}>
+          <MonoLabel size={9} letterSpacing={2} color={EddiesColors.steel}>CATEGORY</MonoLabel>
+          <View style={s.catList}>
+            {expenseCategories.map((cat) => {
+              const active = categoryId === cat.id;
+              return (
+                <Pressable
+                  key={cat.id}
+                  style={s.catRow}
+                  onPress={() => setCategoryId(active ? null : cat.id)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                >
+                  <View style={[s.catDot, { backgroundColor: active ? EddiesColors.alert : 'transparent', borderColor: active ? EddiesColors.alert : EddiesColors.steel }]} />
+                  <MonoLabel
+                    size={12}
+                    weight={active ? 'bold' : 'regular'}
+                    color={active ? EddiesColors.bone : EddiesColors.steel}
+                  >
+                    {cat.name.toUpperCase()}
+                  </MonoLabel>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={s.hairline} />
+
+        {/* Actions */}
+        <View style={s.actions}>
+          <StampButton label="SET CAP" onPress={handleSave} disabled={!canSave} loading={saving} />
           {existingCap && (
             <Pressable
-              style={[styles.deleteButton, deleting && styles.deleteButtonLoading]}
+              style={[s.deleteRow, deleting && s.dimmed]}
               onPress={handleDelete}
               disabled={deleting}
+              accessibilityRole="button"
+              accessibilityLabel="Delete cap"
             >
-              <MonoLabel
-                size={11}
-                weight="bold"
-                color={EddiesColors.steel}
-              >
-                DELETE
+              <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel}>
+                REMOVE CAP
               </MonoLabel>
             </Pressable>
           )}
         </View>
+
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: EddiesColors.ink },
-  content: {
+  toolbar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: EddiesSpacing.md,
-    paddingVertical: EddiesSpacing.md,
+    paddingVertical: EddiesSpacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1A1A1C',
+  },
+  scroll: { flex: 1 },
+  body: {
+    paddingHorizontal: EddiesSpacing.md,
+    paddingBottom: EddiesSpacing.xxl,
     gap: EddiesSpacing.lg,
   },
-  header: {
-    gap: EddiesSpacing.sm,
-  },
-  section: {
-    gap: EddiesSpacing.md,
-  },
-  categoryGrid: {
+  amountBlock: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: EddiesSpacing.sm,
-  },
-  categoryButton: {
-    flex: 1,
-    minWidth: '45%',
-    paddingVertical: EddiesSpacing.sm,
-    paddingHorizontal: EddiesSpacing.md,
-    borderWidth: 1,
-    borderColor: EddiesColors.steel,
-    borderRadius: 2,
-    backgroundColor: EddiesColors.surface,
-  },
-  categoryButtonActive: {
-    borderColor: EddiesColors.alert,
-    backgroundColor: EddiesColors.ink,
-  },
-  periodButtons: {
-    flexDirection: 'row',
-    gap: EddiesSpacing.sm,
-  },
-  periodButton: {
-    flex: 1,
-    paddingVertical: EddiesSpacing.sm,
-    paddingHorizontal: EddiesSpacing.md,
-    borderWidth: 1,
-    borderColor: EddiesColors.steel,
-    borderRadius: 2,
-    backgroundColor: EddiesColors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  periodButtonActive: {
-    borderColor: EddiesColors.bone,
-    backgroundColor: EddiesColors.ink,
+    alignItems: 'flex-end',
+    paddingTop: EddiesSpacing.lg,
+    gap: EddiesSpacing.xs,
   },
   amountInput: {
-    paddingVertical: EddiesSpacing.md,
-    paddingHorizontal: EddiesSpacing.md,
-    fontSize: 16,
-    fontFamily: EddiesFonts.monoBold,
+    flex: 1,
+    fontFamily: EddiesFonts.displayBold,
+    fontSize: 52,
     color: EddiesColors.bone,
-    borderWidth: 1,
-    borderColor: EddiesColors.steel,
-    borderRadius: 2,
-    backgroundColor: EddiesColors.surface,
+    lineHeight: 58,
+    includeFontPadding: false,
   },
-  actions: {
-    gap: EddiesSpacing.md,
+  hairline: { height: 1, backgroundColor: '#1A1A1C' },
+  field: { gap: EddiesSpacing.md },
+  segRow: {
+    flexDirection: 'row',
+    gap: 1,
+    backgroundColor: '#1A1A1C',
+    alignSelf: 'flex-start',
+    padding: 1,
   },
-  deleteButton: {
-    paddingVertical: EddiesSpacing.md,
-    paddingHorizontal: EddiesSpacing.md,
-    borderWidth: 1,
-    borderColor: EddiesColors.steel,
-    borderRadius: 2,
-    backgroundColor: EddiesColors.surface,
-    justifyContent: 'center',
+  seg: {
+    paddingHorizontal: EddiesSpacing.lg,
+    paddingVertical: EddiesSpacing.sm,
+  },
+  segActive: { backgroundColor: EddiesColors.surface },
+  catList: { gap: 0 },
+  catRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: EddiesSpacing.md,
+    paddingVertical: EddiesSpacing.md,
+    borderTopWidth: 1,
+    borderTopColor: '#1A1A1C',
   },
-  deleteButtonLoading: {
-    opacity: 0.5,
+  catDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 1,
+    borderWidth: 1,
   },
+  actions: { gap: EddiesSpacing.sm },
+  deleteRow: {
+    paddingVertical: EddiesSpacing.md,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#1A1A1C',
+  },
+  dimmed: { opacity: 0.4 },
 });
