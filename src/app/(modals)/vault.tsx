@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -36,6 +36,7 @@ export default function VaultModal() {
         await updateAccount(db, id, data);
       }
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Keyboard.dismiss();
       router.back();
     } catch (err) {
       console.error('Vault save error:', err);
@@ -52,7 +53,13 @@ export default function VaultModal() {
         <View style={s.header}>
           <SectionTag label={`EDDIES // ${title}`} />
           <BarcodeMark height={16} />
-          <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Pressable
+            onPress={() => {
+              Keyboard.dismiss();
+              router.back();
+            }}
+            hitSlop={12}
+          >
             <MonoLabel size={11} weight="bold" color={EddiesColors.steel}>CLOSE</MonoLabel>
           </Pressable>
         </View>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View, Keyboard } from 'react-native';
 
 import { MonoLabel } from '@/components/ui/mono-label';
 import { Pill } from '@/components/ui/pill';
@@ -123,10 +123,23 @@ export function VaultForm({ initialData, onSave, onCancel }: VaultFormProps) {
       </View>
 
       <View style={s.actions}>
-        <Pressable onPress={onCancel} style={s.cancelBtn}>
+        <Pressable
+          onPress={() => {
+            Keyboard.dismiss();
+            onCancel();
+          }}
+          style={s.cancelBtn}
+        >
           <MonoLabel size={11} weight="bold" color={EddiesColors.steel}>CANCEL</MonoLabel>
         </Pressable>
-        <StampButton label="SAVE VAULT" onPress={handleSave} disabled={!isValid || saving} />
+        <StampButton
+          label="SAVE VAULT"
+          onPress={() => {
+            Keyboard.dismiss();
+            handleSave();
+          }}
+          disabled={!isValid || saving}
+        />
       </View>
     </ScrollView>
   );

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView, Platform, Pressable,
-  ScrollView, StyleSheet, TextInput, View,
+  ScrollView, StyleSheet, TextInput, View, Keyboard,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -84,6 +84,7 @@ export default function EntryModal() {
       });
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       setLastVaultId(vaultId!);
+      Keyboard.dismiss();
       router.back();
     } catch {
       setSaving(false);
@@ -96,7 +97,13 @@ export default function EntryModal() {
         {/* ── Header ─────────────────────────── */}
         <View style={s.header}>
           <SectionTag label="EDDIES // LOG 01-A" />
-          <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Pressable
+            onPress={() => {
+              Keyboard.dismiss();
+              router.back();
+            }}
+            hitSlop={12}
+          >
             <MonoLabel size={12} color={EddiesColors.steel}>✕ CLOSE</MonoLabel>
           </Pressable>
         </View>
