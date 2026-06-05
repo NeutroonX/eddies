@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
@@ -8,7 +8,6 @@ import { BarcodeMark } from '@/components/ui/barcode-mark';
 import { CapProgress } from '@/components/ui/cap-progress';
 import { MetricCard } from '@/components/ui/metric-card';
 import { MonoLabel } from '@/components/ui/mono-label';
-import { NetWorthChart } from '@/components/ui/net-worth-chart';
 import { PeriodSelector } from '@/components/ui/period-selector';
 import { SectionTag } from '@/components/ui/section-tag';
 import { SpendBar } from '@/components/ui/spend-bar';
@@ -19,16 +18,13 @@ import {
   getInflowVsOutflow,
   getCategorySpend,
   getCapStats,
-  getNetWorthSeries,
   type CategorySpend,
   type CapProgress as CapProgressType,
-  type NetWorthPoint,
 } from '@/lib/analytics';
 import { useStore } from '@/store';
 
 export default function AnalyzeScreen() {
   const db = useSQLiteContext();
-  const { width } = useWindowDimensions();
   const activePeriod = useStore((s) => s.activePeriod);
   const setActivePeriod = useStore((s) => s.setActivePeriod);
 
@@ -36,7 +32,6 @@ export default function AnalyzeScreen() {
   const [burn, setBurn] = useState<{ avgDailyMinor: number; projectedMonthEndMinor: number } | null>(null);
   const [spending, setSpending] = useState<CategorySpend[]>([]);
   const [caps, setCaps] = useState<CapProgressType[]>([]);
-  const [netWorth, setNetWorth] = useState<NetWorthPoint[]>([]);
 
   useEffect(() => {
     async function loadData() {
@@ -45,9 +40,8 @@ export default function AnalyzeScreen() {
 
       if (activePeriod === 'week') {
         const today = new Date(now);
-        const day = today.getDay();
         const start = new Date(today);
-        start.setDate(today.getDate() - day);
+        start.setDate(today.getDate() - today.getDay());
         start.setHours(0, 0, 0, 0);
         fromMs = start.getTime();
       } else {
@@ -60,25 +54,21 @@ export default function AnalyzeScreen() {
       const toMs = now;
       const capPeriod: 'weekly' | 'monthly' = activePeriod === 'month' ? 'monthly' : 'weekly';
 
-      const [inflow, burn2, spending2, caps2, netWorth2] = await Promise.all([
+      const [inflow, burn2, spending2, caps2] = await Promise.all([
         getInflowVsOutflow(db, fromMs, toMs),
         getDailyBurn(db, fromMs, toMs),
         getCategorySpend(db, fromMs, toMs),
         getCapStats(db, capPeriod, fromMs, toMs),
-        getNetWorthSeries(db, fromMs, toMs),
       ]);
 
       setInflowOutflow(inflow);
       setBurn(burn2);
       setSpending(spending2);
       setCaps(caps2);
-      setNetWorth(netWorth2);
     }
 
     loadData();
   }, [activePeriod, db]);
-
-  const chartWidth = width - EddiesSpacing.md * 2;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -92,7 +82,6 @@ export default function AnalyzeScreen() {
           <PeriodSelector value={activePeriod} onChange={setActivePeriod} />
         </View>
 
-        {/* Inflow / Outflow / Net */}
         <View style={styles.section}>
           <View style={styles.grid}>
             <MetricCard
@@ -113,7 +102,6 @@ export default function AnalyzeScreen() {
           />
         </View>
 
-        {/* Daily Burn + Arithmetic Projection */}
         <View style={styles.section}>
           <MetricCard
             label="DAILY BURN"
@@ -123,15 +111,6 @@ export default function AnalyzeScreen() {
           />
         </View>
 
-        {/* Net Worth Trend Chart */}
-        <View style={styles.section}>
-          <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel}>
-            NET WORTH TREND
-          </MonoLabel>
-          <NetWorthChart data={netWorth} width={chartWidth} height={180} />
-        </View>
-
-        {/* Spend by Category */}
         {spending.length > 0 && (
           <View style={styles.section}>
             <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel}>
@@ -148,7 +127,6 @@ export default function AnalyzeScreen() {
           </View>
         )}
 
-        {/* Cap Watch */}
         {caps.length > 0 && (
           <View style={styles.section}>
             <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel}>
@@ -179,14 +157,7 @@ const styles = StyleSheet.create({
     paddingVertical: EddiesSpacing.md,
     gap: EddiesSpacing.lg,
   },
-  header: {
-    gap: EddiesSpacing.sm,
-  },
-  section: {
-    gap: EddiesSpacing.md,
-  },
-  grid: {
-    flexDirection: 'row',
-    gap: EddiesSpacing.md,
-  },
+  header: { gap: EddiesSpacing.sm },
+  section: { gap: EddiesSpacing.md },
+  grid: { flexDirection: 'row', gap: EddiesSpacing.md },
 });
