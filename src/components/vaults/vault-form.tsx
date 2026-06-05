@@ -103,35 +103,66 @@ export function VaultForm({ initialData, onSave, onCancel }: VaultFormProps) {
 
       {/* CURRENCY */}
       <View style={s.section}>
-        <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel}>CURRENCY</MonoLabel>
-        <TextInput
-          style={s.input}
-          placeholder="SEARCH..."
-          placeholderTextColor={EddiesColors.steel + '66'}
-          value={currencySearch}
-          onChangeText={setCurrencySearch}
-          autoCapitalize="characters"
-          maxLength={10}
-        />
-        <ScrollView style={s.currencyList} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-          {filteredCurrencies.map(c => {
-            const active = currency === c.code;
-            return (
-              <Pressable
-                key={c.code}
-                style={[s.currencyRow, active && s.currencyRowActive]}
-                onPress={() => { setCurrency(c.code); setCurrencySearch(''); }}
-              >
-                <MonoLabel size={11} weight="bold" color={active ? EddiesColors.ink : EddiesColors.bone} letterSpacing={1}>
-                  {c.code}
-                </MonoLabel>
-                <MonoLabel size={10} color={active ? EddiesColors.ink + 'AA' : EddiesColors.steel}>
-                  {c.symbol}  {c.name}
-                </MonoLabel>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+        <View style={s.currencyHeader}>
+          <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel}>CURRENCY</MonoLabel>
+          <View style={s.currencyBadge}>
+            <MonoLabel size={11} weight="bold" color={EddiesColors.alert} letterSpacing={1}>
+              {currency}
+            </MonoLabel>
+            <MonoLabel size={10} color={EddiesColors.steel}>
+              {WORLD_CURRENCIES.find(c => c.code === currency)?.symbol ?? ''}
+            </MonoLabel>
+          </View>
+        </View>
+        <View style={s.searchBox}>
+          <MonoLabel size={10} color={EddiesColors.steel} letterSpacing={1}>⌕</MonoLabel>
+          <TextInput
+            style={s.searchInput}
+            placeholder="Search code or name..."
+            placeholderTextColor={EddiesColors.steel + '66'}
+            value={currencySearch}
+            onChangeText={setCurrencySearch}
+            autoCapitalize="characters"
+            maxLength={20}
+            returnKeyType="search"
+          />
+          {currencySearch.length > 0 && (
+            <Pressable onPress={() => setCurrencySearch('')} hitSlop={8}>
+              <MonoLabel size={10} color={EddiesColors.steel}>✕</MonoLabel>
+            </Pressable>
+          )}
+        </View>
+        <View style={s.currencyList}>
+          <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false}>
+            {filteredCurrencies.map(c => {
+              const active = currency === c.code;
+              return (
+                <Pressable
+                  key={c.code}
+                  style={[s.currencyRow, active && s.currencyRowActive]}
+                  onPress={() => { setCurrency(c.code); setCurrencySearch(''); Keyboard.dismiss(); }}
+                >
+                  <View style={s.currencyRowLeft}>
+                    <MonoLabel size={11} weight="bold" color={active ? EddiesColors.ink : EddiesColors.bone} letterSpacing={1}>
+                      {c.code}
+                    </MonoLabel>
+                    <MonoLabel size={9} color={active ? EddiesColors.ink + 'BB' : EddiesColors.steel}>
+                      {c.name}
+                    </MonoLabel>
+                  </View>
+                  <MonoLabel size={13} weight="bold" color={active ? EddiesColors.alert : EddiesColors.steel + '88'}>
+                    {c.symbol}
+                  </MonoLabel>
+                </Pressable>
+              );
+            })}
+            {filteredCurrencies.length === 0 && (
+              <View style={s.currencyEmpty}>
+                <MonoLabel size={10} color={EddiesColors.steel}>NO RESULTS</MonoLabel>
+              </View>
+            )}
+          </ScrollView>
+        </View>
       </View>
 
       {/* OPENING BALANCE */}
@@ -172,16 +203,43 @@ const s = StyleSheet.create({
     color: EddiesColors.bone, fontFamily: EddiesFonts.mono, fontSize: 14,
   },
   pills: { flexDirection: 'row', gap: EddiesSpacing.sm, flexWrap: 'wrap' },
+  currencyHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  },
+  currencyBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: EddiesSpacing.xs,
+    backgroundColor: EddiesColors.surface,
+    borderWidth: 1, borderColor: EddiesColors.alert + '40',
+    paddingHorizontal: EddiesSpacing.sm, paddingVertical: 3,
+  },
+  searchBox: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: EddiesColors.surface,
+    borderWidth: 1, borderColor: EddiesColors.steel + '33',
+    paddingHorizontal: EddiesSpacing.sm,
+    gap: EddiesSpacing.xs,
+  },
+  searchInput: {
+    flex: 1,
+    color: EddiesColors.bone, fontFamily: EddiesFonts.mono, fontSize: 13,
+    paddingVertical: EddiesSpacing.sm,
+    includeFontPadding: false,
+  },
   currencyList: {
-    maxHeight: 180,
+    maxHeight: 200,
     borderWidth: 1, borderColor: EddiesColors.steel + '22',
+    backgroundColor: EddiesColors.surface,
   },
   currencyRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: EddiesSpacing.sm, paddingVertical: EddiesSpacing.xs + 2,
+    paddingHorizontal: EddiesSpacing.sm, paddingVertical: EddiesSpacing.sm,
     borderBottomWidth: 1, borderBottomColor: EddiesColors.steel + '12',
   },
+  currencyRowLeft: { gap: 2 },
   currencyRowActive: { backgroundColor: EddiesColors.bone },
+  currencyEmpty: {
+    paddingVertical: EddiesSpacing.lg, alignItems: 'center',
+  },
   colorGrid: { flexDirection: 'row', gap: EddiesSpacing.sm, flexWrap: 'wrap' },
   colorSwatch: { width: 40, height: 40, borderRadius: 4, borderWidth: 2 },
   actions: { flexDirection: 'row', gap: EddiesSpacing.sm, marginTop: EddiesSpacing.lg },
