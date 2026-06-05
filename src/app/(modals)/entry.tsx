@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Pressable,
-  ScrollView, StyleSheet, TextInput, View, Keyboard,
+  ScrollView, StyleSheet, TextInput, View, Keyboard, Text,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -35,6 +35,7 @@ export default function EntryModal() {
   const [kind, setKind] = useState<Kind>('outflow');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [otherName, setOtherName] = useState('');
+  const otherInputRef = useRef<TextInput>(null);
   const [vaultId, setVaultId] = useState<string | null>(lastVaultId);
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
@@ -89,6 +90,13 @@ export default function EntryModal() {
   }, [rawAmount]);
 
   const tagIsOther = categoryId === '__other__';
+
+  useEffect(() => {
+    if (tagIsOther) {
+      const t = setTimeout(() => otherInputRef.current?.focus(), 120);
+      return () => clearTimeout(t);
+    }
+  }, [tagIsOther]);
   const isValid = amountMinor > 0 && vaultId !== null &&
     (kind === 'transfer' || (categoryId !== null && (!tagIsOther || otherName.trim().length > 0)));
 
@@ -219,17 +227,21 @@ export default function EntryModal() {
                   />
                 </ScrollView>
                 {tagIsOther && (
-                  <TextInput
-                    style={s.otherInput}
-                    placeholder="ENTER TAG NAME"
-                    placeholderTextColor={EddiesColors.steel}
-                    value={otherName}
-                    onChangeText={setOtherName}
-                    autoFocus
-                    maxLength={40}
-                    autoCapitalize="words"
-                    returnKeyType="done"
-                  />
+                  <View style={s.otherWrap}>
+                    <Text style={s.otherLabel}>TAG NAME</Text>
+                    <TextInput
+                      ref={otherInputRef}
+                      style={s.otherInput}
+                      placeholder="e.g. Subscriptions"
+                      placeholderTextColor={EddiesColors.steel}
+                      value={otherName}
+                      onChangeText={setOtherName}
+                      maxLength={40}
+                      autoCapitalize="words"
+                      returnKeyType="done"
+                      onSubmitEditing={() => Keyboard.dismiss()}
+                    />
+                  </View>
                 )}
               </>
             )}
@@ -302,11 +314,25 @@ const s = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: EddiesColors.steel + '55',
     paddingVertical: EddiesSpacing.xs,
   },
+  otherWrap: {
+    marginTop: EddiesSpacing.sm,
+    borderLeftWidth: 2,
+    borderLeftColor: EddiesColors.alert,
+    paddingLeft: EddiesSpacing.sm,
+    gap: 4,
+  },
+  otherLabel: {
+    fontFamily: EddiesFonts.mono,
+    fontSize: 9,
+    letterSpacing: 2,
+    color: EddiesColors.alert,
+  },
   otherInput: {
-    fontFamily: EddiesFonts.mono, fontSize: 13, color: EddiesColors.bone,
-    borderWidth: 1, borderColor: EddiesColors.alert + '66',
-    paddingHorizontal: EddiesSpacing.sm, paddingVertical: EddiesSpacing.xs + 2,
-    marginTop: EddiesSpacing.xs,
+    fontFamily: EddiesFonts.displayBold,
+    fontSize: 22,
+    color: EddiesColors.bone,
+    paddingVertical: EddiesSpacing.xs,
+    backgroundColor: 'transparent',
   },
   footer: {
     paddingHorizontal: EddiesSpacing.md, paddingVertical: EddiesSpacing.md,
