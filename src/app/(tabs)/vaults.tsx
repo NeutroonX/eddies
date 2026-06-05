@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 
 import { VaultCard } from '@/components/vaults/vault-card';
@@ -71,6 +71,10 @@ export default function VaultsScreen() {
   const archiveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingIdRef = useRef<string | null>(null);
   const [pending, setPending] = useState<PendingArchive | null>(null);
+
+  useFocusEffect(() => {
+    reload();
+  });
 
   function handleArchive(accountId: string) {
     if (archiveTimerRef.current && pendingIdRef.current) {
