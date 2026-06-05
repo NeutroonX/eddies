@@ -45,3 +45,5 @@ example
 # AI agent instructions (local only)
 AGENTS.md
 CLAUDE.md
+.claude/
+.vscode/
