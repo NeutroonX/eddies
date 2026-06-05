@@ -22,10 +22,11 @@ type Props = {
   row: LedgerRow;
   isPendingDelete?: boolean;
   onPress: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 };
 
-export function EntryRow({ row, isPendingDelete = false, onPress, onDelete }: Props) {
+export function EntryRow({ row, isPendingDelete = false, onPress, onEdit, onDelete }: Props) {
   const isOutflow = row.kind === 'outflow';
   const amountColor = isOutflow ? EddiesColors.alert : EddiesColors.bone;
   const label = row.note?.trim() || row.category_name;
@@ -35,12 +36,17 @@ export function EntryRow({ row, isPendingDelete = false, onPress, onDelete }: Pr
 
   return (
     <Swipeable
+      renderLeftActions={() => (
+        <Pressable onPress={onEdit} style={styles.editBtn}>
+          <MonoLabel size={10} letterSpacing={2} color={EddiesColors.bone}>EDIT</MonoLabel>
+        </Pressable>
+      )}
       renderRightActions={() => (
         <Pressable onPress={onDelete} style={styles.deleteBtn}>
           <MonoLabel size={10} letterSpacing={2} color={EddiesColors.bone}>DELETE</MonoLabel>
         </Pressable>
       )}
-      overshootRight={false}
+      overshootFriction={8}
     >
       <Pressable onPress={onPress} style={[styles.row, isPendingDelete && styles.fading]}>
         <View style={styles.iconWrap}>
@@ -75,6 +81,10 @@ const styles = StyleSheet.create({
   info: { flex: 1, gap: 2 },
   label: { fontFamily: EddiesFonts.displaySemiBold, fontSize: 15, color: EddiesColors.bone },
   amount: { fontFamily: EddiesFonts.mono, fontSize: 14, letterSpacing: 0.5 },
+  editBtn: {
+    backgroundColor: EddiesColors.steel, width: 80,
+    justifyContent: 'center', alignItems: 'center',
+  },
   deleteBtn: {
     backgroundColor: EddiesColors.alert, width: 80,
     justifyContent: 'center', alignItems: 'center',

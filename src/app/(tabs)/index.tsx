@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Pressable, SectionList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 
 import { BarcodeMark } from '@/components/ui/barcode-mark';
@@ -115,7 +116,8 @@ export default function LedgerScreen() {
           <EntryRow
             row={item}
             isPendingDelete={item.id === pendingDeleteId}
-            onPress={() => { /* TODO M2: edit sheet */ }}
+            onPress={() => router.push(`/(modals)/entry?entryId=${item.id}`)}
+            onEdit={() => router.push(`/(modals)/entry?entryId=${item.id}`)}
             onDelete={() => handleDelete(item)}
           />
         )}

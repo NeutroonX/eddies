@@ -3,6 +3,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { SymbolView } from 'expo-symbols';
 
 import { MonoLabel } from '@/components/ui/mono-label';
+import { EddiesColors } from '@/constants/theme';
 import { Numerals } from '@/components/ui/numerals';
 import { EddiesColors, EddiesRadius, EddiesSpacing } from '@/constants/theme';
 import { formatAmountTabular } from '@/lib/money';
@@ -13,6 +14,7 @@ interface VaultCardProps {
   balance: number;
   isActive: boolean;
   onPress: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }
 
@@ -38,13 +40,19 @@ function DeleteAction() {
   );
 }
 
-export function VaultCard({ account, balance, isActive, onPress, onDelete }: VaultCardProps) {
+export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelete }: VaultCardProps) {
   const isNegative = balance < 0;
 
   return (
     <Swipeable
       overshootFriction={8}
+      renderLeftActions={() => (
+        <Pressable style={[s.deleteAction, { backgroundColor: EddiesColors.steel }]} onPress={onEdit}>
+          <MonoLabel size={11} weight="bold" color={EddiesColors.bone}>EDIT</MonoLabel>
+        </Pressable>
+      )}
       renderRightActions={() => <DeleteAction />}
+      onSwipeableLeftOpen={onEdit}
       onSwipeableRightOpen={onDelete}
     >
       <Pressable onPress={onPress} style={[s.card, isActive && s.cardActive]}>
