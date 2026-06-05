@@ -20,6 +20,9 @@ export function PeriodSelector({ value, onChange }: PeriodSelectorProps) {
             key={period}
             style={[styles.segment, isActive && styles.segmentActive]}
             onPress={() => onChange(period)}
+            accessibilityRole="button"
+            accessibilityLabel={`${period} period`}
+            accessibilityState={{ selected: isActive }}
           >
             <MonoLabel
               size={12}

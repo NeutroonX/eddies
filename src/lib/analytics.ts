@@ -336,3 +336,52 @@ export async function getCapStats(
     };
   });
 }
+
+// Dev-only invariant: Intel figures must reconcile with Ledger to the cent.
+// Call this in __DEV__ builds after loading analytics data to catch drift early.
+export async function assertIntelReconcilesLedger(
+  db: SQLiteDatabase,
+  fromMs: number,
+  toMs: number
+): Promise<void> {
+  if (!__DEV__) return;
+
+  // Sum transactions directly (the "ledger source of truth")
+  const ledger = await db.getFirstAsync<{ inflow: number; outflow: number }>(
+    `SELECT
+       COALESCE(SUM(CASE WHEN kind='inflow'  THEN amount_minor ELSE 0 END),0) AS inflow,
+       COALESCE(SUM(CASE WHEN kind='outflow' THEN amount_minor ELSE 0 END),0) AS outflow
+     FROM transactions
+     WHERE occurred_at >= ? AND occurred_at < ? AND transfer_group_id IS NULL`,
+    fromMs,
+    toMs
+  );
+
+  // getInflowVsOutflow runs the same query — they must match
+  const intel = await getInflowVsOutflow(db, fromMs, toMs);
+
+  const ledgerInflow = ledger?.inflow ?? 0;
+  const ledgerOutflow = ledger?.outflow ?? 0;
+
+  if (intel.inflow !== ledgerInflow) {
+    console.error(
+      `[EDDIES INVARIANT] Intel inflow ${intel.inflow} ≠ Ledger inflow ${ledgerInflow}`
+    );
+  }
+  if (intel.outflow !== ledgerOutflow) {
+    console.error(
+      `[EDDIES INVARIANT] Intel outflow ${intel.outflow} ≠ Ledger outflow ${ledgerOutflow}`
+    );
+  }
+
+  // Category spend must sum to total outflow
+  const categorySpend = await getCategorySpend(db, fromMs, toMs);
+  const categoryTotal = categorySpend.reduce((s, c) => s + c.total_minor, 0);
+
+  // Note: some outflow entries may have no category — categoryTotal ≤ total outflow is valid
+  if (categoryTotal > intel.outflow) {
+    console.error(
+      `[EDDIES INVARIANT] Category spend total ${categoryTotal} > total outflow ${intel.outflow}`
+    );
+  }
+}

@@ -24,7 +24,13 @@ export function CapProgress({
   const barWidth = Math.min(percentage, 100);
 
   return (
-    <Pressable style={styles.container} onPress={onPress}>
+    <Pressable
+      style={styles.container}
+      onPress={onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={`${categoryName} cap: $${(spent / 100).toFixed(2)} of $${(cap / 100).toFixed(2)}${isOver ? ', OVER LIMIT' : ''}`}
+      accessibilityHint={onPress ? 'Tap to edit this cap' : undefined}
+    >
       <View style={styles.header}>
         <MonoLabel size={11} weight="bold" color={EddiesColors.bone}>
           {categoryName}

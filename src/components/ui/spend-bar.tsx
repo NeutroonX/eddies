@@ -21,7 +21,12 @@ export function SpendBar({
   const barWidth = Math.min((percentage / maxPercentage) * 100, 100);
 
   return (
-    <Pressable style={styles.container} onPress={onPress}>
+    <Pressable
+      style={styles.container}
+      onPress={onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={`${categoryName}: $${(amount / 100).toFixed(2)}, ${percentage.toFixed(1)} percent of total`}
+    >
       <View style={styles.header}>
         <MonoLabel size={11} weight="bold" color={EddiesColors.bone}>
           {categoryName}
