@@ -8,16 +8,17 @@ interface SpendBarProps {
   amount: number;
   percentage: number;
   rank: number;
+  sym?: string;
   onPress?: () => void;
 }
 
-export function SpendBar({ categoryName, amount, percentage, rank, onPress }: SpendBarProps) {
+export function SpendBar({ categoryName, amount, percentage, rank, sym = '$', onPress }: SpendBarProps) {
   return (
     <Pressable
       style={styles.row}
       onPress={onPress}
       accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityLabel={`${categoryName}: $${(amount / 100).toFixed(2)}, ${percentage.toFixed(1)} percent`}
+      accessibilityLabel={`${categoryName}: ${sym}${(amount / 100).toFixed(2)}, ${percentage.toFixed(1)} percent`}
     >
       <MonoLabel size={9} color={EddiesColors.steel} style={styles.rank}>
         {String(rank).padStart(2, '0')}
@@ -30,7 +31,7 @@ export function SpendBar({ categoryName, amount, percentage, rank, onPress }: Sp
           </MonoLabel>
           <View style={styles.right}>
             <Numerals size={13} color={EddiesColors.bone}>
-              ${(amount / 100).toFixed(2)}
+              {sym}{(amount / 100).toFixed(2)}
             </Numerals>
             <MonoLabel size={9} color={EddiesColors.steel} style={styles.pct}>
               {percentage.toFixed(0)}%
@@ -65,9 +66,10 @@ const styles = StyleSheet.create({
   right: { flexDirection: 'row', alignItems: 'center', gap: EddiesSpacing.sm },
   pct: { width: 28, textAlign: 'right' },
   track: {
-    height: 3,
-    backgroundColor: '#1A1A1C',
+    height: 4,
+    backgroundColor: EddiesColors.surface,
     overflow: 'hidden',
+    borderRadius: 2,
   },
   fill: {
     height: '100%',
