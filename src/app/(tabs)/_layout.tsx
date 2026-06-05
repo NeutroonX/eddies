@@ -36,7 +36,6 @@ export default function TabsLayout() {
         name="log"
         options={{
           title: '',
-          href: null,
           tabBarButton: () => <LogFAB />,
         }}
       />
