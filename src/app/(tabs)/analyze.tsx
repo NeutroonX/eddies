@@ -1,33 +1,165 @@
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { useSQLiteContext } from 'expo-sqlite';
+import { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BarcodeMark } from '@/components/ui/barcode-mark';
+import { MetricCard } from '@/components/ui/metric-card';
 import { MonoLabel } from '@/components/ui/mono-label';
+import { PeriodSelector } from '@/components/ui/period-selector';
 import { SectionTag } from '@/components/ui/section-tag';
 import { EddiesColors, EddiesSpacing } from '@/constants/theme';
+import { formatMinor, formatPercentage } from '@/lib/format';
+import {
+  getDailyBurn,
+  getInflowVsOutflow,
+  getPeriodSummary,
+  getCategorySpend,
+} from '@/lib/analytics';
+import { useStore } from '@/store';
 
 export default function AnalyzeScreen() {
+  const db = useSQLiteContext();
+  const activePeriod = useStore((s) => s.activePeriod);
+  const setActivePeriod = useStore((s) => s.setActivePeriod);
+
+  const [inflowOutflow, setInflowOutflow] = useState<{ inflow: number; outflow: number; net: number } | null>(null);
+  const [burn, setBurn] = useState<{ avgDailyMinor: number; projectedMonthEndMinor: number } | null>(null);
+  const [spending, setSpending] = useState<Array<{ category_name: string; total_minor: number; percentage: number }>>([]);
+
+  useEffect(() => {
+    async function loadData() {
+      const now = Date.now();
+      let fromMs: number;
+
+      if (activePeriod === 'week') {
+        const today = new Date(now);
+        const day = today.getDay();
+        const diff = today.getDate() - day;
+        const start = new Date(today.setDate(diff));
+        start.setHours(0, 0, 0, 0);
+        fromMs = start.getTime();
+      } else {
+        const start = new Date(now);
+        start.setDate(1);
+        start.setHours(0, 0, 0, 0);
+        fromMs = start.getTime();
+      }
+
+      const toMs = now;
+
+      const [inflow, burn2, spending2] = await Promise.all([
+        getInflowVsOutflow(db, fromMs, toMs),
+        getDailyBurn(db, fromMs, toMs),
+        getCategorySpend(db, fromMs, toMs),
+      ]);
+
+      setInflowOutflow(inflow);
+      setBurn(burn2);
+      setSpending(spending2);
+    }
+
+    loadData();
+  }, [activePeriod, db]);
+
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <SectionTag label="EDDIES // INTEL 03-A" />
-        <BarcodeMark height={20} />
-      </View>
-      <View style={styles.body}>
-        <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>
-          INTEL // M3
-        </MonoLabel>
-      </View>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <SectionTag label="EDDIES // INTEL 03-A" />
+          <BarcodeMark height={20} />
+        </View>
+
+        <View style={styles.section}>
+          <PeriodSelector value={activePeriod} onChange={setActivePeriod} />
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.grid}>
+            <MetricCard
+              label="INFLOW"
+              value={`$${formatMinor(inflowOutflow?.inflow ?? 0)}`}
+              color={EddiesColors.bone}
+            />
+            <MetricCard
+              label="OUTFLOW"
+              value={`$${formatMinor(inflowOutflow?.outflow ?? 0)}`}
+              highlightRed
+            />
+          </View>
+          <MetricCard
+            label="NET"
+            value={`$${formatMinor(inflowOutflow?.net ?? 0)}`}
+            color={inflowOutflow && inflowOutflow.net < 0 ? EddiesColors.alert : EddiesColors.bone}
+          />
+        </View>
+
+        <View style={styles.section}>
+          <MetricCard
+            label="DAILY BURN"
+            value={`$${formatMinor(burn?.avgDailyMinor ?? 0)} / day`}
+            subtext={`PROJECT → $${formatMinor(burn?.projectedMonthEndMinor ?? 0)}`}
+            highlightRed
+          />
+          <MonoLabel size={9} letterSpacing={0.5} color={EddiesColors.steel} style={{ marginTop: EddiesSpacing.xs }}>
+            ƒ FORMULA
+          </MonoLabel>
+        </View>
+
+        {spending.length > 0 && (
+          <View style={styles.section}>
+            <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel} style={{ marginBottom: EddiesSpacing.md }}>
+              TOP CATEGORIES
+            </MonoLabel>
+            {spending.map((cat) => (
+              <View key={cat.category_name} style={styles.categoryRow}>
+                <MonoLabel size={11} color={EddiesColors.bone}>
+                  {cat.category_name}
+                </MonoLabel>
+                <View style={styles.categoryStats}>
+                  <MonoLabel size={11} color={EddiesColors.bone}>
+                    {formatPercentage(cat.percentage)}
+                  </MonoLabel>
+                  <MonoLabel size={11} color={EddiesColors.bone}>
+                    ${formatMinor(cat.total_minor)}
+                  </MonoLabel>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: EddiesColors.ink },
-  header: {
+  content: {
     paddingHorizontal: EddiesSpacing.md,
-    paddingTop: EddiesSpacing.md,
+    paddingVertical: EddiesSpacing.md,
+    gap: EddiesSpacing.lg,
+  },
+  header: {
     gap: EddiesSpacing.sm,
   },
-  body: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  section: {
+    gap: EddiesSpacing.md,
+  },
+  grid: {
+    flexDirection: 'row',
+    gap: EddiesSpacing.md,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: EddiesSpacing.sm,
+    paddingHorizontal: EddiesSpacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: EddiesColors.steel,
+  },
+  categoryStats: {
+    flexDirection: 'row',
+    gap: EddiesSpacing.md,
+  },
 });
