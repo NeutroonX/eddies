@@ -8,13 +8,14 @@ import { MetricCard } from '@/components/ui/metric-card';
 import { MonoLabel } from '@/components/ui/mono-label';
 import { PeriodSelector } from '@/components/ui/period-selector';
 import { SectionTag } from '@/components/ui/section-tag';
+import { SpendBar } from '@/components/ui/spend-bar';
 import { EddiesColors, EddiesSpacing } from '@/constants/theme';
 import { formatMinor, formatPercentage } from '@/lib/format';
 import {
   getDailyBurn,
   getInflowVsOutflow,
-  getPeriodSummary,
   getCategorySpend,
+  type CategorySpend,
 } from '@/lib/analytics';
 import { useStore } from '@/store';
 
@@ -25,7 +26,7 @@ export default function AnalyzeScreen() {
 
   const [inflowOutflow, setInflowOutflow] = useState<{ inflow: number; outflow: number; net: number } | null>(null);
   const [burn, setBurn] = useState<{ avgDailyMinor: number; projectedMonthEndMinor: number } | null>(null);
-  const [spending, setSpending] = useState<Array<{ category_name: string; total_minor: number; percentage: number }>>([]);
+  const [spending, setSpending] = useState<CategorySpend[]>([]);
 
   useEffect(() => {
     async function loadData() {
@@ -109,22 +110,15 @@ export default function AnalyzeScreen() {
         {spending.length > 0 && (
           <View style={styles.section}>
             <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel} style={{ marginBottom: EddiesSpacing.md }}>
-              TOP CATEGORIES
+              SPEND BY CATEGORY
             </MonoLabel>
             {spending.map((cat) => (
-              <View key={cat.category_name} style={styles.categoryRow}>
-                <MonoLabel size={11} color={EddiesColors.bone}>
-                  {cat.category_name}
-                </MonoLabel>
-                <View style={styles.categoryStats}>
-                  <MonoLabel size={11} color={EddiesColors.bone}>
-                    {formatPercentage(cat.percentage)}
-                  </MonoLabel>
-                  <MonoLabel size={11} color={EddiesColors.bone}>
-                    ${formatMinor(cat.total_minor)}
-                  </MonoLabel>
-                </View>
-              </View>
+              <SpendBar
+                key={cat.category_id}
+                categoryName={cat.category_name}
+                amount={cat.total_minor}
+                percentage={cat.percentage}
+              />
             ))}
           </View>
         )}
@@ -147,18 +141,6 @@ const styles = StyleSheet.create({
     gap: EddiesSpacing.md,
   },
   grid: {
-    flexDirection: 'row',
-    gap: EddiesSpacing.md,
-  },
-  categoryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: EddiesSpacing.sm,
-    paddingHorizontal: EddiesSpacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: EddiesColors.steel,
-  },
-  categoryStats: {
     flexDirection: 'row',
     gap: EddiesSpacing.md,
   },

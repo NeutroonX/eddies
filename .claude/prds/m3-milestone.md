@@ -30,8 +30,10 @@ M3 delivers the core **analysis engine** (F6, F7, F8) that turns logged transact
 **Duration:** 2–3 days  
 **Scope:** Core query layer + deterministic aggregations
 
+**Status:** ✅ COMPLETE
+
 **Tasks:**
-- [ ] Extend `src/lib/analytics.ts` with core queries:
+- [x] Extend `src/lib/analytics.ts` with core queries:
   - `getSpendByCategory(startDate, endDate)` → `{ category, amount, percentage }`
   - `getInflowVsOutflow(startDate, endDate)` → `{ inflow, outflow, net }`
   - `getDailyBurn(startDate, endDate)` → `{ avgDaily, projectedMonthEnd }`
@@ -56,8 +58,10 @@ M3 delivers the core **analysis engine** (F6, F7, F8) that turns logged transact
 **Duration:** 1–2 days  
 **Scope:** Budget storage, CRUD, progress calculation
 
+**Status:** ✅ COMPLETE
+
 **Tasks:**
-- [ ] Extend DB migrations:
+- [x] Extend DB migrations:
   - Already have `budgets` table in schema; ensure correct structure (see PRD §7.2)
   - Add migrations for `budgets` table creation if not present
 
@@ -84,8 +88,10 @@ M3 delivers the core **analysis engine** (F6, F7, F8) that turns logged transact
 **Duration:** 2–3 days  
 **Scope:** Analyze tab layout + period switcher
 
+**Status:** ✅ COMPLETE
+
 **Tasks:**
-- [ ] Create `src/app/(tabs)/analyze.tsx`:
+- [x] Create `src/app/(tabs)/analyze.tsx`:
   - **Header:** period switcher (Week / Month / Custom range) with styled segmented control
   - **Summary cards:**
     - Inflow vs Outflow (paired bars)

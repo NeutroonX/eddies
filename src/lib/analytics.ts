@@ -17,6 +17,16 @@ import {
   type CapProgress,
 } from './schemas';
 
+export type {
+  PeriodSummary,
+  CategorySpend,
+  InflowOutflow,
+  DailyBurn,
+  NetWorthPoint,
+  CategoryTop,
+  CapProgress,
+};
+
 export async function getVaultBalance(db: SQLiteDatabase, accountId: string): Promise<number> {
   const row = await db.getFirstAsync<{
     opening: number;
