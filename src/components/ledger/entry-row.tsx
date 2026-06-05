@@ -57,9 +57,6 @@ export function EntryRow({ row, isPendingDelete = false, onPress, onEdit, onDele
       overshootFriction={8}
     >
       <Pressable onPress={onPress} style={[styles.row, isPendingDelete && styles.fading]}>
-        {/* Category color accent bar */}
-        <View style={[styles.accent, { backgroundColor: row.category_color }]} />
-
         {/* Icon */}
         <CategoryIcon glyph={row.category_glyph} color={row.category_color} />
 
@@ -89,18 +86,12 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingRight: EddiesSpacing.md,
+    paddingHorizontal: EddiesSpacing.md,
     paddingVertical: EddiesSpacing.sm + 2,
     backgroundColor: EddiesColors.ink,
     gap: EddiesSpacing.sm,
   },
   fading: { opacity: 0.3 },
-  accent: {
-    width: 2,
-    height: '70%',
-    borderRadius: 1,
-    marginLeft: EddiesSpacing.xs,
-  },
   iconCircle: {
     width: 34,
     height: 34,
