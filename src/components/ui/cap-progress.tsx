@@ -2,7 +2,6 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { EddiesColors, EddiesSpacing } from '@/constants/theme';
 import { MonoLabel } from './mono-label';
 import { Numerals } from './numerals';
-import { CautionStripe } from './caution-stripe';
 
 interface CapProgressProps {
   categoryName: string;
@@ -13,93 +12,80 @@ interface CapProgressProps {
   onPress?: () => void;
 }
 
-export function CapProgress({
-  categoryName,
-  spent,
-  cap,
-  percentage,
-  isOver,
-  onPress,
-}: CapProgressProps) {
-  const barWidth = Math.min(percentage, 100);
+export function CapProgress({ categoryName, spent, cap, percentage, isOver, onPress }: CapProgressProps) {
+  const fill = Math.min(percentage, 100);
 
   return (
     <Pressable
-      style={styles.container}
+      style={styles.row}
       onPress={onPress}
       accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityLabel={`${categoryName} cap: $${(spent / 100).toFixed(2)} of $${(cap / 100).toFixed(2)}${isOver ? ', OVER LIMIT' : ''}`}
-      accessibilityHint={onPress ? 'Tap to edit this cap' : undefined}
+      accessibilityLabel={`${categoryName}: $${(spent / 100).toFixed(2)} of $${(cap / 100).toFixed(2)}${isOver ? ', over limit' : ''}`}
+      accessibilityHint={onPress ? 'Tap to edit' : undefined}
     >
-      <View style={styles.header}>
-        <MonoLabel size={11} weight="bold" color={EddiesColors.bone}>
-          {categoryName}
+      <View style={styles.labelRow}>
+        <MonoLabel size={11} weight="bold" color={isOver ? EddiesColors.alert : EddiesColors.bone}>
+          {categoryName.toUpperCase()}
         </MonoLabel>
-        <View style={styles.status}>
+        <View style={styles.right}>
           {isOver && (
-            <MonoLabel size={9} letterSpacing={1} color={EddiesColors.alert} weight="bold">
-              CAUTION
+            <MonoLabel size={8} letterSpacing={1} color={EddiesColors.alert} weight="bold">
+              OVER
             </MonoLabel>
           )}
-          <MonoLabel size={10} color={EddiesColors.steel}>
-            {percentage.toFixed(0)}%
+          <MonoLabel size={9} color={EddiesColors.steel}>
+            ${(spent / 100).toFixed(0)} / ${(cap / 100).toFixed(0)}
           </MonoLabel>
         </View>
       </View>
 
-      <View style={styles.barContainer}>
+      <View style={styles.track}>
         <View
           style={[
-            styles.barFill,
-            {
-              width: `${barWidth}%`,
-              backgroundColor: isOver ? EddiesColors.alert : EddiesColors.bone,
-            },
+            styles.fill,
+            { width: `${fill}%`, backgroundColor: isOver ? EddiesColors.alert : EddiesColors.bone },
           ]}
         />
       </View>
 
-      {isOver && <CautionStripe height={4} />}
-
-      <View style={styles.amounts}>
-        <MonoLabel size={9} color={EddiesColors.steel}>
-          ${(spent / 100).toFixed(2)} / ${(cap / 100).toFixed(2)}
-        </MonoLabel>
-      </View>
+      {isOver && (
+        <View style={styles.overRow}>
+          {Array.from({ length: 12 }).map((_, i) => (
+            <View
+              key={i}
+              style={[styles.stripe, { backgroundColor: i % 2 === 0 ? EddiesColors.alert : 'transparent' }]}
+            />
+          ))}
+        </View>
+      )}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: EddiesSpacing.lg,
-    paddingHorizontal: EddiesSpacing.sm,
+  row: {
+    paddingVertical: EddiesSpacing.sm,
+    gap: EddiesSpacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: '#1A1A1C',
   },
-  header: {
+  labelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: EddiesSpacing.sm,
   },
-  status: {
-    flexDirection: 'row',
-    gap: EddiesSpacing.sm,
-    alignItems: 'center',
-  },
-  barContainer: {
-    height: 20,
-    backgroundColor: EddiesColors.surface,
-    borderWidth: 1,
-    borderColor: EddiesColors.steel,
-    borderRadius: 2,
+  right: { flexDirection: 'row', alignItems: 'center', gap: EddiesSpacing.sm },
+  track: {
+    height: 3,
+    backgroundColor: '#1A1A1C',
     overflow: 'hidden',
-    marginBottom: EddiesSpacing.sm,
   },
-  barFill: {
-    height: '100%',
-    opacity: 0.8,
+  fill: { height: '100%' },
+  overRow: {
+    flexDirection: 'row',
+    height: 3,
+    overflow: 'hidden',
+    marginTop: 2,
   },
-  amounts: {
-    marginTop: EddiesSpacing.xs,
-  },
+  stripe: { flex: 1 },
 });
