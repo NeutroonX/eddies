@@ -49,3 +49,21 @@ export async function updateAccount(
 export async function archiveAccount(db: SQLiteDatabase, id: string): Promise<void> {
   await db.runAsync('UPDATE accounts SET archived = 1 WHERE id = ?', id);
 }
+
+export async function getAccountBalance(db: SQLiteDatabase, accountId: string): Promise<number> {
+  const account = await getAccountById(db, accountId);
+  if (!account) return 0;
+
+  const result = await db.getFirstAsync<{ net: number }>(
+    `SELECT COALESCE(opening_balance_minor, 0) +
+            COALESCE(SUM(CASE WHEN kind = 'inflow' THEN amount_minor ELSE -amount_minor END), 0) AS net
+     FROM accounts
+     LEFT JOIN transactions ON accounts.id = transactions.account_id
+       AND transfer_group_id IS NULL
+     WHERE accounts.id = ?
+     GROUP BY accounts.id`,
+    accountId
+  );
+
+  return result?.net ?? account.opening_balance_minor;
+}

@@ -51,7 +51,7 @@ function EmptyState() {
 function UndoBar({ label, onUndo }: { label: string; onUndo: () => void }) {
   return (
     <View style={us.bar}>
-      <MonoLabel size={11} color={EddiesColors.bone} style={{ flex: 1 }} numberOfLines={1}>
+      <MonoLabel size={11} color={EddiesColors.bone} style={{ flex: 1 }}>
         {label.toUpperCase()} DELETED
       </MonoLabel>
       <Pressable onPress={onUndo} hitSlop={12}>
