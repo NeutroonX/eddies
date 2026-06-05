@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useEffect, useState } from 'react';
-import { router } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CapProgress } from '@/components/ui/cap-progress';
@@ -18,26 +18,24 @@ import {
   type CategorySpend,
   type CapProgress as CapProgressType,
 } from '@/lib/analytics';
+import { deleteBudget } from '@/lib/db/repos/budgets';
 import { useStore } from '@/store';
 
 type Period = 'week' | 'month';
 
 function getPeriodRange(period: Period): { fromMs: number; toMs: number } {
   const now = Date.now();
-  const toMs = now;
-
   if (period === 'week') {
     const d = new Date(now);
     const start = new Date(d);
     start.setDate(d.getDate() - d.getDay());
     start.setHours(0, 0, 0, 0);
-    return { fromMs: start.getTime(), toMs };
+    return { fromMs: start.getTime(), toMs: now };
   }
-
   const start = new Date(now);
   start.setDate(1);
   start.setHours(0, 0, 0, 0);
-  return { fromMs: start.getTime(), toMs };
+  return { fromMs: start.getTime(), toMs: now };
 }
 
 export default function AnalyzeScreen() {
@@ -49,11 +47,14 @@ export default function AnalyzeScreen() {
   const [burn, setBurn] = useState({ avgDailyMinor: 0, projectedMonthEndMinor: 0 });
   const [spending, setSpending] = useState<CategorySpend[]>([]);
   const [caps, setCaps] = useState<CapProgressType[]>([]);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
-  useEffect(() => {
+  const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingIdRef = useRef<string | null>(null);
+
+  function loadData() {
     const { fromMs, toMs } = getPeriodRange(activePeriod as Period);
     const capPeriod = activePeriod === 'month' ? 'monthly' : 'weekly';
-
     Promise.all([
       getInflowVsOutflow(db, fromMs, toMs),
       getDailyBurn(db, fromMs, toMs),
@@ -65,36 +66,58 @@ export default function AnalyzeScreen() {
       setSpending(sp);
       setCaps(cp);
     });
-  }, [activePeriod, db]);
+  }
+
+  useEffect(() => { loadData(); }, [activePeriod, db]);
+  useFocusEffect(() => { loadData(); });
+
+  function handleDeleteCap(cap: CapProgressType) {
+    // Commit any previous pending delete immediately
+    if (deleteTimerRef.current && pendingIdRef.current) {
+      clearTimeout(deleteTimerRef.current);
+      deleteBudget(db, pendingIdRef.current).then(loadData).catch(console.error);
+    }
+
+    pendingIdRef.current = cap.cap_id;
+    setPendingDelete({ id: cap.cap_id, name: cap.category_name });
+    setCaps((prev) => prev.filter((c) => c.cap_id !== cap.cap_id));
+
+    deleteTimerRef.current = setTimeout(() => {
+      deleteBudget(db, cap.cap_id).then(loadData).catch(console.error);
+      deleteTimerRef.current = null;
+      pendingIdRef.current = null;
+      setPendingDelete(null);
+    }, 4000);
+  }
+
+  function handleUndoDelete() {
+    if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
+    deleteTimerRef.current = null;
+    pendingIdRef.current = null;
+    setPendingDelete(null);
+    loadData();
+  }
 
   const netPositive = inOut.net >= 0;
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={s.safe}>
+      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
 
-        {/* Header */}
-        <View style={styles.header}>
-          <MonoLabel size={9} letterSpacing={2} color={EddiesColors.steel}>
-            EDDIES // INTEL 03-A
-          </MonoLabel>
-          <View style={styles.periodToggle}>
+        <View style={s.header}>
+          <MonoLabel size={9} letterSpacing={2} color={EddiesColors.steel}>EDDIES // INTEL 03-A</MonoLabel>
+          <View style={s.periodToggle}>
             {(['week', 'month'] as Period[]).map((p) => {
               const active = activePeriod === p;
               return (
                 <Pressable
                   key={p}
                   onPress={() => setActivePeriod(p)}
-                  style={[styles.periodBtn, active && styles.periodBtnActive]}
+                  style={[s.periodBtn, active && s.periodBtnActive]}
                   accessibilityRole="button"
                   accessibilityState={{ selected: active }}
                 >
-                  <MonoLabel
-                    size={10}
-                    letterSpacing={1}
-                    weight={active ? 'bold' : 'regular'}
-                    color={active ? EddiesColors.bone : EddiesColors.steel}
-                  >
+                  <MonoLabel size={10} letterSpacing={1} weight={active ? 'bold' : 'regular'} color={active ? EddiesColors.bone : EddiesColors.steel}>
                     {p.toUpperCase()}
                   </MonoLabel>
                 </Pressable>
@@ -103,67 +126,42 @@ export default function AnalyzeScreen() {
           </View>
         </View>
 
-        {/* Divider label */}
         <SectionDivider label="FLOW" />
 
-        {/* Outflow — the hero number */}
-        <View style={styles.flowBlock}>
-          <View style={styles.flowRow}>
-            <Numerals size={48} color={EddiesColors.alert} weight="bold">
-              ${formatMinor(inOut.outflow)}
-            </Numerals>
-            <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.alert} style={styles.flowTag}>
-              OUTFLOW
-            </MonoLabel>
+        <View style={s.flowBlock}>
+          <View style={s.flowRow}>
+            <Numerals size={48} color={EddiesColors.alert} weight="bold">${formatMinor(inOut.outflow)}</Numerals>
+            <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.alert} style={s.flowTag}>OUTFLOW</MonoLabel>
           </View>
-
-          <View style={[styles.flowRow, styles.inflowRow]}>
-            <Numerals size={28} color={EddiesColors.bone} weight="bold">
-              ${formatMinor(inOut.inflow)}
-            </Numerals>
-            <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.steel} style={styles.flowTag}>
-              INFLOW
-            </MonoLabel>
+          <View style={[s.flowRow, s.inflowRow]}>
+            <Numerals size={28} color={EddiesColors.bone} weight="bold">${formatMinor(inOut.inflow)}</Numerals>
+            <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.steel} style={s.flowTag}>INFLOW</MonoLabel>
           </View>
-
-          <View style={styles.hairline} />
-
-          <View style={styles.netRow}>
-            <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.steel}>
-              NET
-            </MonoLabel>
-            <Numerals
-              size={18}
-              color={netPositive ? EddiesColors.bone : EddiesColors.alert}
-              weight="bold"
-            >
+          <View style={s.hairline} />
+          <View style={s.netRow}>
+            <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.steel}>NET</MonoLabel>
+            <Numerals size={18} color={netPositive ? EddiesColors.bone : EddiesColors.alert} weight="bold">
               {inOut.net >= 0 ? '+' : '−'}${formatMinor(Math.abs(inOut.net))}
             </Numerals>
           </View>
         </View>
 
-        {/* Burn Rate */}
         <SectionDivider label="BURN" />
 
-        <View style={styles.burnBlock}>
-          <View style={styles.burnRow}>
-            <Numerals size={32} color={EddiesColors.alert} weight="bold">
-              ${formatMinor(burn.avgDailyMinor)}
-            </Numerals>
-            <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel} style={styles.flowTag}>
-              / DAY
-            </MonoLabel>
+        <View style={s.burnBlock}>
+          <View style={s.flowRow}>
+            <Numerals size={32} color={EddiesColors.alert} weight="bold">${formatMinor(burn.avgDailyMinor)}</Numerals>
+            <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel} style={s.flowTag}>/ DAY</MonoLabel>
           </View>
           <MonoLabel size={9} letterSpacing={0.5} color={EddiesColors.steel}>
             ƒ AT THIS RATE → MONTH-END ≈ ${formatMinor(burn.projectedMonthEndMinor)}
           </MonoLabel>
         </View>
 
-        {/* Spend breakdown */}
         {spending.length > 0 && (
           <>
             <SectionDivider label="SPEND" />
-            <View style={styles.listBlock}>
+            <View>
               {spending.map((cat, i) => (
                 <SpendBar
                   key={cat.category_id}
@@ -177,11 +175,10 @@ export default function AnalyzeScreen() {
           </>
         )}
 
-        {/* Cap watch */}
         {caps.length > 0 && (
           <>
             <SectionDivider label="CAPS" />
-            <View style={styles.listBlock}>
+            <View>
               {caps.map((cap) => (
                 <CapProgress
                   key={cap.cap_id}
@@ -190,95 +187,72 @@ export default function AnalyzeScreen() {
                   cap={cap.cap_amount_minor}
                   percentage={cap.percentage}
                   isOver={cap.is_over}
-                  onPress={() => router.push(`/(modals)/cap?capId=${cap.cap_id}`)}
+                  onEdit={() => router.push(`/(modals)/cap?capId=${cap.cap_id}`)}
+                  onDelete={() => handleDeleteCap(cap)}
                 />
               ))}
             </View>
           </>
         )}
 
-        {/* Add cap CTA */}
-        <Pressable
-          style={styles.addCap}
-          onPress={() => router.push('/(modals)/cap')}
-          accessibilityRole="button"
-          accessibilityLabel="Add cap"
-        >
-          <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel}>
-            + ADD CAP
-          </MonoLabel>
+        <Pressable style={s.addCap} onPress={() => router.push('/(modals)/cap')} accessibilityRole="button">
+          <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel}>+ ADD CAP</MonoLabel>
         </Pressable>
 
       </ScrollView>
+
+      {pendingDelete && (
+        <View style={s.undoBar}>
+          <MonoLabel size={11} color={EddiesColors.bone} style={{ flex: 1 }}>
+            {pendingDelete.name.toUpperCase()} CAP REMOVED
+          </MonoLabel>
+          <Pressable onPress={handleUndoDelete} hitSlop={12}>
+            <MonoLabel size={11} weight="bold" color={EddiesColors.alert}>UNDO</MonoLabel>
+          </Pressable>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
 
 function SectionDivider({ label }: { label: string }) {
   return (
-    <View style={divStyles.row}>
-      <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel}>
-        {label}
-      </MonoLabel>
-      <View style={divStyles.line} />
+    <View style={div.row}>
+      <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel}>{label}</MonoLabel>
+      <View style={div.line} />
     </View>
   );
 }
 
-const divStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: EddiesSpacing.sm,
-    marginBottom: EddiesSpacing.sm,
-  },
+const div = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: EddiesSpacing.sm, marginBottom: EddiesSpacing.sm },
   line: { flex: 1, height: 1, backgroundColor: '#1A1A1C' },
 });
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: EddiesColors.ink },
-  content: {
-    paddingHorizontal: EddiesSpacing.md,
-    paddingTop: EddiesSpacing.md,
-    paddingBottom: EddiesSpacing.xxl,
-    gap: EddiesSpacing.lg,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  periodToggle: {
-    flexDirection: 'row',
-    gap: 1,
-    backgroundColor: '#1A1A1C',
-    padding: 1,
-  },
-  periodBtn: {
-    paddingHorizontal: EddiesSpacing.md,
-    paddingVertical: EddiesSpacing.xs,
-  },
-  periodBtnActive: {
-    backgroundColor: EddiesColors.surface,
-  },
+  content: { paddingHorizontal: EddiesSpacing.md, paddingTop: EddiesSpacing.md, paddingBottom: EddiesSpacing.xxl, gap: EddiesSpacing.lg },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  periodToggle: { flexDirection: 'row', gap: 1, backgroundColor: '#1A1A1C', padding: 1 },
+  periodBtn: { paddingHorizontal: EddiesSpacing.md, paddingVertical: EddiesSpacing.xs },
+  periodBtnActive: { backgroundColor: EddiesColors.surface },
   flowBlock: { gap: EddiesSpacing.sm },
   flowRow: { flexDirection: 'row', alignItems: 'flex-end', gap: EddiesSpacing.sm },
   inflowRow: { marginTop: -EddiesSpacing.xs },
   flowTag: { marginBottom: 6 },
   hairline: { height: 1, backgroundColor: '#1A1A1C' },
-  netRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: EddiesSpacing.xs,
-  },
+  netRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: EddiesSpacing.xs },
   burnBlock: { gap: EddiesSpacing.sm },
-  burnRow: { flexDirection: 'row', alignItems: 'flex-end', gap: EddiesSpacing.sm },
-  listBlock: {},
-  addCap: {
-    paddingVertical: EddiesSpacing.md,
-    borderTopWidth: 1,
-    borderTopColor: '#1A1A1C',
+  addCap: { paddingVertical: EddiesSpacing.md, borderTopWidth: 1, borderTopColor: '#1A1A1C', alignItems: 'center' },
+  undoBar: {
+    position: 'absolute',
+    bottom: 0, left: 0, right: 0,
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: EddiesSpacing.md,
+    paddingVertical: EddiesSpacing.md,
+    backgroundColor: EddiesColors.surface,
+    borderTopWidth: 1,
+    borderTopColor: EddiesColors.steel + '33',
   },
 });

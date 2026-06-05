@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { EddiesColors, EddiesSpacing } from '@/constants/theme';
 import { MonoLabel } from './mono-label';
-import { Numerals } from './numerals';
 
 interface CapProgressProps {
   categoryName: string;
@@ -9,65 +9,83 @@ interface CapProgressProps {
   cap: number;
   percentage: number;
   isOver: boolean;
-  onPress?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export function CapProgress({ categoryName, spent, cap, percentage, isOver, onPress }: CapProgressProps) {
+export function CapProgress({ categoryName, spent, cap, percentage, isOver, onEdit, onDelete }: CapProgressProps) {
   const fill = Math.min(percentage, 100);
 
   return (
-    <Pressable
-      style={styles.row}
-      onPress={onPress}
-      accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityLabel={`${categoryName}: $${(spent / 100).toFixed(2)} of $${(cap / 100).toFixed(2)}${isOver ? ', over limit' : ''}`}
-      accessibilityHint={onPress ? 'Tap to edit' : undefined}
-    >
-      <View style={styles.labelRow}>
-        <MonoLabel size={11} weight="bold" color={isOver ? EddiesColors.alert : EddiesColors.bone}>
-          {categoryName.toUpperCase()}
-        </MonoLabel>
-        <View style={styles.right}>
-          {isOver && (
-            <MonoLabel size={8} letterSpacing={1} color={EddiesColors.alert} weight="bold">
-              OVER
-            </MonoLabel>
-          )}
-          <MonoLabel size={9} color={EddiesColors.steel}>
-            ${(spent / 100).toFixed(0)} / ${(cap / 100).toFixed(0)}
-          </MonoLabel>
-        </View>
-      </View>
-
-      <View style={styles.track}>
-        <View
-          style={[
-            styles.fill,
-            { width: `${fill}%`, backgroundColor: isOver ? EddiesColors.alert : EddiesColors.bone },
-          ]}
-        />
-      </View>
-
-      {isOver && (
-        <View style={styles.overRow}>
-          {Array.from({ length: 12 }).map((_, i) => (
-            <View
-              key={i}
-              style={[styles.stripe, { backgroundColor: i % 2 === 0 ? EddiesColors.alert : 'transparent' }]}
-            />
-          ))}
-        </View>
+    <Swipeable
+      overshootFriction={8}
+      renderLeftActions={() => (
+        <Pressable style={s.editAction} onPress={onEdit}>
+          <MonoLabel size={11} weight="bold" color={EddiesColors.bone}>EDIT</MonoLabel>
+        </Pressable>
       )}
-    </Pressable>
+      renderRightActions={() => (
+        <Pressable style={s.deleteAction}>
+          <MonoLabel size={11} weight="bold" color={EddiesColors.bone}>DELETE</MonoLabel>
+        </Pressable>
+      )}
+      onSwipeableLeftOpen={onEdit}
+      onSwipeableRightOpen={onDelete}
+    >
+      <Pressable
+        style={s.row}
+        onPress={onEdit}
+        accessibilityRole="button"
+        accessibilityLabel={`${categoryName}: $${(spent / 100).toFixed(2)} of $${(cap / 100).toFixed(2)}${isOver ? ', over limit' : ''}`}
+        accessibilityHint="Swipe left to edit, swipe right to delete"
+      >
+        <View style={s.labelRow}>
+          <MonoLabel size={11} weight="bold" color={isOver ? EddiesColors.alert : EddiesColors.bone}>
+            {categoryName.toUpperCase()}
+          </MonoLabel>
+          <View style={s.right}>
+            {isOver && (
+              <MonoLabel size={8} letterSpacing={1} color={EddiesColors.alert} weight="bold">
+                OVER
+              </MonoLabel>
+            )}
+            <MonoLabel size={9} color={EddiesColors.steel}>
+              ${(spent / 100).toFixed(0)} / ${(cap / 100).toFixed(0)}
+            </MonoLabel>
+          </View>
+        </View>
+
+        <View style={s.track}>
+          <View
+            style={[
+              s.fill,
+              { width: `${fill}%`, backgroundColor: isOver ? EddiesColors.alert : EddiesColors.bone },
+            ]}
+          />
+        </View>
+
+        {isOver && (
+          <View style={s.overRow}>
+            {Array.from({ length: 12 }).map((_, i) => (
+              <View
+                key={i}
+                style={[s.stripe, { backgroundColor: i % 2 === 0 ? EddiesColors.alert : 'transparent' }]}
+              />
+            ))}
+          </View>
+        )}
+      </Pressable>
+    </Swipeable>
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   row: {
     paddingVertical: EddiesSpacing.sm,
     gap: EddiesSpacing.xs,
     borderTopWidth: 1,
     borderTopColor: '#1A1A1C',
+    backgroundColor: EddiesColors.ink,
   },
   labelRow: {
     flexDirection: 'row',
@@ -88,4 +106,18 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   stripe: { flex: 1 },
+  editAction: {
+    backgroundColor: EddiesColors.steel,
+    justifyContent: 'center',
+    paddingHorizontal: EddiesSpacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: '#1A1A1C',
+  },
+  deleteAction: {
+    backgroundColor: EddiesColors.alert,
+    justifyContent: 'center',
+    paddingHorizontal: EddiesSpacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: '#1A1A1C',
+  },
 });
