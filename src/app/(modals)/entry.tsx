@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  KeyboardAvoidingView, Platform, Pressable,
+  Pressable,
   ScrollView, StyleSheet, TextInput, View, Keyboard,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -93,7 +93,6 @@ export default function EntryModal() {
 
   return (
     <SafeAreaView style={s.safe}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         {/* ── Header ─────────────────────────── */}
         <View style={s.header}>
           <SectionTag label="EDDIES // LOG 01-A" />
@@ -192,11 +191,10 @@ export default function EntryModal() {
 
         </ScrollView>
 
-        {/* ── Save ───────────────────────────── */}
-        <View style={s.footer}>
-          <StampButton label="SAVE ENTRY" onPress={handleSave} disabled={!isValid || saving} />
-        </View>
-      </KeyboardAvoidingView>
+      {/* ── Save ───────────────────────────── */}
+      <View style={s.footer}>
+        <StampButton label="SAVE ENTRY" onPress={handleSave} disabled={!isValid || saving} />
+      </View>
     </SafeAreaView>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View, Keyboard } from 'react-native';
+import { Pressable, StyleSheet, View, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -49,8 +49,7 @@ export default function VaultModal() {
 
   return (
     <SafeAreaView style={s.safe}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.flex}>
-        <View style={s.header}>
+      <View style={s.header}>
           <SectionTag label={`EDDIES // ${title}`} />
           <BarcodeMark height={16} />
           <Pressable
@@ -64,14 +63,13 @@ export default function VaultModal() {
           </Pressable>
         </View>
 
-        {isReady && (
-          <VaultForm
-            initialData={initialData ?? undefined}
-            onSave={handleSave}
-            onCancel={() => router.back()}
-          />
-        )}
-      </KeyboardAvoidingView>
+      {isReady && (
+        <VaultForm
+          initialData={initialData ?? undefined}
+          onSave={handleSave}
+          onCancel={() => router.back()}
+        />
+      )}
     </SafeAreaView>
   );
 }
