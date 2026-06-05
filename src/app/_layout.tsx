@@ -43,6 +43,10 @@ export default function RootLayout() {
               name="(modals)/entry"
               options={{ presentation: 'modal', gestureEnabled: true }}
             />
+            <Stack.Screen
+              name="(modals)/vault"
+              options={{ presentation: 'modal', gestureEnabled: true }}
+            />
           </Stack>
         </ThemeProvider>
       </SQLiteProvider>
