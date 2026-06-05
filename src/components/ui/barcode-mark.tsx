@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { EddiesColors } from '@/constants/theme';
 
@@ -8,11 +8,12 @@ const PATTERN = [3, 1, 2, 1, 4, 1, 2, 2, 1, 3, 2, 1, 3, 1, 4, 2, 1, 2, 3, 1, 2, 
 type BarcodeMarkProps = {
   height?: number;
   color?: string;
+  style?: ViewStyle;
 };
 
-export function BarcodeMark({ height = 20, color = EddiesColors.steel }: BarcodeMarkProps) {
+export function BarcodeMark({ height = 20, color = EddiesColors.steel, style }: BarcodeMarkProps) {
   return (
-    <View style={[styles.container, { height }]}>
+    <View style={[styles.container, { height }, style]}>
       {PATTERN.map((w, i) =>
         i % 2 === 0 ? (
           <View key={i} style={{ width: w, height: '100%', backgroundColor: color, opacity: 0.5 }} />
