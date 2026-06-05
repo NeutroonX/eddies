@@ -1,9 +1,11 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BarcodeMark } from '@/components/ui/barcode-mark';
+import { CapProgress } from '@/components/ui/cap-progress';
 import { MetricCard } from '@/components/ui/metric-card';
 import { MonoLabel } from '@/components/ui/mono-label';
 import { PeriodSelector } from '@/components/ui/period-selector';
@@ -15,7 +17,9 @@ import {
   getDailyBurn,
   getInflowVsOutflow,
   getCategorySpend,
+  getCapStats,
   type CategorySpend,
+  type CapProgress,
 } from '@/lib/analytics';
 import { useStore } from '@/store';
 
@@ -27,6 +31,7 @@ export default function AnalyzeScreen() {
   const [inflowOutflow, setInflowOutflow] = useState<{ inflow: number; outflow: number; net: number } | null>(null);
   const [burn, setBurn] = useState<{ avgDailyMinor: number; projectedMonthEndMinor: number } | null>(null);
   const [spending, setSpending] = useState<CategorySpend[]>([]);
+  const [caps, setCaps] = useState<CapProgress[]>([]);
 
   useEffect(() => {
     async function loadData() {
@@ -49,15 +54,19 @@ export default function AnalyzeScreen() {
 
       const toMs = now;
 
-      const [inflow, burn2, spending2] = await Promise.all([
+      const capPeriod: 'weekly' | 'monthly' = activePeriod === 'month' ? 'monthly' : 'weekly';
+
+      const [inflow, burn2, spending2, caps2] = await Promise.all([
         getInflowVsOutflow(db, fromMs, toMs),
         getDailyBurn(db, fromMs, toMs),
         getCategorySpend(db, fromMs, toMs),
+        getCapStats(db, capPeriod, fromMs, toMs),
       ]);
 
       setInflowOutflow(inflow);
       setBurn(burn2);
       setSpending(spending2);
+      setCaps(caps2);
     }
 
     loadData();
@@ -118,6 +127,27 @@ export default function AnalyzeScreen() {
                 categoryName={cat.category_name}
                 amount={cat.total_minor}
                 percentage={cat.percentage}
+              />
+            ))}
+          </View>
+        )}
+
+        {caps.length > 0 && (
+          <View style={styles.section}>
+            <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel} style={{ marginBottom: EddiesSpacing.md }}>
+              CAP WATCH
+            </MonoLabel>
+            {caps.map((cap) => (
+              <CapProgress
+                key={cap.cap_id}
+                categoryName={cap.category_name}
+                spent={cap.spent_minor}
+                cap={cap.cap_amount_minor}
+                percentage={cap.percentage}
+                isOver={cap.is_over}
+                onPress={() => {
+                  router.push(`/(modals)/cap?capId=${cap.cap_id}`);
+                }}
               />
             ))}
           </View>
