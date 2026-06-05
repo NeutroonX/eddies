@@ -85,7 +85,7 @@ export default function EntryModal() {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       setLastVaultId(vaultId!);
       Keyboard.dismiss();
-      router.back();
+      setTimeout(() => router.back(), 100);
     } catch {
       setSaving(false);
     }
@@ -100,7 +100,7 @@ export default function EntryModal() {
           <Pressable
             onPress={() => {
               Keyboard.dismiss();
-              router.back();
+              setTimeout(() => router.back(), 100);
             }}
             hitSlop={12}
           >

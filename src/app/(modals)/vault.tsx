@@ -37,7 +37,7 @@ export default function VaultModal() {
       }
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Keyboard.dismiss();
-      router.back();
+      setTimeout(() => router.back(), 100);
     } catch (err) {
       console.error('Vault save error:', err);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -56,7 +56,7 @@ export default function VaultModal() {
           <Pressable
             onPress={() => {
               Keyboard.dismiss();
-              router.back();
+              setTimeout(() => router.back(), 100);
             }}
             hitSlop={12}
           >

@@ -41,11 +41,11 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen
               name="(modals)/entry"
-              options={{ presentation: 'modal', gestureEnabled: true }}
+              options={{ presentation: 'modal', gestureEnabled: false }}
             />
             <Stack.Screen
               name="(modals)/vault"
-              options={{ presentation: 'modal', gestureEnabled: true }}
+              options={{ presentation: 'modal', gestureEnabled: false }}
             />
           </Stack>
         </ThemeProvider>
