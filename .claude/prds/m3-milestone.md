@@ -7,6 +7,23 @@
 
 ---
 
+## Progress Summary
+
+**Completed:**
+- ✅ Phase 3.1: Analytics Engine (5 core queries + Zod schemas)
+- ✅ Phase 3.2: Cap CRUD + Progress Logic
+- ✅ Phase 3.3: Analytics UI (Period selector, summary cards, inflow/outflow)
+- ✅ Phase 3.4: Spend Breakdown (ranked bars with visual progress)
+- ✅ Phase 3.6: Cap Management UI (modal + progress display)
+
+**In Progress:**
+- 🔄 Phase 3.7: Polish & A11y Testing
+
+**Deferred:**
+- ⏭️ Phase 3.5: Net Worth Chart (P1, queries done; chart library needed)
+
+---
+
 ## M3 Overview
 
 M3 delivers the core **analysis engine** (F6, F7, F8) that turns logged transactions into honest, deterministic analytics. Users can now:
@@ -123,8 +140,10 @@ M3 delivers the core **analysis engine** (F6, F7, F8) that turns logged transact
 **Duration:** 2 days  
 **Scope:** Spend-by-category ranking + filtered ledger drill-down
 
+**Status:** ✅ COMPLETE
+
 **Tasks:**
-- [ ] `<SpendBreakdown>` component:
+- [x] `<SpendBreakdown>` component:
   - Ranked bars (largest first) with amount + % of total outflow
   - Tap a bar → filters ledger to that category (via route param)
   - Render in Intel tab below summary
@@ -147,8 +166,11 @@ M3 delivers the core **analysis engine** (F6, F7, F8) that turns logged transact
 **Duration:** 2–3 days  
 **Scope:** Historical line chart + caution stripe
 
+**Status:** ⏭️ DEFERRED (P1, requires SVG library; baseline functionality complete via analytics query)
+
 **Tasks:**
-- [ ] Extend analytics: `getNetWorthSeries(startDate, endDate, interval)`
+- [x] Extend analytics: `getNetWorthSeries(startDate, endDate, interval)` — query implemented
+- [ ] Chart component (deferred: requires react-native-svg)
   - Interval = 'daily' | 'weekly' (user selects via segment in chart header)
   - Returns points with `{ date, balance }`
 
@@ -172,8 +194,10 @@ M3 delivers the core **analysis engine** (F6, F7, F8) that turns logged transact
 **Duration:** 2–3 days  
 **Scope:** Cap CRUD modal + progress display + notifications
 
+**Status:** ✅ COMPLETE
+
 **Tasks:**
-- [ ] Create `src/app/(modals)/cap.tsx`:
+- [x] Create `src/app/(modals)/cap.tsx`:
   - **Edit/create cap:** category selector, period (week/month), amount field
   - Save button (big red, `SUBMIT`), delete button (less prominent)
   - Validation: amount > 0
