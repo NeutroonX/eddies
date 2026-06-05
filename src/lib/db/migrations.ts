@@ -14,12 +14,15 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
   );
   const current = row?.version ?? 0;
 
+  // IMPORTANT: checks must be in ascending order — `current` is captured once
+  // before any migration runs, so execution order matches source order.
+
   if (current < 1) {
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS accounts (
         id                     TEXT    PRIMARY KEY NOT NULL,
         name                   TEXT    NOT NULL,
-        type                   TEXT    NOT NULL CHECK(type IN ('cash','bank','card','savings')),
+        type                   TEXT    NOT NULL DEFAULT 'cash',
         currency               TEXT    NOT NULL DEFAULT 'USD',
         opening_balance_minor  INTEGER NOT NULL DEFAULT 0,
         color                  TEXT    NOT NULL DEFAULT '#8A8F98',
@@ -46,9 +49,9 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
         created_at        INTEGER NOT NULL,
         transfer_group_id TEXT
       );
-      CREATE INDEX IF NOT EXISTS idx_tx_occurred_at  ON transactions(occurred_at);
-      CREATE INDEX IF NOT EXISTS idx_tx_account_id   ON transactions(account_id);
-      CREATE INDEX IF NOT EXISTS idx_tx_category_id  ON transactions(category_id);
+      CREATE INDEX IF NOT EXISTS idx_tx_occurred_at ON transactions(occurred_at);
+      CREATE INDEX IF NOT EXISTS idx_tx_account_id  ON transactions(account_id);
+      CREATE INDEX IF NOT EXISTS idx_tx_category_id ON transactions(category_id);
       CREATE TABLE IF NOT EXISTS budgets (
         id           TEXT    PRIMARY KEY NOT NULL,
         category_id  TEXT    NOT NULL REFERENCES categories(id),
@@ -82,24 +85,19 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
     await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 2);
   }
 
-  if (current < 5) {
-    // Recreate accounts without the hard-coded type CHECK so users can enter custom types.
-    await db.execAsync(`
-      CREATE TABLE IF NOT EXISTS accounts_v5 (
-        id                     TEXT    PRIMARY KEY NOT NULL,
-        name                   TEXT    NOT NULL,
-        type                   TEXT    NOT NULL DEFAULT 'cash',
-        currency               TEXT    NOT NULL DEFAULT 'USD',
-        opening_balance_minor  INTEGER NOT NULL DEFAULT 0,
-        color                  TEXT    NOT NULL DEFAULT '#8A8F98',
-        archived               INTEGER NOT NULL DEFAULT 0,
-        created_at             INTEGER NOT NULL
+  if (current < 3) {
+    const accRow = await db.getFirstAsync<{ cnt: number }>(
+      'SELECT COUNT(*) AS cnt FROM accounts WHERE archived = 0'
+    );
+    if (!accRow || accRow.cnt === 0) {
+      await db.runAsync(
+        `INSERT OR IGNORE INTO accounts
+           (id,name,type,currency,opening_balance_minor,color,archived,created_at)
+         VALUES (?,?,?,?,?,?,?,?)`,
+        'acc_default', 'Cash', 'cash', 'USD', 0, '#F2F0EB', 0, Date.now()
       );
-      INSERT INTO accounts_v5 SELECT * FROM accounts;
-      DROP TABLE accounts;
-      ALTER TABLE accounts_v5 RENAME TO accounts;
-    `);
-    await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 5);
+    }
+    await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 3);
   }
 
   if (current < 4) {
@@ -123,19 +121,26 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
     await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 4);
   }
 
-  if (current < 3) {
-    // Seed a default Cash vault if the user has no accounts yet (pre-onboarding).
-    const accRow = await db.getFirstAsync<{ cnt: number }>(
-      'SELECT COUNT(*) AS cnt FROM accounts WHERE archived = 0'
-    );
-    if (!accRow || accRow.cnt === 0) {
-      await db.runAsync(
-        `INSERT OR IGNORE INTO accounts
-           (id,name,type,currency,opening_balance_minor,color,archived,created_at)
-         VALUES (?,?,?,?,?,?,?,?)`,
-        'acc_default', 'Cash', 'cash', 'USD', 0, '#F2F0EB', 0, Date.now()
+  if (current < 5) {
+    // Recreate accounts without the hard-coded type CHECK constraint so users
+    // can store free-form types (crypto, investment, etc.).
+    // DROP IF EXISTS guards against a partial previous run.
+    await db.execAsync(`
+      DROP TABLE IF EXISTS accounts_v5;
+      CREATE TABLE accounts_v5 (
+        id                     TEXT    PRIMARY KEY NOT NULL,
+        name                   TEXT    NOT NULL,
+        type                   TEXT    NOT NULL DEFAULT 'cash',
+        currency               TEXT    NOT NULL DEFAULT 'USD',
+        opening_balance_minor  INTEGER NOT NULL DEFAULT 0,
+        color                  TEXT    NOT NULL DEFAULT '#8A8F98',
+        archived               INTEGER NOT NULL DEFAULT 0,
+        created_at             INTEGER NOT NULL
       );
-    }
-    await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 3);
+      INSERT INTO accounts_v5 SELECT * FROM accounts;
+      DROP TABLE accounts;
+      ALTER TABLE accounts_v5 RENAME TO accounts;
+    `);
+    await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 5);
   }
 }
