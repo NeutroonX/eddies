@@ -14,6 +14,7 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { runMigrations } from '@/lib/db/migrations';
+import { GlobalToast } from '@/components/ui/global-toast';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -60,6 +61,7 @@ export default function RootLayout() {
               options={{ presentation: 'modal', gestureEnabled: false }}
             />
           </Stack>
+          <GlobalToast />
         </ThemeProvider>
       </SQLiteProvider>
     </GestureHandlerRootView>

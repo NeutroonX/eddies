@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View, Keyboard, ActivityIndicator } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, Keyboard, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -9,105 +9,69 @@ import { BarcodeMark } from '@/components/ui/barcode-mark';
 import { MonoLabel } from '@/components/ui/mono-label';
 import { SectionTag } from '@/components/ui/section-tag';
 import { EddiesColors, EddiesSpacing } from '@/constants/theme';
+import { useStore } from '@/store';
 import { exportAsCSV, exportAsJSON } from '@/lib/export';
 
-type DateRange = 'all' | 'week' | 'month' | 'custom';
+type DateRange = 'all' | 'week' | 'month';
 type Format = 'csv' | 'json';
 
 export default function ExportModal() {
   const db = useSQLiteContext();
+  const { showToast } = useStore();
   const [dateRange, setDateRange] = useState<DateRange>('all');
   const [format, setFormat] = useState<Format>('csv');
   const [exporting, setExporting] = useState(false);
 
-  const getDateRangeLabel = (range: DateRange): string => {
+  function getDateRangeLabel(range: DateRange): string {
     const now = new Date();
     switch (range) {
-      case 'all':
-        return 'All data';
-      case 'week':
-        const weekStart = new Date(now);
-        weekStart.setDate(now.getDate() - now.getDay());
-        return `This week (${weekStart.toLocaleDateString()})`;
+      case 'all': return 'All data';
+      case 'week': {
+        const s = new Date(now);
+        s.setDate(now.getDate() - now.getDay());
+        return `This week (${s.toLocaleDateString()})`;
+      }
       case 'month':
-        return `${now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
-      case 'custom':
-        return 'Custom range';
-      default:
-        return range;
+        return now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     }
-  };
+  }
 
-  const getExportRange = (): { from?: number; to?: number } | undefined => {
+  function getExportRange(): { from?: number; to?: number } | undefined {
     const now = Date.now();
     switch (dateRange) {
-      case 'all':
-        return undefined;
+      case 'all': return undefined;
       case 'week': {
-        const weekStart = new Date(now);
-        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-        weekStart.setHours(0, 0, 0, 0);
-        return { from: weekStart.getTime(), to: now };
+        const s = new Date(now);
+        s.setDate(s.getDate() - s.getDay());
+        s.setHours(0, 0, 0, 0);
+        return { from: s.getTime(), to: now };
       }
       case 'month': {
-        const monthStart = new Date(now);
-        monthStart.setDate(1);
-        monthStart.setHours(0, 0, 0, 0);
-        return { from: monthStart.getTime(), to: now };
+        const s = new Date(now);
+        s.setDate(1);
+        s.setHours(0, 0, 0, 0);
+        return { from: s.getTime(), to: now };
       }
-      case 'custom':
-        return undefined;
-      default:
-        return undefined;
     }
-  };
+  }
 
   async function handleExport() {
     if (exporting) return;
-
     try {
       setExporting(true);
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
       const range = getExportRange();
-      let data = '';
-      let filename = '';
-
       if (format === 'csv') {
-        data = await exportAsCSV(db, range);
-        filename = `eddies-export-${Date.now()}.csv`;
+        await exportAsCSV(db, range);
       } else {
-        data = await exportAsJSON(db, range);
-        filename = `eddies-backup-${Date.now()}.json`;
+        await exportAsJSON(db, range);
       }
-
-      Alert.alert(
-        'Export Generated',
-        `Ready to share: ${filename}\n\n(Note: File sharing requires expo-sharing package)`,
-        [
-          {
-            text: 'Copy to Clipboard',
-            onPress: async () => {
-              try {
-                // TODO: Implement clipboard copy once react-native-clipboard or expo-clipboard is available
-                Alert.alert('Not yet implemented', 'Clipboard copy coming soon.');
-              } catch (err) {
-                console.error('Clipboard error:', err);
-              }
-            },
-          },
-          {
-            text: 'Close',
-            onPress: () => setTimeout(() => router.back(), 100),
-            style: 'destructive',
-          },
-        ]
-      );
-
+      showToast(`${format.toUpperCase()} export ready`);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setTimeout(() => router.back(), 600);
     } catch (err) {
       console.error('Export error:', err);
-      Alert.alert('Export Failed', String(err));
+      showToast('Export failed', 'err');
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setExporting(false);
@@ -126,38 +90,26 @@ export default function ExportModal() {
           }}
           hitSlop={12}
         >
-          <MonoLabel size={11} weight="bold" color={EddiesColors.steel}>
-            CLOSE
-          </MonoLabel>
+          <MonoLabel size={11} weight="bold" color={EddiesColors.steel}>CLOSE</MonoLabel>
         </Pressable>
       </View>
 
       <ScrollView style={s.body} contentContainerStyle={s.bodyContent}>
         {/* Date Range */}
         <View style={s.section}>
-          <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>
-            DATE RANGE
-          </MonoLabel>
+          <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>DATE RANGE</MonoLabel>
           <View style={s.optionGroup}>
             {(['all', 'week', 'month'] as DateRange[]).map((option) => (
               <Pressable
                 key={option}
-                style={[
-                  s.option,
-                  dateRange === option && s.optionActive,
-                ]}
+                style={[s.option, dateRange === option && s.optionActive]}
                 onPress={() => {
                   setDateRange(option);
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }}
               >
-                <View
-                  style={[
-                    s.optionRadio,
-                    dateRange === option && s.optionRadioActive,
-                  ]}
-                />
-                <Text style={s.optionText}>{getDateRangeLabel(option as DateRange)}</Text>
+                <View style={[s.optionRadio, dateRange === option && s.optionRadioActive]} />
+                <Text style={s.optionText}>{getDateRangeLabel(option)}</Text>
               </Pressable>
             ))}
           </View>
@@ -165,30 +117,20 @@ export default function ExportModal() {
 
         {/* Format */}
         <View style={s.section}>
-          <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>
-            FORMAT
-          </MonoLabel>
+          <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>FORMAT</MonoLabel>
           <View style={s.optionGroup}>
             {(['csv', 'json'] as Format[]).map((option) => (
               <Pressable
                 key={option}
-                style={[
-                  s.option,
-                  format === option && s.optionActive,
-                ]}
+                style={[s.option, format === option && s.optionActive]}
                 onPress={() => {
                   setFormat(option);
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }}
               >
-                <View
-                  style={[
-                    s.optionRadio,
-                    format === option && s.optionRadioActive,
-                  ]}
-                />
+                <View style={[s.optionRadio, format === option && s.optionRadioActive]} />
                 <Text style={s.optionText}>
-                  {option === 'csv' ? 'CSV (Spreadsheet)' : 'JSON (Full fidelity)'}
+                  {option === 'csv' ? 'CSV — Spreadsheet' : 'JSON — Full fidelity'}
                 </Text>
               </Pressable>
             ))}
@@ -199,8 +141,8 @@ export default function ExportModal() {
         <View style={s.description}>
           <Text style={s.descriptionText}>
             {format === 'csv'
-              ? 'Export as CSV for spreadsheet apps (Excel, Sheets).'
-              : 'Export as JSON with full data fidelity for backup or analysis.'}
+              ? 'Spreadsheet-compatible. Works with Excel, Google Sheets, and Numbers.'
+              : 'Full fidelity JSON with all fields. Use for backup or custom analysis.'}
           </Text>
         </View>
 
@@ -214,7 +156,7 @@ export default function ExportModal() {
             <ActivityIndicator color={EddiesColors.bone} />
           ) : (
             <MonoLabel size={12} weight="bold" color={EddiesColors.bone} letterSpacing={1}>
-              EXPORT
+              EXPORT {format.toUpperCase()}
             </MonoLabel>
           )}
         </Pressable>
@@ -239,12 +181,8 @@ const s = StyleSheet.create({
     paddingVertical: EddiesSpacing.md,
     gap: EddiesSpacing.lg,
   },
-  section: {
-    gap: EddiesSpacing.sm,
-  },
-  optionGroup: {
-    gap: EddiesSpacing.xs,
-  },
+  section: { gap: EddiesSpacing.sm },
+  optionGroup: { gap: EddiesSpacing.xs },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -288,7 +226,7 @@ const s = StyleSheet.create({
   descriptionText: {
     fontFamily: 'SpaceMono_400Regular',
     fontSize: 11,
-    lineHeight: 16,
+    lineHeight: 17,
     color: EddiesColors.steel,
   },
   button: {
@@ -299,7 +237,5 @@ const s = StyleSheet.create({
     alignItems: 'center',
     marginBottom: EddiesSpacing.xl,
   },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
+  buttonDisabled: { opacity: 0.6 },
 });
