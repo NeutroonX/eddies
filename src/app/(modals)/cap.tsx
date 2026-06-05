@@ -4,6 +4,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Text,
   TextInput,
   View,
 } from 'react-native';
@@ -13,7 +14,6 @@ import { useSQLiteContext } from 'expo-sqlite';
 import * as Haptics from 'expo-haptics';
 
 import { MonoLabel } from '@/components/ui/mono-label';
-import { Numerals } from '@/components/ui/numerals';
 import { StampButton } from '@/components/ui/stamp-button';
 import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
 import { useCategories } from '@/hooks/use-categories';
@@ -107,9 +107,7 @@ export default function CapModal() {
 
         {/* Amount — big number input */}
         <View style={s.amountBlock}>
-          <Numerals size={52} color={rawAmount ? EddiesColors.bone : EddiesColors.steel} weight="bold">
-            $
-          </Numerals>
+          <Text style={s.amountCurrency}>$</Text>
           <TextInput
             style={s.amountInput}
             placeholder="0.00"
@@ -226,17 +224,23 @@ const s = StyleSheet.create({
   },
   amountBlock: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     paddingTop: EddiesSpacing.lg,
-    gap: EddiesSpacing.xs,
+  },
+  amountCurrency: {
+    fontFamily: EddiesFonts.displayBold,
+    fontSize: 52,
+    color: EddiesColors.bone,
+    includeFontPadding: false,
+    padding: 0,
   },
   amountInput: {
     flex: 1,
     fontFamily: EddiesFonts.displayBold,
     fontSize: 52,
     color: EddiesColors.bone,
-    lineHeight: 58,
     includeFontPadding: false,
+    padding: 0,
   },
   hairline: { height: 1, backgroundColor: '#1A1A1C' },
   field: { gap: EddiesSpacing.md },
