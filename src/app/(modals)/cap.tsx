@@ -17,6 +17,7 @@ import { MonoLabel } from '@/components/ui/mono-label';
 import { StampButton } from '@/components/ui/stamp-button';
 import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
 import { useCategories } from '@/hooks/use-categories';
+import { createCategory } from '@/lib/db/repos/categories';
 import { createBudget, deleteBudget, updateBudget } from '@/lib/db/repos/budgets';
 import { toMinorUnits } from '@/lib/money';
 import type { Budget } from '@/lib/schemas';
@@ -27,6 +28,7 @@ export default function CapModal() {
   const params = useLocalSearchParams<{ capId?: string }>();
 
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [otherName, setOtherName] = useState('');
   const [period, setPeriod] = useState<'weekly' | 'monthly'>('monthly');
   const [rawAmount, setRawAmount] = useState('');
   const [saving, setSaving] = useState(false);
@@ -52,11 +54,16 @@ export default function CapModal() {
     setSaving(true);
     Keyboard.dismiss();
     try {
+      let resolvedId = categoryId!;
+      if (capIsOther && otherName.trim()) {
+        const cat = await createCategory(db, { name: otherName.trim(), kind: 'expense', glyph: 'tag', color: EddiesColors.steel, sort: 999 });
+        resolvedId = cat.id;
+      }
       const amount = toMinorUnits(parseFloat(rawAmount));
       if (existingCap) {
-        await updateBudget(db, existingCap.id, { category_id: categoryId, period, amount_minor: amount, start_date: existingCap.start_date });
+        await updateBudget(db, existingCap.id, { category_id: resolvedId, period, amount_minor: amount, start_date: existingCap.start_date });
       } else {
-        await createBudget(db, { category_id: categoryId, period, amount_minor: amount, start_date: Date.now() });
+        await createBudget(db, { category_id: resolvedId, period, amount_minor: amount, start_date: Date.now() });
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
@@ -83,7 +90,8 @@ export default function CapModal() {
   }
 
   const expenseCategories = categories.filter((c) => c.kind === 'expense');
-  const canSave = !!categoryId && !!rawAmount && !saving;
+  const capIsOther = categoryId === '__other__';
+  const canSave = !!categoryId && !!rawAmount && !saving && (!capIsOther || otherName.trim().length > 0);
 
   return (
     <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
@@ -159,24 +167,19 @@ export default function CapModal() {
             {expenseCategories.map((cat) => {
               const active = categoryId === cat.id;
               return (
-                <Pressable
-                  key={cat.id}
-                  style={s.catRow}
-                  onPress={() => setCategoryId(active ? null : cat.id)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                >
+                <Pressable key={cat.id} style={s.catRow} onPress={() => { setCategoryId(active ? null : cat.id); setOtherName(''); }} accessibilityRole="button" accessibilityState={{ selected: active }}>
                   <View style={[s.catDot, { backgroundColor: active ? EddiesColors.alert : 'transparent', borderColor: active ? EddiesColors.alert : EddiesColors.steel }]} />
-                  <MonoLabel
-                    size={12}
-                    weight={active ? 'bold' : 'regular'}
-                    color={active ? EddiesColors.bone : EddiesColors.steel}
-                  >
-                    {cat.name.toUpperCase()}
-                  </MonoLabel>
+                  <MonoLabel size={12} weight={active ? 'bold' : 'regular'} color={active ? EddiesColors.bone : EddiesColors.steel}>{cat.name.toUpperCase()}</MonoLabel>
                 </Pressable>
               );
             })}
+            <Pressable style={s.catRow} onPress={() => setCategoryId(capIsOther ? null : '__other__')} accessibilityRole="button" accessibilityState={{ selected: capIsOther }}>
+              <View style={[s.catDot, { backgroundColor: capIsOther ? EddiesColors.alert : 'transparent', borderColor: capIsOther ? EddiesColors.alert : EddiesColors.steel }]} />
+              <MonoLabel size={12} weight={capIsOther ? 'bold' : 'regular'} color={capIsOther ? EddiesColors.bone : EddiesColors.steel}>OTHER</MonoLabel>
+            </Pressable>
+            {capIsOther && (
+              <TextInput style={s.otherInput} placeholder="CATEGORY NAME" placeholderTextColor={EddiesColors.steel} value={otherName} onChangeText={setOtherName} autoFocus maxLength={40} autoCapitalize="words" returnKeyType="done" />
+            )}
           </View>
         </View>
 
@@ -279,4 +282,10 @@ const s = StyleSheet.create({
     borderTopColor: '#1A1A1C',
   },
   dimmed: { opacity: 0.4 },
+  otherInput: {
+    fontFamily: EddiesFonts.mono, fontSize: 13, color: EddiesColors.bone,
+    borderWidth: 1, borderColor: EddiesColors.alert + '66',
+    paddingHorizontal: EddiesSpacing.sm, paddingVertical: EddiesSpacing.xs + 2,
+    marginTop: 2,
+  },
 });

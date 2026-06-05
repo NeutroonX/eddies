@@ -16,6 +16,7 @@ import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
 import { useAccounts } from '@/hooks/use-accounts';
 import { useCategories } from '@/hooks/use-categories';
 import { createTransaction, updateTransaction, getTransactionById } from '@/lib/db/repos/transactions';
+import { createCategory } from '@/lib/db/repos/categories';
 import { toMinorUnits, formatAmountTabular } from '@/lib/money';
 import { useStore } from '@/store/index';
 import type { Transaction } from '@/lib/schemas';
@@ -33,6 +34,7 @@ export default function EntryModal() {
   const [rawAmount, setRawAmount] = useState('');
   const [kind, setKind] = useState<Kind>('outflow');
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [otherName, setOtherName] = useState('');
   const [vaultId, setVaultId] = useState<string | null>(lastVaultId);
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
@@ -86,7 +88,9 @@ export default function EntryModal() {
     return isNaN(n) ? 0 : toMinorUnits(n);
   }, [rawAmount]);
 
-  const isValid = amountMinor > 0 && vaultId !== null && (kind === 'transfer' || categoryId !== null);
+  const tagIsOther = categoryId === '__other__';
+  const isValid = amountMinor > 0 && vaultId !== null &&
+    (kind === 'transfer' || (categoryId !== null && (!tagIsOther || otherName.trim().length > 0)));
 
   const todayLabel = new Date().toLocaleDateString('en-US', {
     weekday: 'short', day: '2-digit', month: 'short',
@@ -96,10 +100,22 @@ export default function EntryModal() {
     if (!isValid || saving || loading) return;
     setSaving(true);
     try {
+      let resolvedCategoryId = categoryId;
+      if (tagIsOther && otherName.trim()) {
+        const cat = await createCategory(db, {
+          name: otherName.trim(),
+          kind: kind === 'outflow' ? 'expense' : 'income',
+          glyph: 'tag',
+          color: EddiesColors.steel,
+          sort: 999,
+        });
+        resolvedCategoryId = cat.id;
+      }
+
       if (isEditMode && existingEntry) {
         await updateTransaction(db, existingEntry.id, {
           account_id: vaultId!,
-          category_id: kind === 'transfer' ? null : categoryId,
+          category_id: kind === 'transfer' ? null : resolvedCategoryId,
           kind,
           amount_minor: amountMinor,
           note: note.trim() || null,
@@ -109,7 +125,7 @@ export default function EntryModal() {
       } else {
         await createTransaction(db, {
           account_id: vaultId!,
-          category_id: kind === 'transfer' ? null : categoryId,
+          category_id: kind === 'transfer' ? null : resolvedCategoryId,
           kind,
           amount_minor: amountMinor,
           note: note.trim() || null,
@@ -186,15 +202,36 @@ export default function EntryModal() {
             {kind === 'transfer' ? (
               <MonoLabel size={10} color={EddiesColors.steel}>TRANSFERS // M2</MonoLabel>
             ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.rail}>
-                {filteredCats.map(c => (
+              <>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.rail}>
+                  {filteredCats.map(c => (
+                    <Pill
+                      key={c.id} label={c.name} color={c.color}
+                      active={c.id === categoryId}
+                      onPress={() => { setCategoryId(c.id === categoryId ? null : c.id); setOtherName(''); }}
+                    />
+                  ))}
                   <Pill
-                    key={c.id} label={c.name} color={c.color}
-                    active={c.id === categoryId}
-                    onPress={() => setCategoryId(c.id === categoryId ? null : c.id)}
+                    label="OTHER"
+                    color={EddiesColors.steel}
+                    active={tagIsOther}
+                    onPress={() => setCategoryId(tagIsOther ? null : '__other__')}
                   />
-                ))}
-              </ScrollView>
+                </ScrollView>
+                {tagIsOther && (
+                  <TextInput
+                    style={s.otherInput}
+                    placeholder="ENTER TAG NAME"
+                    placeholderTextColor={EddiesColors.steel}
+                    value={otherName}
+                    onChangeText={setOtherName}
+                    autoFocus
+                    maxLength={40}
+                    autoCapitalize="words"
+                    returnKeyType="done"
+                  />
+                )}
+              </>
             )}
           </View>
 
@@ -264,6 +301,12 @@ const s = StyleSheet.create({
     fontFamily: EddiesFonts.mono, fontSize: 13, color: EddiesColors.bone,
     borderBottomWidth: 1, borderBottomColor: EddiesColors.steel + '55',
     paddingVertical: EddiesSpacing.xs,
+  },
+  otherInput: {
+    fontFamily: EddiesFonts.mono, fontSize: 13, color: EddiesColors.bone,
+    borderWidth: 1, borderColor: EddiesColors.alert + '66',
+    paddingHorizontal: EddiesSpacing.sm, paddingVertical: EddiesSpacing.xs + 2,
+    marginTop: EddiesSpacing.xs,
   },
   footer: {
     paddingHorizontal: EddiesSpacing.md, paddingVertical: EddiesSpacing.md,

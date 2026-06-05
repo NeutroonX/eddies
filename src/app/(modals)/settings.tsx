@@ -10,12 +10,12 @@ import { BarcodeMark } from '@/components/ui/barcode-mark';
 import { MonoLabel } from '@/components/ui/mono-label';
 import { SectionTag } from '@/components/ui/section-tag';
 import { EddiesColors, EddiesSpacing } from '@/constants/theme';
+import { WORLD_CURRENCIES } from '@/constants/currencies';
 import { useStore } from '@/store';
 import { getSetting, setSetting } from '@/lib/db/repos/settings-repo';
 import { createBackup } from '@/lib/backup';
 
 const APP_VERSION = '1.0.0';
-const CURRENCIES = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'INR'];
 
 export default function SettingsModal() {
   const db = useSQLiteContext();
@@ -132,13 +132,18 @@ export default function SettingsModal() {
               </Pressable>
               {expanded === 'currency' && (
                 <Animated.View entering={FadeIn} exiting={FadeOut} style={s.dropdown}>
-                  {CURRENCIES.map((curr) => (
+                  {WORLD_CURRENCIES.map((c) => (
                     <Pressable
-                      key={curr}
-                      style={[s.option, currency === curr && s.optionActive]}
-                      onPress={() => handleCurrencyChange(curr)}
+                      key={c.code}
+                      style={[s.option, currency === c.code && s.optionActive]}
+                      onPress={() => handleCurrencyChange(c.code)}
                     >
-                      <Text style={[s.optionText, currency === curr && s.optionTextActive]}>{curr}</Text>
+                      <Text style={[s.optionText, currency === c.code && s.optionTextActive]}>
+                        {c.code}
+                      </Text>
+                      <Text style={[s.optionText, { color: EddiesColors.steel, fontSize: 10 }]}>
+                        {c.name}
+                      </Text>
                     </Pressable>
                   ))}
                 </Animated.View>

@@ -82,6 +82,26 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
     await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 2);
   }
 
+  if (current < 5) {
+    // Recreate accounts without the hard-coded type CHECK so users can enter custom types.
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS accounts_v5 (
+        id                     TEXT    PRIMARY KEY NOT NULL,
+        name                   TEXT    NOT NULL,
+        type                   TEXT    NOT NULL DEFAULT 'cash',
+        currency               TEXT    NOT NULL DEFAULT 'USD',
+        opening_balance_minor  INTEGER NOT NULL DEFAULT 0,
+        color                  TEXT    NOT NULL DEFAULT '#8A8F98',
+        archived               INTEGER NOT NULL DEFAULT 0,
+        created_at             INTEGER NOT NULL
+      );
+      INSERT INTO accounts_v5 SELECT * FROM accounts;
+      DROP TABLE accounts;
+      ALTER TABLE accounts_v5 RENAME TO accounts;
+    `);
+    await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 5);
+  }
+
   if (current < 4) {
     await db.execAsync(`
       ALTER TABLE transactions ADD COLUMN archived INTEGER NOT NULL DEFAULT 0;
