@@ -3,7 +3,7 @@ import {
   Pressable,
   ScrollView, StyleSheet, TextInput, View, Keyboard,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as Haptics from 'expo-haptics';
@@ -15,9 +15,10 @@ import { StampButton } from '@/components/ui/stamp-button';
 import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
 import { useAccounts } from '@/hooks/use-accounts';
 import { useCategories } from '@/hooks/use-categories';
-import { createTransaction } from '@/lib/db/repos/transactions';
-import { toMinorUnits } from '@/lib/money';
+import { createTransaction, updateTransaction, getTransactionById } from '@/lib/db/repos/transactions';
+import { toMinorUnits, formatAmountTabular } from '@/lib/money';
 import { useStore } from '@/store/index';
+import type { Transaction } from '@/lib/schemas';
 
 type Kind = 'outflow' | 'inflow' | 'transfer';
 
@@ -27,6 +28,7 @@ export default function EntryModal() {
   const { categories } = useCategories();
   const lastVaultId = useStore(s => s.lastVaultId);
   const setLastVaultId = useStore(s => s.setLastVaultId);
+  const params = useLocalSearchParams<{ mode?: string; id?: string }>();
 
   const [rawAmount, setRawAmount] = useState('');
   const [kind, setKind] = useState<Kind>('outflow');
@@ -34,11 +36,32 @@ export default function EntryModal() {
   const [vaultId, setVaultId] = useState<string | null>(lastVaultId);
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(params.mode === 'edit');
+  const [existingEntry, setExistingEntry] = useState<Transaction | null>(null);
 
-  // Prefill vault from accounts once loaded
+  const isEditMode = params.mode === 'edit' && params.id;
+
+  // Load existing entry if in edit mode
   useEffect(() => {
-    if (!vaultId && accounts.length > 0) setVaultId(accounts[0].id);
-  }, [accounts, vaultId]);
+    if (isEditMode) {
+      getTransactionById(db, params.id!).then(entry => {
+        if (entry) {
+          setExistingEntry(entry);
+          setRawAmount((entry.amount_minor / 100).toString());
+          setKind(entry.kind as Kind);
+          setCategoryId(entry.category_id);
+          setVaultId(entry.account_id);
+          setNote(entry.note || '');
+        }
+        setLoading(false);
+      }).catch(console.error);
+    }
+  }, [isEditMode, params.id, db]);
+
+  // Prefill vault from accounts once loaded (create mode only)
+  useEffect(() => {
+    if (!isEditMode && !vaultId && accounts.length > 0) setVaultId(accounts[0].id);
+  }, [accounts, vaultId, isEditMode]);
 
   function handleKindChange(k: Kind) {
     setKind(k);
@@ -70,23 +93,36 @@ export default function EntryModal() {
   }).toUpperCase();
 
   async function handleSave() {
-    if (!isValid || saving) return;
+    if (!isValid || saving || loading) return;
     setSaving(true);
     try {
-      await createTransaction(db, {
-        account_id: vaultId!,
-        category_id: kind === 'transfer' ? null : categoryId,
-        kind,
-        amount_minor: amountMinor,
-        note: note.trim() || null,
-        occurred_at: Date.now(),
-        transfer_group_id: null,
-      });
+      if (isEditMode && existingEntry) {
+        await updateTransaction(db, existingEntry.id, {
+          account_id: vaultId!,
+          category_id: kind === 'transfer' ? null : categoryId,
+          kind,
+          amount_minor: amountMinor,
+          note: note.trim() || null,
+          occurred_at: existingEntry.occurred_at,
+          transfer_group_id: existingEntry.transfer_group_id,
+        });
+      } else {
+        await createTransaction(db, {
+          account_id: vaultId!,
+          category_id: kind === 'transfer' ? null : categoryId,
+          kind,
+          amount_minor: amountMinor,
+          note: note.trim() || null,
+          occurred_at: Date.now(),
+          transfer_group_id: null,
+        });
+        setLastVaultId(vaultId!);
+      }
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      setLastVaultId(vaultId!);
       Keyboard.dismiss();
       setTimeout(() => router.back(), 100);
-    } catch {
+    } catch (err) {
+      console.error('Save error:', err);
       setSaving(false);
     }
   }
@@ -95,7 +131,7 @@ export default function EntryModal() {
     <SafeAreaView style={s.safe}>
         {/* ── Header ─────────────────────────── */}
         <View style={s.header}>
-          <SectionTag label="EDDIES // LOG 01-A" />
+          <SectionTag label={isEditMode ? 'EDDIES // EDIT ENTRY' : 'EDDIES // LOG 01-A'} />
           <Pressable
             onPress={() => {
               Keyboard.dismiss();
@@ -193,7 +229,11 @@ export default function EntryModal() {
 
       {/* ── Save ───────────────────────────── */}
       <View style={s.footer}>
-        <StampButton label="SAVE ENTRY" onPress={handleSave} disabled={!isValid || saving} />
+        <StampButton
+          label={isEditMode ? 'UPDATE ENTRY' : 'SAVE ENTRY'}
+          onPress={handleSave}
+          disabled={!isValid || saving || loading}
+        />
       </View>
     </SafeAreaView>
   );

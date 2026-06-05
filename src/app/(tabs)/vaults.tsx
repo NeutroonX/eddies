@@ -45,7 +45,7 @@ function VaultItem({ accountId, lastVaultId, onArchive }: { accountId: string; l
       balance={balance}
       isActive={lastVaultId === accountId}
       onPress={() => setLastVaultId(accountId)}
-      onEdit={() => router.push(`/(modals)/vault?mode=edit&accountId=${accountId}`)}
+      onEdit={() => router.push(`/(modals)/vault?mode=edit&id=${accountId}`)}
       onDelete={() => onArchive(accountId)}
     />
   );

@@ -116,8 +116,8 @@ export default function LedgerScreen() {
           <EntryRow
             row={item}
             isPendingDelete={item.id === pendingDeleteId}
-            onPress={() => router.push(`/(modals)/entry?entryId=${item.id}`)}
-            onEdit={() => router.push(`/(modals)/entry?entryId=${item.id}`)}
+            onPress={() => router.push(`/(modals)/entry?mode=edit&id=${item.id}`)}
+            onEdit={() => router.push(`/(modals)/entry?mode=edit&id=${item.id}`)}
             onDelete={() => handleDelete(item)}
           />
         )}
