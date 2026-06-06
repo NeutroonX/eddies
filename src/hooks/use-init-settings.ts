@@ -2,17 +2,25 @@ import { useEffect } from 'react';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useStore } from '@/store';
 import { getAllSettings } from '@/lib/db/repos/settings-repo';
+import { setTelemetryEnabled } from '@/lib/telemetry';
 
 export function useInitSettings() {
   const db = useSQLiteContext();
-  const { setCurrency, setFirstDayOfWeek, setHapticsEnabled, setOnboardingComplete } = useStore();
+  const { setCurrency, setFirstDayOfWeek, setHapticsEnabled, setCrashReportingEnabled, setOnboardingComplete, setInviteValidated } = useStore();
 
   useEffect(() => {
     getAllSettings(db).then((settings) => {
       if (settings.currency) setCurrency(settings.currency);
       if (settings.first_day_of_week) setFirstDayOfWeek(parseInt(settings.first_day_of_week, 10));
       if (settings.haptics_enabled) setHapticsEnabled(settings.haptics_enabled === 'true');
+      // Default true — only false when the user has explicitly opted out.
+      const crashEnabled = settings.crash_reporting_enabled !== 'false';
+      setCrashReportingEnabled(crashEnabled);
+      setTelemetryEnabled(crashEnabled);
       setOnboardingComplete(settings.onboarding_complete === 'true');
+      if (settings.invite_validated !== undefined) {
+        setInviteValidated(settings.invite_validated === 'true');
+      }
     }).catch(console.error);
-  }, [db, setCurrency, setFirstDayOfWeek, setHapticsEnabled, setOnboardingComplete]);
+  }, [db, setCurrency, setFirstDayOfWeek, setHapticsEnabled, setCrashReportingEnabled, setOnboardingComplete, setInviteValidated]);
 }

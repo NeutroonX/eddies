@@ -1,4 +1,5 @@
 import React from 'react';
+import * as Sentry from '@sentry/react-native';
 import {
   Rajdhani_500Medium,
   Rajdhani_600SemiBold,
@@ -20,6 +21,10 @@ import { GlobalToast } from '@/components/ui/global-toast';
 import { useArchiveCheck } from '@/hooks/use-archive-check';
 import { useInitSettings } from '@/hooks/use-init-settings';
 import { useStore } from '@/store';
+import { captureError, initTelemetry } from '@/lib/telemetry';
+
+// Initialise Sentry before any React render so native crash handler is ready.
+initTelemetry();
 
 SplashScreen.preventAutoHideAsync();
 
@@ -32,6 +37,7 @@ class AppErrorBoundary extends React.Component<
 > {
   state: { error: Error | null } = { error: null };
   static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error) { captureError(error); }
   render() {
     if (this.state.error) {
       return (
@@ -87,8 +93,23 @@ function OnboardingGate() {
   return null;
 }
 
+// ── Invite gate ────────────────────────────────────────────────────────────
+// After onboarding is complete, checks for a stored invite validation.
+// No valid code → send to invite entry screen.
+function InviteGate() {
+  const onboardingComplete = useStore((s) => s.onboardingComplete);
+  const inviteValidated    = useStore((s) => s.inviteValidated);
+
+  useEffect(() => {
+    if (onboardingComplete !== true) return;
+    if (inviteValidated === false) router.replace('/(auth)');
+  }, [onboardingComplete, inviteValidated]);
+
+  return null;
+}
+
 // ── Root layout ────────────────────────────────────────────────────────────
-export default function RootLayout() {
+function RootLayout() {
   const [loaded, error] = useFonts({
     Rajdhani_500Medium,
     Rajdhani_600SemiBold,
@@ -117,10 +138,15 @@ export default function RootLayout() {
             <StatusBar style="light" />
             <ArchiveWatcher />
             <OnboardingGate />
+            <InviteGate />
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(tabs)" />
               <Stack.Screen
                 name="(onboarding)"
+                options={{ animation: 'fade', gestureEnabled: false }}
+              />
+              <Stack.Screen
+                name="(auth)"
                 options={{ animation: 'fade', gestureEnabled: false }}
               />
               <Stack.Screen name="(modals)/entry"   options={modalOptions} />
@@ -137,3 +163,5 @@ export default function RootLayout() {
     </AppErrorBoundary>
   );
 }
+
+export default Sentry.wrap(RootLayout);
