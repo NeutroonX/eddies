@@ -33,3 +33,23 @@ export async function validateInviteCode(
     return { granted: false, error: 'CONNECTION ERROR — TRY AGAIN' };
   }
 }
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export async function requestAccess(
+  email: string,
+): Promise<{ ok: boolean; error: string | null }> {
+  const trimmed = email.trim().toLowerCase();
+  if (!EMAIL_RE.test(trimmed)) {
+    return { ok: false, error: 'ENTER A VALID EMAIL ADDRESS' };
+  }
+  try {
+    const { error } = await supabase.functions.invoke('request-access', {
+      body: { email: trimmed },
+    });
+    if (error) return { ok: false, error: 'SEND FAILED — TRY AGAIN' };
+    return { ok: true, error: null };
+  } catch {
+    return { ok: false, error: 'CONNECTION ERROR — TRY AGAIN' };
+  }
+}

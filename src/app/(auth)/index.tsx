@@ -18,7 +18,7 @@ import Animated, {
 
 import { MonoLabel } from '@/components/ui/mono-label';
 import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
-import { validateInviteCode } from '@/lib/invite';
+import { validateInviteCode, requestAccess } from '@/lib/invite';
 import { setSetting } from '@/lib/db/repos/settings-repo';
 import { useStore } from '@/store';
 
@@ -189,6 +189,141 @@ const ii = StyleSheet.create({
   },
 });
 
+// ── Request access form ────────────────────────────────────────────────────
+function AccessRequest() {
+  const [email, setEmail] = useState('');
+  const [focused, setFocused] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [errMsg, setErrMsg] = useState<string | null>(null);
+
+  async function handleRequest() {
+    if (status === 'sending' || status === 'sent') return;
+    setErrMsg(null);
+    setStatus('sending');
+    const { ok, error } = await requestAccess(email);
+    if (!ok) {
+      setErrMsg(error);
+      setStatus('error');
+      return;
+    }
+    setStatus('sent');
+  }
+
+  if (status === 'sent') {
+    return (
+      <View style={ar.sentWrap}>
+        <MonoLabel size={8} letterSpacing={1} color={EddiesColors.alert + 'CC'}>
+          ▲  REQUEST SENT — WE'LL EMAIL YOUR CODE
+        </MonoLabel>
+      </View>
+    );
+  }
+
+  const disabled = status === 'sending' || !email.trim();
+
+  return (
+    <View style={ar.wrap}>
+      <MonoLabel size={7} letterSpacing={3} color={EddiesColors.steel + '55'}>
+        NO CODE?
+      </MonoLabel>
+      <View style={[ar.bar, focused && ar.barFocused]}>
+        <TextInput
+          style={ar.input}
+          value={email}
+          onChangeText={(t) => { setEmail(t); setErrMsg(null); setStatus('idle'); }}
+          onSubmitEditing={handleRequest}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          placeholder="your@email.com"
+          placeholderTextColor={EddiesColors.steel + '30'}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="send"
+          editable={status !== 'sending'}
+        />
+        <View style={ar.divider} />
+        <Pressable
+          style={({ pressed }) => [
+            ar.btn,
+            pressed && !disabled && ar.btnPressed,
+            disabled && ar.btnDisabled,
+          ]}
+          onPress={disabled ? undefined : handleRequest}
+          accessibilityRole="button"
+          accessibilityLabel="Request beta access"
+          accessibilityState={{ disabled }}
+        >
+          {status === 'sending' ? (
+            <ActivityIndicator size="small" color={EddiesColors.steel} />
+          ) : (
+            <MonoLabel
+              size={9}
+              letterSpacing={2}
+              color={disabled ? EddiesColors.steel + '35' : EddiesColors.steel + 'CC'}
+            >
+              REQUEST ›
+            </MonoLabel>
+          )}
+        </Pressable>
+      </View>
+      {errMsg !== null && (
+        <MonoLabel size={7} letterSpacing={1} color={EddiesColors.alert + 'BB'}>
+          ▲  {errMsg}
+        </MonoLabel>
+      )}
+    </View>
+  );
+}
+
+const ar = StyleSheet.create({
+  wrap: {
+    gap: EddiesSpacing.xs,
+  },
+  bar: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    borderWidth: 1,
+    borderColor: EddiesColors.steel + '20',
+    backgroundColor: EddiesColors.surface,
+    overflow: 'hidden',
+  },
+  barFocused: {
+    borderColor: EddiesColors.steel + '50',
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingLeft: EddiesSpacing.md,
+    paddingRight: EddiesSpacing.sm,
+    fontFamily: 'SpaceMono_400Regular',
+    fontSize: 11,
+    color: EddiesColors.bone + 'CC',
+    letterSpacing: 0.5,
+  },
+  divider: {
+    width: 1,
+    alignSelf: 'stretch',
+    backgroundColor: EddiesColors.steel + '18',
+    marginVertical: 8,
+  },
+  btn: {
+    paddingHorizontal: EddiesSpacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btnPressed: {
+    backgroundColor: EddiesColors.steel + '0C',
+  },
+  btnDisabled: {
+    opacity: 0.4,
+  },
+  sentWrap: {
+    alignItems: 'center',
+    paddingVertical: EddiesSpacing.sm,
+  },
+});
+
 // ── Corner brackets (full screen frame) ────────────────────────────────────
 function CornerBrackets() {
   const size = 14;
@@ -320,12 +455,8 @@ export default function InviteScreen() {
           )}
         </View>
 
-        {/* Footnote */}
-        <View style={s.footnote}>
-          <MonoLabel size={7} letterSpacing={1} color={EddiesColors.steel + '55'}>
-            ▲  NO CODE? EMAIL kranthicodes4@gmail.com TO REQUEST ACCESS
-          </MonoLabel>
-        </View>
+        {/* Request access */}
+        <AccessRequest />
 
       </Animated.View>
 
@@ -404,9 +535,6 @@ const s = StyleSheet.create({
     flex: 1,
     height: 1,
     backgroundColor: EddiesColors.steel + '18',
-  },
-  footnote: {
-    alignItems: 'center',
   },
   bottomBar: {
     flexDirection: 'row',
