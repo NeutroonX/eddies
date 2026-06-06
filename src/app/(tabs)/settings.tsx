@@ -26,7 +26,7 @@ const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', '
 
 export default function SystemScreen() {
   const db = useSQLiteContext();
-  const { userName, setUserName, hapticsEnabled, showToast } = useStore();
+  const { userName, setUserName, hapticsEnabled, showToast, dbVersion } = useStore();
   const { accounts } = useAccounts();
 
   const [editingName, setEditingName] = useState(false);
@@ -35,27 +35,26 @@ export default function SystemScreen() {
   const [joinedLabel, setJoinedLabel] = useState('—');
   const inputRef = useRef<TextInput>(null);
 
-  useFocusEffect(
-    useCallback(() => {
-      async function loadStats() {
-        try {
-          const row = await db.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM transactions');
-          setTxCount(row?.n ?? 0);
+  const loadStats = useCallback(async () => {
+    try {
+      const row = await db.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM transactions WHERE archived = 0');
+      setTxCount(row?.n ?? 0);
 
-          let joined = await getSetting(db, 'joined_at');
-          if (!joined) {
-            joined = String(Date.now());
-            await setSetting(db, 'joined_at', joined);
-          }
-          const d = new Date(parseInt(joined, 10));
-          setJoinedLabel(`${MONTHS[d.getMonth()]} ${d.getFullYear()}`);
-        } catch {
-          // non-critical
-        }
+      let joined = await getSetting(db, 'joined_at');
+      if (!joined) {
+        joined = String(Date.now());
+        await setSetting(db, 'joined_at', joined);
       }
-      loadStats();
-    }, [db])
-  );
+      const d = new Date(parseInt(joined, 10));
+      setJoinedLabel(`${MONTHS[d.getMonth()]} ${d.getFullYear()}`);
+    } catch {
+      // non-critical
+    }
+  }, [db]);
+
+  useFocusEffect(useCallback(() => { loadStats(); }, [loadStats]));
+
+  useEffect(() => { loadStats(); }, [dbVersion, loadStats]);
 
   useEffect(() => {
     if (!editingName) return;

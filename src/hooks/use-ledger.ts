@@ -1,6 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useFocusEffect } from 'expo-router';
+
+import { useStore } from '@/store';
 
 import { getTotalBalance } from '@/lib/analytics';
 
@@ -87,8 +89,12 @@ export function useLedger() {
     setLoading(false);
   }, [db]);
 
-  // Reload whenever this screen regains focus — catches entry saves and deletes.
+  // Reload when the screen regains focus (covers entry saves via modal).
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
+
+  // Reload when any cross-screen mutation bumps dbVersion (e.g. vault archival).
+  const dbVersion = useStore(s => s.dbVersion);
+  useEffect(() => { reload(); }, [dbVersion, reload]);
 
   return { sections, totalBalance, hasMixedCurrencies, atRowLimit, loading, reload };
 }

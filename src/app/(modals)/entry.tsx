@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Pressable,
-  ScrollView, StyleSheet, TextInput, View, Keyboard, Text,
+  Pressable, ScrollView, StyleSheet, TextInput, View, Text, Keyboard,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,7 +9,6 @@ import * as Haptics from 'expo-haptics';
 
 import { MonoLabel } from '@/components/ui/mono-label';
 import { Pill } from '@/components/ui/pill';
-import { SectionTag } from '@/components/ui/section-tag';
 import { StampButton } from '@/components/ui/stamp-button';
 import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
 import { useAccounts } from '@/hooks/use-accounts';
@@ -22,6 +20,7 @@ import { useStore } from '@/store/index';
 import type { Transaction } from '@/lib/schemas';
 
 type Kind = 'outflow' | 'inflow';
+
 
 export default function EntryModal() {
   const db = useSQLiteContext();
@@ -45,7 +44,6 @@ export default function EntryModal() {
 
   const isEditMode = params.mode === 'edit' && params.id;
 
-  // Load existing entry if in edit mode
   useEffect(() => {
     if (isEditMode) {
       getTransactionById(db, params.id!).then(entry => {
@@ -62,7 +60,6 @@ export default function EntryModal() {
     }
   }, [isEditMode, params.id, db]);
 
-  // Prefill vault from accounts once loaded (create mode only)
   useEffect(() => {
     if (!isEditMode && !vaultId && accounts.length > 0) setVaultId(accounts[0].id);
   }, [accounts, vaultId, isEditMode]);
@@ -80,9 +77,10 @@ export default function EntryModal() {
     setRawAmount(cleaned);
   }
 
-  const filteredCats = useMemo(() =>
-    categories.filter(c => c.kind === (kind === 'outflow' ? 'expense' : 'income')),
-    [categories, kind]);
+  const filteredCats = useMemo(
+    () => categories.filter(c => c.kind === (kind === 'outflow' ? 'expense' : 'income')),
+    [categories, kind],
+  );
 
   const amountMinor = useMemo(() => {
     const n = parseFloat(rawAmount || '0');
@@ -97,12 +95,24 @@ export default function EntryModal() {
       return () => clearTimeout(t);
     }
   }, [tagIsOther]);
-  const isValid = amountMinor > 0 && vaultId !== null &&
-    (categoryId !== null && (!tagIsOther || otherName.trim().length > 0));
 
-  const todayLabel = new Date().toLocaleDateString('en-US', {
-    weekday: 'short', day: '2-digit', month: 'short',
-  }).toUpperCase();
+  const isValid =
+    amountMinor > 0 &&
+    vaultId !== null &&
+    categoryId !== null &&
+    (!tagIsOther || otherName.trim().length > 0);
+
+  const todayLabel = new Date()
+    .toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short' })
+    .toUpperCase();
+
+  const amountColor = kind === 'outflow' ? EddiesColors.alert : EddiesColors.bone;
+
+  const selectedCategory = categories.find(c => c.id === categoryId);
+  const selectedVault = accounts.find(a => a.id === vaultId);
+  const footerTagLabel = tagIsOther
+    ? (otherName.toUpperCase() || null)
+    : (selectedCategory?.name.toUpperCase() ?? null);
 
   async function handleSave() {
     if (!isValid || saving || loading) return;
@@ -119,7 +129,6 @@ export default function EntryModal() {
         });
         resolvedCategoryId = cat.id;
       }
-
       if (isEditMode && existingEntry) {
         await updateTransaction(db, existingEntry.id, {
           account_id: vaultId!,
@@ -154,185 +163,382 @@ export default function EntryModal() {
 
   return (
     <SafeAreaView style={s.safe}>
-        {/* ── Header ─────────────────────────── */}
-        <View style={s.header}>
-          <SectionTag label={isEditMode ? 'EDDIES // EDIT ENTRY' : 'EDDIES // LOG 01-A'} />
-          <Pressable
-            onPress={() => {
-              Keyboard.dismiss();
-              setTimeout(() => router.back(), 100);
-            }}
-            hitSlop={12}
-          >
-            <MonoLabel size={12} color={EddiesColors.steel}>✕ CLOSE</MonoLabel>
-          </Pressable>
-        </View>
 
-        {/* ── Form ───────────────────────────── */}
-        <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={s.body}>
+      {/* ── Header ───────────────────────────────────────── */}
+      <View style={s.header}>
+        <MonoLabel size={9} letterSpacing={2} color={EddiesColors.steel}>
+          {isEditMode ? 'EDDIES // EDIT ENTRY' : 'EDDIES // LOG 01-A'}
+        </MonoLabel>
+        <Pressable
+          onPress={() => { Keyboard.dismiss(); setTimeout(() => router.back(), 100); }}
+          hitSlop={12}
+        >
+          <MonoLabel size={10} color={EddiesColors.steel}>✕ CLOSE</MonoLabel>
+        </Pressable>
+      </View>
 
-          {/* Amount */}
-          <View style={s.amountWrap}>
+      {/* ── Scrollable body ──────────────────────────────── */}
+      <ScrollView
+        style={{ flex: 1 }}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={s.body}
+      >
+
+        {/* ── Amount panel ─────────────────────────────────
+            Dark surface card. No internal rules.
+            Kind toggle = solid inverted selection.             */}
+        <View style={s.panel}>
+
+          {/* Prompt header row */}
+          <View style={s.panelHead}>
+            <View style={s.panelPrompt}>
+              <Text style={s.panelPromptCaret}>&gt;</Text>
+              <MonoLabel size={9} letterSpacing={2}>AMOUNT</MonoLabel>
+            </View>
+            <MonoLabel size={9} letterSpacing={1}>{todayLabel}</MonoLabel>
+          </View>
+
+          {/* Amount input */}
+          <View style={s.amountZone}>
             <TextInput
               value={rawAmount}
               onChangeText={handleAmountChange}
               keyboardType="decimal-pad"
-              autoFocus
-              style={s.amountInput}
+              style={[s.amountInput, { color: amountColor }]}
               placeholder="0"
-              placeholderTextColor={EddiesColors.steel}
+              placeholderTextColor={EddiesColors.steel + '55'}
+              selectionColor={amountColor}
               returnKeyType="done"
             />
-            <MonoLabel size={10} letterSpacing={2}>AMOUNT</MonoLabel>
           </View>
 
-          {/* Kind toggle */}
+          {/* Kind toggle — terminal inverted selection */}
           <View style={s.kindRow}>
-            {(['outflow', 'inflow'] as Kind[]).map(k => (
-              <Pressable
-                key={k}
-                onPress={() => handleKindChange(k)}
-                style={[s.kindBtn, kind === k && s.kindBtnActive]}
+            <Pressable
+              style={[
+                s.kindBtn,
+                s.kindBtnLeft,
+                kind === 'outflow' ? s.kindOutflowOn : s.kindOff,
+              ]}
+              onPress={() => handleKindChange('outflow')}
+            >
+              <MonoLabel
+                size={11} letterSpacing={2}
+                weight={kind === 'outflow' ? 'bold' : 'regular'}
+                color={kind === 'outflow' ? EddiesColors.bone : EddiesColors.steel}
               >
-                <MonoLabel
-                  size={10} letterSpacing={1.5}
-                  weight={kind === k ? 'bold' : 'regular'}
-                  color={kind === k ? EddiesColors.bone : EddiesColors.steel}
-                >
-                  {k.toUpperCase()}
-                </MonoLabel>
-              </Pressable>
+                ↓ OUTFLOW
+              </MonoLabel>
+            </Pressable>
+            <Pressable
+              style={[
+                s.kindBtn,
+                kind === 'inflow' ? s.kindInflowOn : s.kindOff,
+              ]}
+              onPress={() => handleKindChange('inflow')}
+            >
+              <MonoLabel
+                size={11} letterSpacing={2}
+                weight={kind === 'inflow' ? 'bold' : 'regular'}
+                color={kind === 'inflow' ? EddiesColors.ink : EddiesColors.steel}
+              >
+                ↑ INFLOW
+              </MonoLabel>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* ── TAG ──────────────────────────────────────── */}
+        <View style={s.section}>
+          <MonoLabel size={9} letterSpacing={2}>TAG</MonoLabel>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={s.rail}
+          >
+            {filteredCats.map(c => (
+              <Pill
+                key={c.id}
+                label={c.name}
+                color={c.color}
+                active={c.id === categoryId}
+                onPress={() => {
+                  setCategoryId(c.id === categoryId ? null : c.id);
+                  setOtherName('');
+                }}
+              />
             ))}
-          </View>
+            <Pill
+              label="+ OTHER"
+              color={EddiesColors.steel}
+              active={tagIsOther}
+              onPress={() => setCategoryId(tagIsOther ? null : '__other__')}
+            />
+          </ScrollView>
 
-          {/* TAG */}
-          <View style={s.field}>
-            <MonoLabel size={9} letterSpacing={2}>TAG</MonoLabel>
-            <>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.rail}>
-                  {filteredCats.map(c => (
-                    <Pill
-                      key={c.id} label={c.name} color={c.color}
-                      active={c.id === categoryId}
-                      onPress={() => { setCategoryId(c.id === categoryId ? null : c.id); setOtherName(''); }}
-                    />
-                  ))}
-                  <Pill
-                    label="OTHER"
-                    color={EddiesColors.steel}
-                    active={tagIsOther}
-                    onPress={() => setCategoryId(tagIsOther ? null : '__other__')}
-                  />
-                </ScrollView>
-                {tagIsOther && (
-                  <View style={s.otherWrap}>
-                    <Text style={s.otherLabel}>TAG NAME</Text>
-                    <TextInput
-                      ref={otherInputRef}
-                      style={s.otherInput}
-                      placeholder="e.g. Subscriptions"
-                      placeholderTextColor={EddiesColors.steel}
-                      value={otherName}
-                      onChangeText={setOtherName}
-                      maxLength={40}
-                      autoCapitalize="words"
-                      returnKeyType="done"
-                      onSubmitEditing={() => Keyboard.dismiss()}
-                    />
-                  </View>
-                )}
-              </>
-          </View>
+          {tagIsOther && (
+            <View style={s.otherBlock}>
+              <MonoLabel size={9} letterSpacing={2}>TAG NAME</MonoLabel>
+              <TextInput
+                ref={otherInputRef}
+                style={s.otherInput}
+                placeholder="e.g. Subscriptions"
+                placeholderTextColor={EddiesColors.steel + '55'}
+                value={otherName}
+                onChangeText={setOtherName}
+                maxLength={40}
+                autoCapitalize="words"
+                returnKeyType="done"
+                onSubmitEditing={() => Keyboard.dismiss()}
+              />
+            </View>
+          )}
+        </View>
 
-          {/* VAULT */}
-          <View style={s.field}>
-            <MonoLabel size={9} letterSpacing={2}>VAULT</MonoLabel>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.rail}>
+        {/* ── VAULT ────────────────────────────────────── */}
+        <View style={s.section}>
+          <MonoLabel size={9} letterSpacing={2}>VAULT</MonoLabel>
+          {accounts.length === 0 ? (
+            <Pressable
+              style={s.vaultEmpty}
+              onPress={() => { Keyboard.dismiss(); setTimeout(() => { router.back(); router.push('/(modals)/vault?mode=add'); }, 100); }}
+            >
+              <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.alert}>+ ADD VAULT TO CONTINUE</MonoLabel>
+            </Pressable>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={s.rail}
+            >
               {accounts.map(a => (
-                <Pill key={a.id} label={a.name} active={a.id === vaultId} onPress={() => setVaultId(a.id)} />
+                <Pill
+                  key={a.id}
+                  label={a.name}
+                  active={a.id === vaultId}
+                  onPress={() => setVaultId(a.id)}
+                />
               ))}
             </ScrollView>
-          </View>
+          )}
+        </View>
 
-          {/* NOTE */}
-          <View style={s.field}>
-            <MonoLabel size={9} letterSpacing={2}>NOTE</MonoLabel>
-            <TextInput
-              value={note} onChangeText={setNote}
-              style={s.noteInput}
-              placeholder="OPTIONAL"
-              placeholderTextColor={EddiesColors.steel}
-              maxLength={200} returnKeyType="done" blurOnSubmit
-            />
-          </View>
+        {/* ── MEMO ─────────────────────────────────────── */}
+        <View style={s.section}>
+          <MonoLabel size={9} letterSpacing={2}>MEMO</MonoLabel>
+          <TextInput
+            value={note}
+            onChangeText={setNote}
+            style={s.memoInput}
+            placeholder="— OPTIONAL —"
+            placeholderTextColor={EddiesColors.steel + '44'}
+            maxLength={200}
+            returnKeyType="done"
+            blurOnSubmit
+          />
+        </View>
 
-          {/* DATE */}
-          <View style={s.field}>
-            <MonoLabel size={10} color={EddiesColors.steel}>DATE // {todayLabel}</MonoLabel>
-          </View>
+      </ScrollView>
 
-        </ScrollView>
-
-      {/* ── Save ───────────────────────────── */}
+      {/* ── Footer ──────────────────────────────────────── */}
       <View style={s.footer}>
-        <StampButton
-          label={isEditMode ? 'UPDATE ENTRY' : 'SAVE ENTRY'}
-          onPress={handleSave}
-          disabled={!isValid || saving || loading}
-        />
+        <View style={s.previewRow}>
+          <Text style={[s.previewAmount, { color: amountColor }]}>
+            ${formatAmountTabular(amountMinor)}
+          </Text>
+          <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel + '66'}>{' · '}</MonoLabel>
+          <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.steel}>
+            {kind.toUpperCase()}
+          </MonoLabel>
+          {footerTagLabel != null && (
+            <>
+              <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel + '66'}>{' · '}</MonoLabel>
+              <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.steel}>
+                {footerTagLabel}
+              </MonoLabel>
+            </>
+          )}
+          {selectedVault != null && (
+            <>
+              <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel + '66'}>{' · '}</MonoLabel>
+              <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.steel}>
+                {selectedVault.name.toUpperCase()}
+              </MonoLabel>
+            </>
+          )}
+        </View>
+
+        <View style={s.stampWrap}>
+          <StampButton
+            label={isEditMode ? 'UPDATE ENTRY' : 'STAMP ENTRY'}
+            onPress={handleSave}
+            disabled={!isValid || saving || loading}
+            loading={saving}
+          />
+        </View>
       </View>
+
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: EddiesColors.ink },
+  safe: {
+    flex: 1,
+    backgroundColor: EddiesColors.ink,
+  },
+
+  // ── Header ──────────────────────────────────────────
   header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: EddiesSpacing.md, paddingVertical: EddiesSpacing.sm,
-    borderBottomWidth: 1, borderBottomColor: EddiesColors.steel + '33',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: EddiesSpacing.md,
+    paddingVertical: EddiesSpacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: EddiesColors.steel + '22',
   },
-  body: { gap: EddiesSpacing.lg, paddingBottom: EddiesSpacing.xxl },
-  amountWrap: { alignItems: 'center', paddingVertical: EddiesSpacing.lg },
+
+  body: {
+    gap: EddiesSpacing.lg,
+    paddingTop: EddiesSpacing.md,
+    paddingBottom: EddiesSpacing.xxl,
+  },
+
+  // ── Amount panel ────────────────────────────────────
+  panel: {
+    marginHorizontal: EddiesSpacing.md,
+    backgroundColor: EddiesColors.surface,
+    borderWidth: 1,
+    borderColor: EddiesColors.steel + '33',
+  },
+
+  panelHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: EddiesSpacing.md,
+    paddingTop: EddiesSpacing.sm,
+    paddingBottom: EddiesSpacing.xs,
+  },
+
+  panelPrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+
+  panelPromptCaret: {
+    fontFamily: EddiesFonts.monoBold,
+    fontSize: 9,
+    color: EddiesColors.alert,
+  },
+
+  amountZone: {
+    alignItems: 'center',
+    paddingTop: EddiesSpacing.lg,
+    paddingBottom: EddiesSpacing.xl,
+  },
+
   amountInput: {
-    fontFamily: EddiesFonts.displayBold, fontSize: 64,
-    color: EddiesColors.bone, textAlign: 'center', minWidth: 120,
+    fontFamily: EddiesFonts.displayBold,
+    fontSize: 80,
+    textAlign: 'center',
+    minWidth: 100,
+    letterSpacing: -2,
   },
-  kindRow: { flexDirection: 'row', paddingHorizontal: EddiesSpacing.md, gap: EddiesSpacing.sm },
+
+  // Kind toggle: two equal halves, no internal rules
+  kindRow: {
+    flexDirection: 'row',
+  },
+
   kindBtn: {
-    flex: 1, paddingVertical: EddiesSpacing.sm,
-    borderWidth: 1, borderColor: EddiesColors.steel + '55', alignItems: 'center',
+    flex: 1,
+    paddingVertical: EddiesSpacing.sm + 2,
+    alignItems: 'center',
   },
-  kindBtnActive: { borderColor: EddiesColors.alert, backgroundColor: EddiesColors.alert + '22' },
-  field: { paddingHorizontal: EddiesSpacing.md, gap: EddiesSpacing.xs },
-  rail: { gap: EddiesSpacing.sm, paddingVertical: 2 },
-  noteInput: {
-    fontFamily: EddiesFonts.mono, fontSize: 13, color: EddiesColors.bone,
-    borderBottomWidth: 1, borderBottomColor: EddiesColors.steel + '55',
-    paddingVertical: EddiesSpacing.xs,
+
+  kindBtnLeft: {
+    borderRightWidth: 1,
+    borderRightColor: EddiesColors.steel + '33',
   },
-  otherWrap: {
-    marginTop: EddiesSpacing.sm,
+
+  // Active = solid fill (terminal "selected" inversion)
+  kindOutflowOn: {
+    backgroundColor: EddiesColors.alert,
+  },
+
+  kindInflowOn: {
+    backgroundColor: EddiesColors.bone,
+  },
+
+  kindOff: {
+    backgroundColor: 'transparent',
+  },
+
+  // ── Sections ────────────────────────────────────────
+  section: {
+    paddingHorizontal: EddiesSpacing.md,
+    gap: EddiesSpacing.sm,
+  },
+
+  rail: {
+    gap: EddiesSpacing.sm,
+    paddingVertical: 2,
+  },
+
+  memoInput: {
+    fontFamily: EddiesFonts.mono,
+    fontSize: 14,
+    color: EddiesColors.bone,
+    paddingVertical: EddiesSpacing.sm,
+    letterSpacing: 0.5,
+  },
+
+  vaultEmpty: {
+    paddingVertical: EddiesSpacing.sm,
     borderLeftWidth: 2,
     borderLeftColor: EddiesColors.alert,
     paddingLeft: EddiesSpacing.sm,
-    gap: 4,
   },
-  otherLabel: {
-    fontFamily: EddiesFonts.mono,
-    fontSize: 9,
-    letterSpacing: 2,
-    color: EddiesColors.alert,
+
+  otherBlock: {
+    borderLeftWidth: 2,
+    borderLeftColor: EddiesColors.alert,
+    paddingLeft: EddiesSpacing.sm,
+    gap: EddiesSpacing.xs,
+    marginTop: EddiesSpacing.xs,
   },
+
   otherInput: {
     fontFamily: EddiesFonts.displayBold,
-    fontSize: 22,
+    fontSize: 26,
     color: EddiesColors.bone,
     paddingVertical: EddiesSpacing.xs,
-    backgroundColor: 'transparent',
   },
+
+  // ── Footer ──────────────────────────────────────────
   footer: {
-    paddingHorizontal: EddiesSpacing.md, paddingVertical: EddiesSpacing.md,
-    borderTopWidth: 1, borderTopColor: EddiesColors.steel + '22',
+    gap: EddiesSpacing.sm,
+    paddingBottom: EddiesSpacing.md,
+  },
+
+  previewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: EddiesSpacing.md,
+    paddingTop: EddiesSpacing.sm,
+    flexWrap: 'nowrap',
+  },
+
+  previewAmount: {
+    fontFamily: EddiesFonts.monoBold,
+    fontSize: 11,
+    letterSpacing: 1,
+  },
+
+  stampWrap: {
+    paddingHorizontal: EddiesSpacing.md,
   },
 });

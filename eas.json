@@ -9,16 +9,36 @@
       "distribution": "internal",
       "ios": {
         "simulator": true
+      },
+      "env": {
+        "SENTRY_ORG": "eddies-dev",
+        "SENTRY_PROJECT": "eddies",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://jqmrklutacyefasquvto.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_3045iR0dMOHKf1qA3TH3Sg_xIbEqepj"
       }
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "SENTRY_ORG": "eddies-dev",
+        "SENTRY_PROJECT": "eddies",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://7bf8d5fc30e43722e769f191753a1dc6@o4511517181542400.ingest.us.sentry.io/4511517200875520",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://jqmrklutacyefasquvto.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_3045iR0dMOHKf1qA3TH3Sg_xIbEqepj"
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "SENTRY_ORG": "eddies-dev",
+        "SENTRY_PROJECT": "eddies",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://7bf8d5fc30e43722e769f191753a1dc6@o4511517181542400.ingest.us.sentry.io/4511517200875520",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://jqmrklutacyefasquvto.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_3045iR0dMOHKf1qA3TH3Sg_xIbEqepj"
+      }
     }
   },
   "submit": {

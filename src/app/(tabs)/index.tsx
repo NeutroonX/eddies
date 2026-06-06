@@ -15,10 +15,16 @@ import { deleteTransaction } from '@/lib/db/repos/transactions';
 import { formatAmountTabular } from '@/lib/money';
 import { useCurrencySymbol } from '@/hooks/use-currency-symbol';
 
-function LedgerHeader({ balance, sections, hasMixedCurrencies }: { balance: number; sections: DaySection[]; hasMixedCurrencies: boolean }) {
+function LedgerHeader({ balance, sections, hasMixedCurrencies, pendingRow }: { balance: number; sections: DaySection[]; hasMixedCurrencies: boolean; pendingRow: LedgerRow | null }) {
   const sym = useCurrencySymbol();
 
-  // Single-pass month aggregate — only recomputes when sections reference changes.
+  // Optimistically subtract the pending-delete entry from the displayed balance.
+  const effectiveBalance = useMemo(() => {
+    if (!pendingRow || pendingRow.transfer_group_id !== null) return balance;
+    return balance + (pendingRow.kind === 'outflow' ? pendingRow.amount_minor : -pendingRow.amount_minor);
+  }, [balance, pendingRow]);
+
+  // Single-pass month aggregate — skip pending-delete row immediately.
   const { monthNet, monthOut, monthIn } = useMemo(() => {
     const monthStart = new Date();
     monthStart.setDate(1);
@@ -27,13 +33,14 @@ function LedgerHeader({ balance, sections, hasMixedCurrencies }: { balance: numb
     let net = 0, out = 0, inc = 0;
     for (const section of sections) {
       for (const r of section.data) {
+        if (pendingRow && r.id === pendingRow.id) continue;
         if (r.occurred_at < cutoff || r.transfer_group_id !== null) continue;
         if (r.kind === 'inflow') { net += r.amount_minor; inc += r.amount_minor; }
         else                     { net -= r.amount_minor; out += r.amount_minor; }
       }
     }
     return { monthNet: net, monthOut: out, monthIn: inc };
-  }, [sections]);
+  }, [sections, pendingRow]);
 
   const netPositive = monthNet >= 0;
 
@@ -56,8 +63,8 @@ function LedgerHeader({ balance, sections, hasMixedCurrencies }: { balance: numb
           * VAULTS HAVE MIXED CURRENCIES — SUM IS APPROXIMATE
         </MonoLabel>
       )}
-      <Numerals size={56} weight="bold" color={balance < 0 ? EddiesColors.alert : EddiesColors.bone}>
-        {balance < 0 ? '−' : ''}{sym}{formatAmountTabular(Math.abs(balance))}
+      <Numerals size={56} weight="bold" color={effectiveBalance < 0 ? EddiesColors.alert : EddiesColors.bone}>
+        {effectiveBalance < 0 ? '−' : ''}{sym}{formatAmountTabular(Math.abs(effectiveBalance))}
       </Numerals>
 
       {/* Month stat row */}
@@ -177,6 +184,15 @@ export default function LedgerScreen() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [pendingDeleteLabel, setPendingDeleteLabel] = useState('');
 
+  const pendingDeleteRow = useMemo(() => {
+    if (!pendingDeleteId) return null;
+    for (const s of sections) {
+      const r = s.data.find(row => row.id === pendingDeleteId);
+      if (r) return r;
+    }
+    return null;
+  }, [pendingDeleteId, sections]);
+
   // Commit any pending delete on unmount without calling setState.
   useEffect(() => () => {
     if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
@@ -195,10 +211,12 @@ export default function LedgerScreen() {
     setPendingDeleteId(row.id);
     setPendingDeleteLabel(label);
     deleteTimerRef.current = setTimeout(() => {
-      deleteTransaction(db, row.id).then(() => reload()).catch(console.error);
       deleteTimerRef.current = null;
       pendingIdRef.current = null;
-      setPendingDeleteId(prev => (prev === row.id ? null : prev));
+      deleteTransaction(db, row.id)
+        .then(() => reload())
+        .then(() => setPendingDeleteId(prev => (prev === row.id ? null : prev)))
+        .catch(console.error);
     }, 4000);
   }
 
@@ -211,7 +229,14 @@ export default function LedgerScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
+      <LedgerHeader
+        balance={totalBalance}
+        sections={sections}
+        hasMixedCurrencies={hasMixedCurrencies}
+        pendingRow={pendingDeleteRow}
+      />
       <SectionList
+        style={s.list}
         sections={sections}
         keyExtractor={item => item.id}
         stickySectionHeadersEnabled
@@ -225,7 +250,6 @@ export default function LedgerScreen() {
             onDelete={() => handleDelete(item)}
           />
         )}
-        ListHeaderComponent={<LedgerHeader balance={totalBalance} sections={sections} hasMixedCurrencies={hasMixedCurrencies} />}
         ListFooterComponent={atRowLimit ? <LedgerLimitBanner /> : null}
         ListEmptyComponent={loading ? null : <EmptyState />}
         ItemSeparatorComponent={() => <View style={s.separator} />}
@@ -240,6 +264,7 @@ export default function LedgerScreen() {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: EddiesColors.ink },
+  list: { flex: 1 },
   separator: {
     height: 1,
     backgroundColor: EddiesColors.steel + '18',

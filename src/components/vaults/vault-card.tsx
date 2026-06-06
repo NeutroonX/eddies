@@ -1,5 +1,6 @@
+import { useRef } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
-import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SymbolView } from 'expo-symbols';
 
 import { IDCard } from '@/components/ui/id-card';
@@ -51,21 +52,36 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
   const sym = useCurrencySymbol();
   const serial = serialFromId(account.id);
   const typeLabel = TYPE_LABELS[account.type] ?? account.type.toUpperCase();
+  const swipeRef = useRef<SwipeableMethods>(null);
+
+  function triggerEdit() {
+    swipeRef.current?.close();
+    onEdit();
+  }
+
+  function triggerDelete() {
+    swipeRef.current?.close();
+    onDelete();
+  }
 
   return (
     <ReanimatedSwipeable
+      ref={swipeRef}
       overshootFriction={8}
       renderLeftActions={() => (
-        <Pressable style={s.editAction} onPress={onEdit}>
+        <Pressable style={s.editAction} onPress={triggerEdit}>
           <MonoLabel size={11} weight="bold" color={EddiesColors.bone}>EDIT</MonoLabel>
         </Pressable>
       )}
       renderRightActions={() => (
-        <Pressable style={s.deleteAction} onPress={onDelete}>
+        <Pressable style={s.deleteAction} onPress={triggerDelete}>
           <MonoLabel size={11} weight="bold" color={EddiesColors.bone}>DELETE</MonoLabel>
         </Pressable>
       )}
-      onSwipeableOpen={(direction) => { if (direction === 'right') onDelete(); }}
+      onSwipeableOpen={(direction) => {
+        if (direction === 'right') triggerEdit();
+        else if (direction === 'left') triggerDelete();
+      }}
     >
       <Pressable onPress={onPress} style={s.wrapper} accessibilityRole="button">
         <IDCard style={[s.card, isActive ? s.cardActive : undefined]}>

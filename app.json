@@ -39,11 +39,28 @@
         }
       ],
       "expo-sqlite",
-      "expo-image"
+      "expo-image",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "eddies",
+          "organization": "eddies-dev"
+        }
+      ],
+      "expo-web-browser",
+      "expo-secure-store",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "54a0451a-b49c-46e2-9475-455446373f06"
+      }
     }
   }
 }

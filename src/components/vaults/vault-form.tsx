@@ -6,6 +6,7 @@ import { Pill } from '@/components/ui/pill';
 import { StampButton } from '@/components/ui/stamp-button';
 import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
 import { WORLD_CURRENCIES } from '@/constants/currencies';
+import { useStore } from '@/store/index';
 import type { Account, NewAccount } from '@/lib/schemas';
 
 interface VaultFormProps {
@@ -18,12 +19,13 @@ const PRESET_TYPES = ['cash', 'bank', 'card', 'savings'] as const;
 const PRESET_COLORS = [EddiesColors.stock, EddiesColors.bone, EddiesColors.alert, EddiesColors.steel, '#E5B8F4', '#B5E7A0'];
 
 export function VaultForm({ initialData, onSave, onCancel }: VaultFormProps) {
+  const preferredCurrency = useStore(s => s.currency);
   const isPreset = PRESET_TYPES.includes(initialData?.type as any);
   const [name, setName] = useState(initialData?.name ?? '');
   const [type, setType] = useState<string>(initialData?.type ?? 'cash');
   const [typeIsOther, setTypeIsOther] = useState(!isPreset && !!initialData?.type);
   const [otherType, setOtherType] = useState(!isPreset ? (initialData?.type ?? '') : '');
-  const [currency, setCurrency] = useState(initialData?.currency ?? 'USD');
+  const [currency, setCurrency] = useState(initialData?.currency ?? preferredCurrency);
   const [currencySearch, setCurrencySearch] = useState('');
   const [rawBalance, setRawBalance] = useState(initialData ? (initialData.opening_balance_minor / 100).toString() : '0');
   const [color, setColor] = useState(initialData?.color ?? EddiesColors.stock);

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSQLiteContext } from 'expo-sqlite';
 
 import { getAllAccounts, createAccount, archiveAccount } from '@/lib/db/repos/accounts';
+import { useStore } from '@/store';
 import type { Account, NewAccount } from '@/lib/schemas';
 
 export function useAccounts() {
@@ -16,6 +17,9 @@ export function useAccounts() {
   }, [db]);
 
   useEffect(() => { reload(); }, [reload]);
+
+  const dbVersion = useStore(s => s.dbVersion);
+  useEffect(() => { reload(); }, [dbVersion, reload]);
 
   const create = useCallback(async (data: NewAccount): Promise<Account> => {
     const acc = await createAccount(db, data);

@@ -352,7 +352,7 @@ export default function OnboardingScreen() {
   async function handleDeploy() {
     await setSetting(db, 'onboarding_complete', 'true').catch(console.error);
     setOnboardingComplete(true);
-    router.replace('/(tabs)');
+    router.replace('/(auth)');
   }
 
   function handleNext() {

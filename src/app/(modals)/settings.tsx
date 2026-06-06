@@ -13,13 +13,14 @@ import { EddiesColors, EddiesSpacing } from '@/constants/theme';
 import { WORLD_CURRENCIES } from '@/constants/currencies';
 import { useStore } from '@/store';
 import { getSetting, setSetting } from '@/lib/db/repos/settings-repo';
+import { setTelemetryEnabled } from '@/lib/telemetry';
 import { createBackup } from '@/lib/backup';
 
 const APP_VERSION = '1.0.0';
 
 export default function SettingsModal() {
   const db = useSQLiteContext();
-  const { currency, firstDayOfWeek, hapticsEnabled, setCurrency, setFirstDayOfWeek, setHapticsEnabled, showToast } = useStore();
+  const { currency, firstDayOfWeek, hapticsEnabled, crashReportingEnabled, setCurrency, setFirstDayOfWeek, setHapticsEnabled, setCrashReportingEnabled, showToast } = useStore();
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [loading, setLoading] = useState(true);
@@ -32,9 +33,11 @@ export default function SettingsModal() {
         const savedCurrency = await getSetting(db, 'currency', 'USD');
         const savedDayOfWeek = await getSetting(db, 'first_day_of_week', '1');
         const savedHaptics = await getSetting(db, 'haptics_enabled', 'true');
+        const savedCrashReporting = await getSetting(db, 'crash_reporting_enabled', 'true');
         setCurrency(savedCurrency!);
         setFirstDayOfWeek(parseInt(savedDayOfWeek!, 10));
         setHapticsEnabled(savedHaptics === 'true');
+        setCrashReportingEnabled(savedCrashReporting !== 'false');
       } catch (err) {
         console.error('Failed to load settings:', err);
       } finally {
@@ -42,7 +45,7 @@ export default function SettingsModal() {
       }
     }
     loadSettings();
-  }, [db, setCurrency, setFirstDayOfWeek, setHapticsEnabled]);
+  }, [db, setCurrency, setFirstDayOfWeek, setHapticsEnabled, setCrashReportingEnabled]);
 
   async function handleCurrencyChange(newCurrency: string) {
     try {
@@ -73,6 +76,18 @@ export default function SettingsModal() {
       await setSetting(db, 'haptics_enabled', enabled ? 'true' : 'false');
       showToast(enabled ? 'Haptics enabled' : 'Haptics disabled');
       if (enabled) await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch {
+      showToast('Failed to update setting', 'err');
+    }
+  }
+
+  async function handleCrashReportingChange(enabled: boolean) {
+    try {
+      setCrashReportingEnabled(enabled);
+      setTelemetryEnabled(enabled);
+      await setSetting(db, 'crash_reporting_enabled', enabled ? 'true' : 'false');
+      showToast(enabled ? 'Crash reports on' : 'Crash reports off');
+      if (hapticsEnabled) await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch {
       showToast('Failed to update setting', 'err');
     }
@@ -228,6 +243,24 @@ export default function SettingsModal() {
                 </Pressable>
                 <Text style={s.toggleLabel}>{hapticsEnabled ? 'ENABLED' : 'DISABLED'}</Text>
               </View>
+            </View>
+
+            {/* Crash Reporting */}
+            <View style={s.section}>
+              <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>CRASH REPORTS</MonoLabel>
+              <View style={s.toggleRow}>
+                <Pressable
+                  style={[s.toggle, crashReportingEnabled && s.toggleActive]}
+                  onPress={() => handleCrashReportingChange(!crashReportingEnabled)}
+                >
+                  <View style={[s.toggleThumb, crashReportingEnabled && s.toggleThumbActive]} />
+                </Pressable>
+                <Text style={s.toggleLabel}>{crashReportingEnabled ? 'ENABLED' : 'DISABLED'}</Text>
+              </View>
+              <Text style={s.sectionNote}>
+                Sends anonymous crash logs and performance data to help fix bugs.{'\n'}
+                No financial data is ever included. You can opt out at any time.
+              </Text>
             </View>
 
             {/* Theme Lock */}

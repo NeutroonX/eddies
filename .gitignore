@@ -47,3 +47,5 @@ AGENTS.md
 CLAUDE.md
 .claude/
 .vscode/
+
+.env.local

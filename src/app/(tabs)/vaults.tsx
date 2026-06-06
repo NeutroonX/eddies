@@ -56,7 +56,7 @@ function UndoBar({ label, onUndo }: { label: string; onUndo: () => void }) {
   return (
     <View style={s.undoBar}>
       <MonoLabel size={11} color={EddiesColors.bone} style={{ flex: 1 }}>
-        {label.toUpperCase()} ARCHIVED
+        {label.toUpperCase()} REMOVED
       </MonoLabel>
       <Pressable onPress={onUndo} hitSlop={12}>
         <MonoLabel size={11} weight="bold" color={EddiesColors.alert}>UNDO</MonoLabel>
@@ -69,6 +69,7 @@ export default function VaultsScreen() {
   const db = useSQLiteContext();
   const { accounts, reload } = useAccounts();
   const lastVaultId = useStore(s => s.lastVaultId);
+  const bumpDbVersion = useStore(s => s.bumpDbVersion);
 
   const archiveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingIdRef = useRef<string | null>(null);
@@ -80,7 +81,11 @@ export default function VaultsScreen() {
 
   function handleArchive(accountId: string) {
     if (archiveTimerRef.current && pendingIdRef.current) {
-      archiveAccount(db, pendingIdRef.current).then(() => reload()).catch(console.error);
+      clearTimeout(archiveTimerRef.current);
+      archiveAccount(db, pendingIdRef.current)
+        .then(() => reload())
+        .then(() => bumpDbVersion())
+        .catch(console.error);
     }
 
     const acc = accounts.find(a => a.id === accountId);
@@ -89,10 +94,15 @@ export default function VaultsScreen() {
     setPending({ id: accountId, name: label });
 
     archiveTimerRef.current = setTimeout(() => {
-      archiveAccount(db, accountId).then(() => reload()).catch(console.error);
       archiveTimerRef.current = null;
       pendingIdRef.current = null;
-      setPending(prev => (prev?.id === accountId ? null : prev));
+      archiveAccount(db, accountId)
+        .then(() => reload())
+        .then(() => {
+          bumpDbVersion();
+          setPending(prev => (prev?.id === accountId ? null : prev));
+        })
+        .catch(console.error);
     }, 4000);
   }
 
