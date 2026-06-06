@@ -10,6 +10,15 @@ export interface ExportRange {
   to?: number;
 }
 
+// RFC-4180 compliant cell encoder with formula-injection guard.
+// Prefixes cells that start with =+-@ with a single quote so spreadsheet
+// apps do not execute them as formulas (CSV injection / DDE).
+export function csvCell(value: string): string {
+  const v = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  if (/[,"\n\r]/.test(v)) return `"${v.replace(/"/g, '""')}"`;
+  return v;
+}
+
 export async function exportAsCSV(
   db: SQLiteDatabase,
   range?: ExportRange
@@ -41,9 +50,7 @@ export async function exportAsCSV(
     const vault = accountMap.get(tx.account_id) || 'Unknown';
     const kind = tx.kind.toUpperCase();
     const amount = (tx.amount_minor / 100).toFixed(2);
-    const note = (tx.note || '').replace(/,/g, ';').replace(/"/g, '""');
 
-    // Update running balance
     if (tx.kind === 'inflow') {
       runningBalance += tx.amount_minor;
     } else if (tx.kind === 'outflow') {
@@ -51,7 +58,7 @@ export async function exportAsCSV(
     }
 
     const balance = (runningBalance / 100).toFixed(2);
-    const row = [date, category, vault, kind, amount, note ? `"${note}"` : '', balance];
+    const row = [date, csvCell(category), csvCell(vault), kind, amount, csvCell(tx.note || ''), balance];
     rows.push(row.join(','));
   }
 

@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -60,8 +60,19 @@ export default function AnalyzeScreen() {
 
   const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingIdRef = useRef<string | null>(null);
+  const mountedRef = useRef(true);
 
-  function loadData() {
+  useEffect(() => () => { mountedRef.current = false; }, []);
+
+  // Commit pending cap delete on unmount without setState.
+  useEffect(() => () => {
+    if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
+    if (pendingIdRef.current) {
+      deleteBudget(db, pendingIdRef.current).catch(console.error);
+    }
+  }, [db]);
+
+  const loadData = useCallback(() => {
     const { fromMs, toMs } = getPeriodRange(activePeriod as Period);
     const capPeriod = activePeriod === 'month' ? 'monthly' : 'weekly';
     Promise.all([
@@ -70,15 +81,16 @@ export default function AnalyzeScreen() {
       getCategorySpend(db, fromMs, toMs),
       getCapStats(db, capPeriod as 'weekly' | 'monthly', fromMs, toMs),
     ]).then(([io, b, sp, cp]) => {
+      if (!mountedRef.current) return;
       setInOut(io);
       setBurn(b);
       setSpending(sp);
       setCaps(cp);
     });
-  }
+  }, [activePeriod, db]);
 
-  useEffect(() => { loadData(); }, [activePeriod, db]);
-  useFocusEffect(() => { loadData(); });
+  // Single load path: fires on focus and when activePeriod/db changes.
+  useFocusEffect(loadData);
 
   function handleDeleteCap(cap: CapProgressType) {
     if (deleteTimerRef.current && pendingIdRef.current) {

@@ -1,7 +1,18 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 import { Share } from 'react-native';
 
+import { csvCell } from './export';
+
 const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 export type PendingMonth = {
   year: number;
@@ -141,8 +152,7 @@ export async function exportMonthCSV(
     const date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const time = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     const amount = (r.amount_minor / 100).toFixed(2);
-    const note = (r.note ?? '').replace(/,/g, ';');
-    return `${date},${time},${r.kind},${amount},${r.category_name},${r.vault_name},${note}`;
+    return `${date},${time},${r.kind},${amount},${csvCell(r.category_name)},${csvCell(r.vault_name)},${csvCell(r.note ?? '')}`;
   });
 
   const csv = [header, ...lines].join('\n');
@@ -187,13 +197,13 @@ export async function exportMonthHTML(
   const rowsHTML = rows.map((r) => {
     const d = new Date(r.occurred_at);
     const date = `${String(d.getDate()).padStart(2,'0')} ${MONTHS[d.getMonth()]}`;
-    const amt = `${r.kind === 'outflow' ? '−' : '+'}${currencySymbol}${(r.amount_minor/100).toFixed(2)}`;
+    const amt = `${r.kind === 'outflow' ? '−' : '+'}${escapeHtml(currencySymbol)}${(r.amount_minor/100).toFixed(2)}`;
     const color = r.kind === 'outflow' ? '#E5484D' : '#FFFFFF';
     return `<tr>
       <td>${date}</td>
-      <td>${r.category_name}</td>
-      <td>${r.vault_name}</td>
-      <td>${r.note ?? ''}</td>
+      <td>${escapeHtml(r.category_name)}</td>
+      <td>${escapeHtml(r.vault_name)}</td>
+      <td>${escapeHtml(r.note ?? '')}</td>
       <td style="text-align:right;color:${color};font-weight:600">${amt}</td>
     </tr>`;
   }).join('\n');

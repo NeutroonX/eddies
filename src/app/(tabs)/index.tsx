@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -144,6 +144,14 @@ export default function LedgerScreen() {
   const pendingIdRef = useRef<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [pendingDeleteLabel, setPendingDeleteLabel] = useState('');
+
+  // Commit any pending delete on unmount without calling setState.
+  useEffect(() => () => {
+    if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
+    if (pendingIdRef.current) {
+      deleteTransaction(db, pendingIdRef.current).catch(console.error);
+    }
+  }, [db]);
 
   function handleDelete(row: LedgerRow) {
     if (deleteTimerRef.current && pendingIdRef.current) {
