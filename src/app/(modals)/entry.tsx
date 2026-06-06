@@ -29,6 +29,7 @@ export default function EntryModal() {
   const { categories } = useCategories();
   const lastVaultId = useStore(s => s.lastVaultId);
   const setLastVaultId = useStore(s => s.setLastVaultId);
+  const showToast = useStore(s => s.showToast);
   const params = useLocalSearchParams<{ mode?: string; id?: string }>();
 
   const [rawAmount, setRawAmount] = useState('');
@@ -146,6 +147,7 @@ export default function EntryModal() {
       setTimeout(() => router.back(), 100);
     } catch (err) {
       console.error('Save error:', err);
+      showToast('Failed to save entry', 'err');
       setSaving(false);
     }
   }

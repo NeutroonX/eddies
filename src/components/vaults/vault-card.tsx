@@ -1,5 +1,5 @@
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
-import { Swipeable } from 'react-native-gesture-handler';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SymbolView } from 'expo-symbols';
 
 import { IDCard } from '@/components/ui/id-card';
@@ -53,7 +53,7 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
   const typeLabel = TYPE_LABELS[account.type] ?? account.type.toUpperCase();
 
   return (
-    <Swipeable
+    <ReanimatedSwipeable
       overshootFriction={8}
       renderLeftActions={() => (
         <Pressable style={s.editAction} onPress={onEdit}>
@@ -65,7 +65,7 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
           <MonoLabel size={11} weight="bold" color={EddiesColors.bone}>DELETE</MonoLabel>
         </Pressable>
       )}
-      onSwipeableRightOpen={onDelete}
+      onSwipeableOpen={(direction) => { if (direction === 'right') onDelete(); }}
     >
       <Pressable onPress={onPress} style={s.wrapper} accessibilityRole="button">
         <IDCard style={[s.card, isActive ? s.cardActive : undefined]}>
@@ -111,7 +111,7 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
 
         </IDCard>
       </Pressable>
-    </Swipeable>
+    </ReanimatedSwipeable>
   );
 }
 

@@ -160,8 +160,10 @@ export async function getDailyBurn(
   const daysInPeriod = Math.max(1, Math.ceil((toMs - fromMs) / MS_PER_DAY));
   const avgDailyMinor = Math.round(outflow / daysInPeriod);
 
-  // Arithmetic projection: assume month is 30 days, multiply by remaining days
-  const daysRemainingInMonth = Math.max(0, 30 - daysInPeriod);
+  // Project to end of the actual month the period starts in.
+  const periodStart = new Date(fromMs);
+  const daysInMonth = new Date(periodStart.getFullYear(), periodStart.getMonth() + 1, 0).getDate();
+  const daysRemainingInMonth = Math.max(0, daysInMonth - daysInPeriod);
   const projectedMonthEndMinor = outflow + avgDailyMinor * daysRemainingInMonth;
 
   return { avgDailyMinor, projectedMonthEndMinor, daysInPeriod };

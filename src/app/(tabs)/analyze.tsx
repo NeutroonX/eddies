@@ -25,12 +25,12 @@ import { useStore } from '@/store';
 
 type Period = 'week' | 'month';
 
-function getPeriodRange(period: Period): { fromMs: number; toMs: number } {
+function getPeriodRange(period: Period, firstDayOfWeek: number): { fromMs: number; toMs: number } {
   const now = Date.now();
   if (period === 'week') {
     const d = new Date(now);
     const start = new Date(d);
-    start.setDate(d.getDate() - d.getDay());
+    start.setDate(d.getDate() - ((d.getDay() - firstDayOfWeek + 7) % 7));
     start.setHours(0, 0, 0, 0);
     return { fromMs: start.getTime(), toMs: now };
   }
@@ -50,6 +50,7 @@ export default function AnalyzeScreen() {
   const db = useSQLiteContext();
   const activePeriod = useStore((s) => s.activePeriod);
   const setActivePeriod = useStore((s) => s.setActivePeriod);
+  const firstDayOfWeek = useStore((s) => s.firstDayOfWeek);
   const sym = useCurrencySymbol();
 
   const [inOut, setInOut] = useState({ inflow: 0, outflow: 0, net: 0 });
@@ -73,7 +74,7 @@ export default function AnalyzeScreen() {
   }, [db]);
 
   const loadData = useCallback(() => {
-    const { fromMs, toMs } = getPeriodRange(activePeriod as Period);
+    const { fromMs, toMs } = getPeriodRange(activePeriod as Period, firstDayOfWeek);
     const capPeriod = activePeriod === 'month' ? 'monthly' : 'weekly';
     Promise.all([
       getInflowVsOutflow(db, fromMs, toMs),

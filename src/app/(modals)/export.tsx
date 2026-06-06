@@ -17,7 +17,7 @@ type Format = 'csv' | 'json';
 
 export default function ExportModal() {
   const db = useSQLiteContext();
-  const { showToast } = useStore();
+  const { showToast, firstDayOfWeek } = useStore();
   const [dateRange, setDateRange] = useState<DateRange>('all');
   const [format, setFormat] = useState<Format>('csv');
   const [exporting, setExporting] = useState(false);
@@ -42,7 +42,7 @@ export default function ExportModal() {
       case 'all': return undefined;
       case 'week': {
         const s = new Date(now);
-        s.setDate(s.getDate() - s.getDay());
+        s.setDate(s.getDate() - ((s.getDay() - firstDayOfWeek + 7) % 7));
         s.setHours(0, 0, 0, 0);
         return { from: s.getTime(), to: now };
       }

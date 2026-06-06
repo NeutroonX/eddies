@@ -104,13 +104,3 @@ export async function updateTransaction(
 export async function deleteTransaction(db: SQLiteDatabase, id: string): Promise<void> {
   await db.runAsync('DELETE FROM transactions WHERE id = ?', id);
 }
-
-export async function deleteTransferGroup(
-  db: SQLiteDatabase,
-  transferGroupId: string
-): Promise<void> {
-  await db.runAsync(
-    'DELETE FROM transactions WHERE transfer_group_id = ?',
-    transferGroupId
-  );
-}

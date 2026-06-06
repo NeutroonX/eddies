@@ -19,6 +19,7 @@ import { MonoLabel } from '@/components/ui/mono-label';
 import { StampButton } from '@/components/ui/stamp-button';
 import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
 import { useCategories } from '@/hooks/use-categories';
+import { useStore } from '@/store';
 import { findOrCreateCategory } from '@/lib/db/repos/categories';
 import { createBudget, deleteBudget, updateBudget } from '@/lib/db/repos/budgets';
 import { toMinorUnits } from '@/lib/money';
@@ -27,6 +28,7 @@ import type { Budget } from '@/lib/schemas';
 export default function CapModal() {
   const db = useSQLiteContext();
   const { categories } = useCategories();
+  const { showToast } = useStore();
   const params = useLocalSearchParams<{ capId?: string }>();
 
   const scrollRef = useRef<ScrollView>(null);
@@ -86,6 +88,7 @@ export default function CapModal() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch {
+      showToast('Failed to save cap', 'err');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setSaving(false);
@@ -101,6 +104,7 @@ export default function CapModal() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch {
+      showToast('Failed to remove cap', 'err');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setDeleting(false);
