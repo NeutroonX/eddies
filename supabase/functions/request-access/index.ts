@@ -22,7 +22,8 @@ Deno.serve(async (req: Request) => {
 
     const resendKey = Deno.env.get('RESEND_API_KEY');
     const ownerEmail = Deno.env.get('OWNER_EMAIL');
-    if (!resendKey || !ownerEmail) {
+    const fromEmail = Deno.env.get('FROM_EMAIL');
+    if (!resendKey || !ownerEmail || !fromEmail) {
       console.error('RESEND_API_KEY secret is not set');
       return new Response(
         JSON.stringify({ error: 'SERVICE_UNAVAILABLE' }),
@@ -39,7 +40,7 @@ Deno.serve(async (req: Request) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Eddies <eddies.dev@atomicmail.io>',
+        from: `Eddies <${fromEmail}>`,
         to: [ownerEmail],
         subject: `Beta Access Request — ${sanitised}`,
         html: `
