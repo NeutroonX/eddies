@@ -1,12 +1,9 @@
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -22,19 +19,23 @@ serve(async (req: Request) => {
     }
 
     const normalised = code.trim().toUpperCase();
+    const url = Deno.env.get('SUPABASE_URL')!;
+    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const headers = {
+      'Authorization': `Bearer ${key}`,
+      'apikey': key,
+      'Content-Type': 'application/json',
+    };
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    // Fetch the code row
+    const selectRes = await fetch(
+      `${url}/rest/v1/invite_codes?code=eq.${encodeURIComponent(normalised)}&limit=1`,
+      { headers },
     );
+    const rows: Record<string, unknown>[] = await selectRes.json();
+    const data = rows[0] ?? null;
 
-    const { data, error } = await supabase
-      .from('invite_codes')
-      .select('id, is_active, expires_at, uses_count, max_uses')
-      .eq('code', normalised)
-      .single();
-
-    if (error || !data) {
+    if (!data) {
       return new Response(
         JSON.stringify({ granted: false, error: 'INVALID_CODE' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -48,36 +49,44 @@ serve(async (req: Request) => {
       );
     }
 
-    if (data.expires_at && new Date(data.expires_at) < new Date()) {
+    if (data.expires_at && new Date(data.expires_at as string) < new Date()) {
       return new Response(
         JSON.stringify({ granted: false, error: 'EXPIRED_CODE' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    if (data.max_uses !== null && data.uses_count >= data.max_uses) {
+    const usesCount = data.uses_count as number;
+    const maxUses = data.max_uses as number | null;
+
+    if (maxUses !== null && usesCount >= maxUses) {
       return new Response(
         JSON.stringify({ granted: false, error: 'CODE_EXHAUSTED' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    const newUsesCount = data.uses_count + 1;
-    const shouldDeactivate = data.max_uses !== null && newUsesCount >= data.max_uses;
+    const newUsesCount = usesCount + 1;
+    const shouldDeactivate = maxUses !== null && newUsesCount >= maxUses;
 
-    await supabase
-      .from('invite_codes')
-      .update({
-        uses_count: newUsesCount,
-        ...(shouldDeactivate ? { is_active: false } : {}),
-      })
-      .eq('id', data.id);
+    await fetch(
+      `${url}/rest/v1/invite_codes?id=eq.${data.id}`,
+      {
+        method: 'PATCH',
+        headers: { ...headers, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({
+          uses_count: newUsesCount,
+          ...(shouldDeactivate ? { is_active: false } : {}),
+        }),
+      },
+    );
 
     return new Response(
       JSON.stringify({ granted: true }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
-  } catch {
+  } catch (err) {
+    console.error('validate-invite-code error:', err);
     return new Response(
       JSON.stringify({ granted: false, error: 'INTERNAL_ERROR' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 },

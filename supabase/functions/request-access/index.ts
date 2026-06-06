@@ -1,5 +1,3 @@
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -8,7 +6,7 @@ const corsHeaders = {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const OWNER_EMAIL = 'kranthicodes4@gmail.com';
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -25,6 +23,7 @@ serve(async (req: Request) => {
 
     const resendKey = Deno.env.get('RESEND_API_KEY');
     if (!resendKey) {
+      console.error('RESEND_API_KEY secret is not set');
       return new Response(
         JSON.stringify({ error: 'SERVICE_UNAVAILABLE' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 503 },
@@ -47,7 +46,7 @@ serve(async (req: Request) => {
           <p>Someone wants access to <strong>Eddies</strong>.</p>
           <p><strong>Email:</strong> ${sanitised}</p>
           <hr />
-          <p>Generate a code in Supabase and reply to them:</p>
+          <p>Generate a code in Supabase and send it to them:</p>
           <pre>INSERT INTO invite_codes (code, max_uses) VALUES ('XXXX-YYYY-ZZZZ', 1);</pre>
         `,
         text: `Beta access request from: ${sanitised}\n\nGenerate a code in Supabase and send it to them.`,
