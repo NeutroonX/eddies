@@ -14,7 +14,7 @@ const BackupSchema = z.object({
   categories: z.array(z.any()),
   transactions: z.array(z.any()),
   budgets: z.array(z.any()),
-  settings: z.record(z.string()),
+  settings: z.record(z.string(), z.string()),
 });
 
 export type BackupData = z.infer<typeof BackupSchema>;

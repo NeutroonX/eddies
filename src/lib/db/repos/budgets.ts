@@ -40,7 +40,7 @@ export async function updateBudget(
   data: Partial<Omit<Budget, 'id'>>
 ): Promise<void> {
   const updates: string[] = [];
-  const values: unknown[] = [];
+  const values: (string | number | null)[] = [];
 
   if (data.category_id !== undefined) {
     updates.push('category_id = ?');

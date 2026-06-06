@@ -1,11 +1,11 @@
 import { StyleSheet, View } from 'react-native';
-import type { ViewStyle } from 'react-native';
+import type { StyleProp, ViewStyle } from 'react-native';
 
 import { EddiesColors, EddiesRadius, EddiesSpacing } from '@/constants/theme';
 
 type IDCardProps = {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 };
 
 export function IDCard({ children, style }: IDCardProps) {

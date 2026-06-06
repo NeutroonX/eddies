@@ -37,7 +37,7 @@ export async function exportAsCSV(
 
   for (const tx of transactions) {
     const date = new Date(tx.occurred_at).toISOString().split('T')[0];
-    const category = categoryMap.get(tx.category_id) || 'Uncategorized';
+    const category = (tx.category_id ? categoryMap.get(tx.category_id) : undefined) || 'Uncategorized';
     const vault = accountMap.get(tx.account_id) || 'Unknown';
     const kind = tx.kind.toUpperCase();
     const amount = (tx.amount_minor / 100).toFixed(2);
@@ -62,7 +62,7 @@ export async function exportAsJSON(
   db: SQLiteDatabase,
   range?: ExportRange
 ): Promise<string> {
-  const transactions = await getTransactionsByRange(db, range?.from, range?.to);
+  const transactions = await getTransactions(db, { fromMs: range?.from, toMs: range?.to });
   const accounts = await getAllAccounts(db);
   const categories = await getAllCategories(db);
   const budgets = await getAllBudgets(db);

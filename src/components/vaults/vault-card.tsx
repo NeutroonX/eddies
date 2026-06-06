@@ -68,7 +68,7 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
       onSwipeableRightOpen={onDelete}
     >
       <Pressable onPress={onPress} style={s.wrapper} accessibilityRole="button">
-        <IDCard style={[s.card, isActive && s.cardActive]}>
+        <IDCard style={[s.card, isActive ? s.cardActive : undefined]}>
 
           <View style={s.topRow}>
             <View style={s.typeStamp}>

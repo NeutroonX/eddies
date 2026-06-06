@@ -65,7 +65,7 @@ export async function updateTransaction(
   data: Partial<Omit<Transaction, 'id' | 'created_at'>>
 ): Promise<void> {
   const updates: string[] = [];
-  const values: unknown[] = [];
+  const values: (string | number | null)[] = [];
 
   if (data.account_id !== undefined) {
     updates.push('account_id = ?');
