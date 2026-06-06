@@ -23,50 +23,50 @@ import { useStore } from '@/store';
 const { width: SCREEN_W } = Dimensions.get('window');
 
 // ── Corner bracket decoration ──────────────────────────────────────────────
-function CornerBrackets({ size = 20, thickness = 2, color = EddiesColors.steel }: {
+function CornerBrackets({ size = 22, thickness = 2, color = EddiesColors.steel + '66' }: {
   size?: number; thickness?: number; color?: string;
 }) {
-  const b = (corner: 'tl' | 'tr' | 'bl' | 'br') => {
-    const isTop = corner.startsWith('t');
-    const isLeft = corner.endsWith('l');
+  const corners = (['tl', 'tr', 'bl', 'br'] as const).map((corner) => {
+    const isTop  = corner[0] === 't';
+    const isLeft = corner[1] === 'l';
     return (
-      <View style={[
-        cb.corner,
-        isTop ? { top: 0 } : { bottom: 0 },
-        isLeft ? { left: 0 } : { right: 0 },
-      ]}>
-        <View style={[
-          cb.h,
-          { width: size, height: thickness, backgroundColor: color },
-          isTop ? { top: 0 } : { bottom: 0 },
-          isLeft ? { left: 0 } : { right: 0 },
+      <View
+        key={corner}
+        style={[
+          cb.corner,
+          isTop  ? { top: 0 }    : { bottom: 0 },
+          isLeft ? { left: 0 }   : { right: 0 },
+        ]}
+      >
+        <View style={[cb.h, { width: size, height: thickness, backgroundColor: color },
+          isTop  ? { top: 0 }    : { bottom: 0 },
+          isLeft ? { left: 0 }   : { right: 0 },
         ]} />
-        <View style={[
-          cb.v,
-          { width: thickness, height: size, backgroundColor: color },
-          isTop ? { top: 0 } : { bottom: 0 },
-          isLeft ? { left: 0 } : { right: 0 },
+        <View style={[cb.v, { width: thickness, height: size, backgroundColor: color },
+          isTop  ? { top: 0 }    : { bottom: 0 },
+          isLeft ? { left: 0 }   : { right: 0 },
         ]} />
       </View>
     );
-  };
+  });
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      {b('tl')}{b('tr')}{b('bl')}{b('br')}
+      {corners}
     </View>
   );
 }
-
 const cb = StyleSheet.create({
-  corner: { position: 'absolute', width: 24, height: 24 },
+  corner: { position: 'absolute', width: 28, height: 28 },
   h: { position: 'absolute' },
   v: { position: 'absolute' },
 });
 
 // ── Slash decoration ───────────────────────────────────────────────────────
-function SlashRow({ count = 6, color = EddiesColors.alert + '44' }: { count?: number; color?: string }) {
+function SlashRow({ count = 4, color = EddiesColors.alert + '44' }: {
+  count?: number; color?: string;
+}) {
   return (
-    <View style={{ flexDirection: 'row', gap: 3 }}>
+    <View style={{ flexDirection: 'row', gap: 2 }}>
       {Array.from({ length: count }, (_, i) => (
         <Text key={i} style={{ color, fontFamily: EddiesFonts.displayBold, fontSize: 18, letterSpacing: -2 }}>
           /
@@ -76,110 +76,81 @@ function SlashRow({ count = 6, color = EddiesColors.alert + '44' }: { count?: nu
   );
 }
 
-// ── Data badge (bottom-right corner label) ─────────────────────────────────
+// ── Data badge ─────────────────────────────────────────────────────────────
 function DataBadge({ lines }: { lines: string[] }) {
   return (
     <View style={dg.wrap}>
       <View style={dg.bar} />
       {lines.map((l, i) => (
-        <MonoLabel key={i} size={8} letterSpacing={1} color={EddiesColors.bone + 'CC'}>
-          {l}
-        </MonoLabel>
+        <MonoLabel key={i} size={8} letterSpacing={1} color={EddiesColors.bone + 'CC'}>{l}</MonoLabel>
       ))}
     </View>
   );
 }
 const dg = StyleSheet.create({
-  wrap: {
-    borderWidth: 1,
-    borderColor: EddiesColors.alert + '66',
-    padding: EddiesSpacing.sm,
-    gap: 3,
-  },
-  bar: {
-    height: 3,
-    backgroundColor: EddiesColors.alert,
-    marginBottom: 4,
-  },
+  wrap: { borderWidth: 1, borderColor: EddiesColors.alert + '66', padding: EddiesSpacing.sm, gap: 3 },
+  bar:  { height: 3, backgroundColor: EddiesColors.alert, marginBottom: 4 },
 });
 
-// ── PAGE 1: Brand intro ────────────────────────────────────────────────────
-function Page1() {
+// ── PAGE 1 ─────────────────────────────────────────────────────────────────
+function Page1({ height }: { height: number }) {
   return (
-    <View style={[pg.page, { width: SCREEN_W }]}>
-      <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
-        <CornerBrackets size={22} thickness={2} color={EddiesColors.steel + '66'} />
+    <View style={[pg.page, { width: SCREEN_W, height }]}>
+      <CornerBrackets />
 
-        {/* Top bar */}
-        <View style={pg.topBar}>
-          <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel}>
-            EDDIES // SECTOR-01
+      {/* Top label */}
+      <View style={pg.topBar}>
+        <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel}>EDDIES // SECTOR-01</MonoLabel>
+        <MonoLabel size={8} letterSpacing={1} color={EddiesColors.steel + '66'}>INIT — 01-A</MonoLabel>
+      </View>
+
+      {/* Logo */}
+      <View style={p1.logoWrap}>
+        <Image
+          source={require('../../../assets/images/icon.png')}
+          style={p1.logo}
+          resizeMode="contain"
+        />
+      </View>
+
+      {/* Hero text */}
+      <View style={p1.displayBlock}>
+        <Text style={p1.displayBig}>EDDIES</Text>
+        <View style={p1.displayRow}>
+          <View style={p1.accentLine} />
+          <Text style={p1.displaySub}>FINANCIAL OS</Text>
+        </View>
+      </View>
+
+      <CautionStripe height={6} />
+
+      {/* Body */}
+      <View style={p1.body}>
+        <SlashRow count={4} />
+        <View style={{ gap: EddiesSpacing.sm, marginTop: EddiesSpacing.xs }}>
+          <Text style={p1.headline}>COMMAND YOUR FINANCES.</Text>
+          <MonoLabel size={10} letterSpacing={0.5} color={EddiesColors.steel} style={{ lineHeight: 16 }}>
+            {'LOG EVERY ENTRY. TRACK EVERY VAULT.\nANALYZE BURN RATE AND SPEND CAPS.'}
           </MonoLabel>
-          <MonoLabel size={8} letterSpacing={1} color={EddiesColors.steel + '66'}>
-            INIT — 01-A
+          <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel + '88'}>
+            ALL DATA STAYS ON-DEVICE — NO CLOUD.
           </MonoLabel>
         </View>
+      </View>
 
-        {/* Logo */}
-        <View style={p1.logoWrap}>
-          <Image
-            source={require('../../../assets/images/icon.png')}
-            style={p1.logo}
-            resizeMode="contain"
-          />
-        </View>
-
-        {/* Large display text */}
-        <View style={p1.displayBlock}>
-          <Text style={p1.displayBig}>EDDIES</Text>
-          <View style={p1.displayRow}>
-            <View style={p1.hairlineShort} />
-            <Text style={p1.displaySub}>FINANCIAL OS</Text>
-          </View>
-        </View>
-
-        <CautionStripe height={6} style={{ marginHorizontal: EddiesSpacing.md }} />
-
-        {/* Body copy */}
-        <View style={p1.body}>
-          <SlashRow count={4} />
-          <View style={{ gap: EddiesSpacing.sm, marginTop: EddiesSpacing.sm }}>
-            <Text style={p1.headline}>COMMAND YOUR FINANCES.</Text>
-            <MonoLabel size={10} letterSpacing={0.5} color={EddiesColors.steel} style={{ lineHeight: 16 }}>
-              {'LOG EVERY ENTRY. TRACK EVERY VAULT.\nANALYZE BURN RATE AND SPEND CAPS.'}
-            </MonoLabel>
-            <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel + '88'}>
-              ALL DATA STAYS ON-DEVICE — NO CLOUD.
-            </MonoLabel>
-          </View>
-        </View>
-
-        {/* Bottom data badge */}
-        <View style={pg.bottomRow}>
-          <BarcodeMark height={20} style={{ flex: 1 }} />
-          <DataBadge lines={['PERSONAL FINANCE', 'V1.0 // LOCAL']} />
-        </View>
-      </SafeAreaView>
+      {/* Bottom row — pushed to bottom of remaining space */}
+      <View style={p1.bottomRow}>
+        <BarcodeMark height={20} style={{ flex: 1 }} />
+        <DataBadge lines={['PERSONAL FINANCE', 'V1.0 // LOCAL']} />
+      </View>
     </View>
   );
 }
 
 const p1 = StyleSheet.create({
-  logoWrap: {
-    alignItems: 'center',
-    marginTop: EddiesSpacing.lg,
-    marginBottom: EddiesSpacing.md,
-  },
-  logo: {
-    width: 88,
-    height: 88,
-    borderRadius: 4,
-  },
-  displayBlock: {
-    paddingHorizontal: EddiesSpacing.md,
-    marginBottom: EddiesSpacing.md,
-    gap: 4,
-  },
+  logoWrap: { alignItems: 'center', marginTop: EddiesSpacing.lg, marginBottom: EddiesSpacing.md },
+  logo: { width: 88, height: 88, borderRadius: 4 },
+  displayBlock: { marginBottom: EddiesSpacing.md, gap: 4 },
   displayBig: {
     fontFamily: EddiesFonts.displayBold,
     fontSize: 80,
@@ -187,38 +158,32 @@ const p1 = StyleSheet.create({
     letterSpacing: 8,
     lineHeight: 80,
   },
-  displayRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: EddiesSpacing.sm,
-  },
-  hairlineShort: {
-    width: 32,
-    height: 1,
-    backgroundColor: EddiesColors.alert,
-  },
+  displayRow: { flexDirection: 'row', alignItems: 'center', gap: EddiesSpacing.sm },
+  accentLine: { width: 32, height: 1, backgroundColor: EddiesColors.alert },
   displaySub: {
     fontFamily: EddiesFonts.displaySemiBold,
     fontSize: 18,
     color: EddiesColors.bone + 'CC',
     letterSpacing: 6,
   },
-  body: {
-    paddingHorizontal: EddiesSpacing.md,
-    marginTop: EddiesSpacing.md,
-    gap: 2,
-  },
+  body: { gap: 2, marginTop: EddiesSpacing.md },
   headline: {
     fontFamily: EddiesFonts.displayBold,
     fontSize: 22,
     color: EddiesColors.bone,
     letterSpacing: 3,
   },
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: EddiesSpacing.md,
+    marginTop: 'auto',
+    paddingTop: EddiesSpacing.md,
+  },
 });
 
-// ── PAGE 2: Mission brief ──────────────────────────────────────────────────
+// ── PAGE 2 ─────────────────────────────────────────────────────────────────
 type FeatureItem = { num: string; title: string; desc: string };
-
 const FEATURES: FeatureItem[] = [
   { num: '01', title: 'LOG',    desc: 'INFLOW. OUTFLOW. EVERY CENT.\nCATEGORIZE AS YOU GO.' },
   { num: '02', title: 'INTEL',  desc: 'BURN RATE. CATEGORY SPEND.\nSPENDING CAPS. SEE WHERE IT GOES.' },
@@ -239,7 +204,6 @@ function FeatureRow({ item }: { item: FeatureItem }) {
     </View>
   );
 }
-
 const fr = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
@@ -257,15 +221,8 @@ const fr = StyleSheet.create({
     width: 64,
     lineHeight: 52,
   },
-  divider: {
-    width: 1,
-    height: 44,
-    backgroundColor: EddiesColors.steel + '22',
-  },
-  right: {
-    flex: 1,
-    gap: 4,
-  },
+  divider: { width: 1, height: 44, backgroundColor: EddiesColors.steel + '22' },
+  right: { flex: 1, gap: 4 },
   title: {
     fontFamily: EddiesFonts.displayBold,
     fontSize: 22,
@@ -274,62 +231,54 @@ const fr = StyleSheet.create({
   },
 });
 
-function Page2({ onDeploy }: { onDeploy: () => void }) {
+function Page2({ height, onDeploy }: { height: number; onDeploy: () => void }) {
   return (
-    <View style={[pg.page, { width: SCREEN_W }]}>
-      <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
-        <CornerBrackets size={22} thickness={2} color={EddiesColors.steel + '66'} />
+    <View style={[pg.page, { width: SCREEN_W, height }]}>
+      <CornerBrackets />
 
-        {/* Top bar */}
-        <View style={pg.topBar}>
-          <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel}>
-            MISSION BRIEF // 02-A
-          </MonoLabel>
-          <SlashRow count={3} color={EddiesColors.alert + '66'} />
-        </View>
+      {/* Top label */}
+      <View style={pg.topBar}>
+        <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel}>MISSION BRIEF // 02-A</MonoLabel>
+        <SlashRow count={3} color={EddiesColors.alert + '66'} />
+      </View>
 
-        {/* Section label */}
-        <View style={p2.sectionRow}>
-          <View style={p2.sectionLine} />
-          <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel}>CAPABILITIES</MonoLabel>
-          <View style={p2.sectionLine} />
-        </View>
+      {/* Section divider */}
+      <View style={p2.sectionRow}>
+        <View style={p2.sectionLine} />
+        <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel}>CAPABILITIES</MonoLabel>
+        <View style={p2.sectionLine} />
+      </View>
 
-        {/* Feature rows */}
-        <View style={p2.featureList}>
-          {FEATURES.map((f) => <FeatureRow key={f.num} item={f} />)}
-        </View>
+      {/* Features */}
+      <View>
+        {FEATURES.map((f) => <FeatureRow key={f.num} item={f} />)}
+      </View>
 
-        {/* Warning area */}
-        <View style={{ marginHorizontal: EddiesSpacing.md, marginTop: EddiesSpacing.md }}>
-          <CautionStripe height={6} />
-          <View style={p2.warningRow}>
-            <MonoLabel size={8} letterSpacing={1} color={EddiesColors.alert}>
-              USE WITH DISCIPLINE
-            </MonoLabel>
-            <MonoLabel size={8} letterSpacing={1} color={EddiesColors.steel + '66'}>
-              AREA // FINANCE-02
-            </MonoLabel>
-          </View>
+      {/* Caution band */}
+      <View style={{ marginTop: EddiesSpacing.md }}>
+        <CautionStripe height={6} />
+        <View style={p2.warningRow}>
+          <MonoLabel size={8} letterSpacing={1} color={EddiesColors.alert}>USE WITH DISCIPLINE</MonoLabel>
+          <MonoLabel size={8} letterSpacing={1} color={EddiesColors.steel + '66'}>AREA // FINANCE-02</MonoLabel>
         </View>
+      </View>
 
-        {/* Deploy button */}
-        <View style={p2.deployWrap}>
-          <Pressable
-            style={({ pressed }) => [p2.deployBtn, pressed && p2.deployBtnPressed]}
-            onPress={onDeploy}
-            accessibilityRole="button"
-            accessibilityLabel="Deploy — enter the app"
-          >
-            <SlashRow count={2} color={EddiesColors.alert} />
-            <Text style={p2.deployText}>DEPLOY</Text>
-            <SlashRow count={2} color={EddiesColors.alert} />
-          </Pressable>
-          <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel + '66'} style={p2.deployHint}>
-            ENTER FINANCIAL COMMAND
-          </MonoLabel>
-        </View>
-      </SafeAreaView>
+      {/* Deploy CTA — pushed to bottom */}
+      <View style={p2.deployWrap}>
+        <Pressable
+          style={({ pressed }) => [p2.deployBtn, pressed && p2.deployBtnPressed]}
+          onPress={onDeploy}
+          accessibilityRole="button"
+          accessibilityLabel="Deploy — enter the app"
+        >
+          <SlashRow count={2} color={EddiesColors.alert} />
+          <Text style={p2.deployText}>DEPLOY</Text>
+          <SlashRow count={2} color={EddiesColors.alert} />
+        </Pressable>
+        <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel + '66'}>
+          ENTER FINANCIAL COMMAND
+        </MonoLabel>
+      </View>
     </View>
   );
 }
@@ -339,29 +288,20 @@ const p2 = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: EddiesSpacing.sm,
-    marginHorizontal: EddiesSpacing.md,
     marginBottom: EddiesSpacing.sm,
   },
-  sectionLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: EddiesColors.steel + '22',
-  },
-  featureList: {
-    marginHorizontal: EddiesSpacing.md,
-    gap: 0,
-  },
+  sectionLine: { flex: 1, height: 1, backgroundColor: EddiesColors.steel + '22' },
   warningRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: EddiesSpacing.xs,
   },
   deployWrap: {
-    flex: 1,
-    justifyContent: 'flex-end',
+    marginTop: 'auto',
     alignItems: 'center',
-    paddingBottom: EddiesSpacing.xl,
     gap: EddiesSpacing.sm,
+    paddingTop: EddiesSpacing.lg,
+    paddingBottom: EddiesSpacing.md,
   },
   deployBtn: {
     flexDirection: 'row',
@@ -372,26 +312,38 @@ const p2 = StyleSheet.create({
     paddingHorizontal: EddiesSpacing.xl,
     paddingVertical: EddiesSpacing.md,
   },
-  deployBtnPressed: {
-    backgroundColor: EddiesColors.alert + '18',
-  },
+  deployBtnPressed: { backgroundColor: EddiesColors.alert + '18' },
   deployText: {
     fontFamily: EddiesFonts.displayBold,
     fontSize: 28,
     color: EddiesColors.alert,
     letterSpacing: 10,
   },
-  deployHint: {
-    textAlign: 'center',
+});
+
+// ── Shared page styles ─────────────────────────────────────────────────────
+const pg = StyleSheet.create({
+  page: {
+    backgroundColor: EddiesColors.ink,
+    paddingHorizontal: EddiesSpacing.md,
+    // No flex:1 here — height is passed explicitly so the FlatList item is sized correctly
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: EddiesSpacing.md,
+    paddingBottom: EddiesSpacing.sm,
   },
 });
 
-// ── Root onboarding component ──────────────────────────────────────────────
+// ── Root ───────────────────────────────────────────────────────────────────
 export default function OnboardingScreen() {
   const db = useSQLiteContext();
   const setOnboardingComplete = useStore((s) => s.setOnboardingComplete);
   const listRef = useRef<FlatList>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [pageHeight, setPageHeight] = useState(0);
 
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems[0]) setActiveIndex(viewableItems[0].index ?? 0);
@@ -408,110 +360,78 @@ export default function OnboardingScreen() {
   }
 
   const pages = [
-    <Page1 key="p1" />,
-    <Page2 key="p2" onDeploy={handleDeploy} />,
+    <Page1 key="p1" height={pageHeight} />,
+    <Page2 key="p2" height={pageHeight} onDeploy={handleDeploy} />,
   ];
 
   return (
-    <View style={s.root}>
-      <FlatList
-        ref={listRef}
-        data={pages}
-        renderItem={({ item }) => item}
-        keyExtractor={(_, i) => String(i)}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
-        scrollEventThrottle={16}
-      />
+    // SafeAreaView wraps the entire screen — handles top status bar + bottom home indicator
+    <SafeAreaView style={s.root} edges={['top', 'bottom', 'left', 'right']}>
+      {/* FlatList fills remaining space above the nav bar */}
+      <View
+        style={{ flex: 1 }}
+        onLayout={(e) => setPageHeight(e.nativeEvent.layout.height)}
+      >
+        {pageHeight > 0 && (
+          <FlatList
+            ref={listRef}
+            data={pages}
+            renderItem={({ item }) => item}
+            keyExtractor={(_, i) => String(i)}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onViewableItemsChanged={onViewableItemsChanged}
+            viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
+            scrollEventThrottle={16}
+          />
+        )}
+      </View>
 
-      {/* Bottom nav bar */}
-      <SafeAreaView edges={['bottom']} style={s.navWrap}>
-        {/* Page dots */}
+      {/* Nav bar — normal flow so FlatList never overlaps it */}
+      <View style={s.nav}>
         <View style={s.dots}>
           {pages.map((_, i) => (
-            <View
-              key={i}
-              style={[s.dot, i === activeIndex && s.dotActive]}
-            />
+            <View key={i} style={[s.dot, i === activeIndex && s.dotActive]} />
           ))}
         </View>
-
-        {/* Next button only on page 1 */}
-        {activeIndex === 0 && (
+        {activeIndex === 0 ? (
           <Pressable
             style={({ pressed }) => [s.nextBtn, pressed && s.nextBtnPressed]}
             onPress={handleNext}
             accessibilityRole="button"
-            accessibilityLabel="Next page"
+            accessibilityLabel="Go to next page"
           >
             <MonoLabel size={10} letterSpacing={3} color={EddiesColors.bone}>NEXT</MonoLabel>
-            <View style={s.nextArrow} />
+            <View style={s.arrow} />
           </Pressable>
+        ) : (
+          // Placeholder to keep dots left-aligned consistently
+          <View style={s.nextBtn} />
         )}
-      </SafeAreaView>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
-
-const pg = StyleSheet.create({
-  page: {
-    flex: 1,
-    backgroundColor: EddiesColors.ink,
-    paddingHorizontal: EddiesSpacing.md,
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: EddiesSpacing.md,
-    marginBottom: EddiesSpacing.sm,
-  },
-  bottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: EddiesSpacing.md,
-    marginTop: 'auto',
-    paddingBottom: EddiesSpacing.xxl,
-    paddingHorizontal: EddiesSpacing.md,
-  },
-});
 
 const s = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: EddiesColors.ink,
   },
-  navWrap: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  nav: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: EddiesSpacing.md,
     paddingVertical: EddiesSpacing.md,
-    backgroundColor: EddiesColors.ink,
     borderTopWidth: 1,
     borderTopColor: EddiesColors.steel + '18',
+    backgroundColor: EddiesColors.ink,
   },
-  dots: {
-    flexDirection: 'row',
-    gap: EddiesSpacing.sm,
-    alignItems: 'center',
-  },
-  dot: {
-    width: 20,
-    height: 2,
-    backgroundColor: EddiesColors.steel + '44',
-  },
-  dotActive: {
-    backgroundColor: EddiesColors.alert,
-    width: 32,
-  },
+  dots: { flexDirection: 'row', gap: EddiesSpacing.sm, alignItems: 'center' },
+  dot: { width: 20, height: 2, backgroundColor: EddiesColors.steel + '44' },
+  dotActive: { width: 32, backgroundColor: EddiesColors.alert },
   nextBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -520,13 +440,9 @@ const s = StyleSheet.create({
     paddingHorizontal: EddiesSpacing.md,
     borderWidth: 1,
     borderColor: EddiesColors.steel + '44',
+    minWidth: 80,
+    justifyContent: 'center',
   },
-  nextBtnPressed: {
-    backgroundColor: EddiesColors.steel + '18',
-  },
-  nextArrow: {
-    width: 8,
-    height: 1,
-    backgroundColor: EddiesColors.bone,
-  },
+  nextBtnPressed: { backgroundColor: EddiesColors.steel + '18' },
+  arrow: { width: 8, height: 1, backgroundColor: EddiesColors.bone },
 });
