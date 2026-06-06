@@ -39,7 +39,7 @@ Deno.serve(async (req: Request) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Eddies <onboarding@resend.dev>',
+        from: 'Eddies <eddies.dev@atomicmail.io>',
         to: [ownerEmail],
         subject: `Beta Access Request — ${sanitised}`,
         html: `
