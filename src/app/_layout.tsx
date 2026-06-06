@@ -18,6 +18,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { runMigrations } from '@/lib/db/migrations';
 import { GlobalToast } from '@/components/ui/global-toast';
 import { useArchiveCheck } from '@/hooks/use-archive-check';
+import { useInitSettings } from '@/hooks/use-init-settings';
 import { useStore } from '@/store';
 
 SplashScreen.preventAutoHideAsync();
@@ -69,6 +70,23 @@ function ArchiveWatcher() {
   return null;
 }
 
+// ── Onboarding gate ────────────────────────────────────────────────────────
+// Loads settings (including onboarding flag) and redirects to onboarding on
+// first install. Fires once inside SQLiteProvider; null state means "still
+// checking" so we never redirect prematurely.
+function OnboardingGate() {
+  useInitSettings();
+  const onboardingComplete = useStore((s) => s.onboardingComplete);
+
+  useEffect(() => {
+    if (onboardingComplete === false) {
+      router.replace('/(onboarding)');
+    }
+  }, [onboardingComplete]);
+
+  return null;
+}
+
 // ── Root layout ────────────────────────────────────────────────────────────
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -98,8 +116,13 @@ export default function RootLayout() {
           <ThemeProvider value={DarkTheme}>
             <StatusBar style="light" />
             <ArchiveWatcher />
+            <OnboardingGate />
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(tabs)" />
+              <Stack.Screen
+                name="(onboarding)"
+                options={{ animation: 'fade', gestureEnabled: false }}
+              />
               <Stack.Screen name="(modals)/entry"   options={modalOptions} />
               <Stack.Screen name="(modals)/vault"   options={modalOptions} />
               <Stack.Screen name="(modals)/settings" options={modalOptions} />

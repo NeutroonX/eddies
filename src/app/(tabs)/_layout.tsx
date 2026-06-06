@@ -1,10 +1,8 @@
 import { Tabs } from 'expo-router';
 
 import { CommandTabBar } from '@/components/ui/command-tab-bar';
-import { useInitSettings } from '@/hooks/use-init-settings';
 
 export default function TabsLayout() {
-  useInitSettings();
   return (
     <Tabs
       tabBar={(props) => <CommandTabBar {...props} />}

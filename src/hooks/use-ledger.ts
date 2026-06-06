@@ -48,11 +48,14 @@ function groupByDay(rows: LedgerRow[]): DaySection[] {
   return Array.from(map.values());
 }
 
+const ROW_LIMIT = 500;
+
 export function useLedger() {
   const db = useSQLiteContext();
   const [sections, setSections] = useState<DaySection[]>([]);
   const [totalBalance, setTotalBalance] = useState(0);
   const [hasMixedCurrencies, setHasMixedCurrencies] = useState(false);
+  const [atRowLimit, setAtRowLimit] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
@@ -70,7 +73,7 @@ export function useLedger() {
         LEFT JOIN accounts   a ON a.id = t.account_id
         WHERE t.archived = 0
         ORDER BY t.occurred_at DESC
-        LIMIT 500
+        LIMIT ${ROW_LIMIT}
       `),
       getTotalBalance(db),
       db.getFirstAsync<{ cnt: number }>(
@@ -80,11 +83,12 @@ export function useLedger() {
     setSections(groupByDay(rows));
     setTotalBalance(balance);
     setHasMixedCurrencies((mixedRow?.cnt ?? 1) > 1);
+    setAtRowLimit(rows.length === ROW_LIMIT);
     setLoading(false);
   }, [db]);
 
   // Reload whenever this screen regains focus — catches entry saves and deletes.
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
 
-  return { sections, totalBalance, hasMixedCurrencies, loading, reload };
+  return { sections, totalBalance, hasMixedCurrencies, atRowLimit, loading, reload };
 }

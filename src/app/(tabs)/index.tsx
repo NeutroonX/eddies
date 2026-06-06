@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -17,12 +17,24 @@ import { useCurrencySymbol } from '@/hooks/use-currency-symbol';
 
 function LedgerHeader({ balance, sections, hasMixedCurrencies }: { balance: number; sections: DaySection[]; hasMixedCurrencies: boolean }) {
   const sym = useCurrencySymbol();
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-  const monthEntries = sections.flatMap(s => s.data).filter(r => r.occurred_at >= monthStart && r.transfer_group_id === null);
-  const monthNet = monthEntries.reduce((sum, r) => r.kind === 'inflow' ? sum + r.amount_minor : sum - r.amount_minor, 0);
-  const monthOut = monthEntries.filter(r => r.kind === 'outflow').reduce((s, r) => s + r.amount_minor, 0);
-  const monthIn = monthEntries.filter(r => r.kind === 'inflow').reduce((s, r) => s + r.amount_minor, 0);
+
+  // Single-pass month aggregate — only recomputes when sections reference changes.
+  const { monthNet, monthOut, monthIn } = useMemo(() => {
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const cutoff = monthStart.getTime();
+    let net = 0, out = 0, inc = 0;
+    for (const section of sections) {
+      for (const r of section.data) {
+        if (r.occurred_at < cutoff || r.transfer_group_id !== null) continue;
+        if (r.kind === 'inflow') { net += r.amount_minor; inc += r.amount_minor; }
+        else                     { net -= r.amount_minor; out += r.amount_minor; }
+      }
+    }
+    return { monthNet: net, monthOut: out, monthIn: inc };
+  }, [sections]);
+
   const netPositive = monthNet >= 0;
 
   return (
@@ -72,6 +84,26 @@ function LedgerHeader({ balance, sections, hasMixedCurrencies }: { balance: numb
     </View>
   );
 }
+
+function LedgerLimitBanner() {
+  return (
+    <View style={lb.wrap}>
+      <MonoLabel size={8} letterSpacing={1.5} color={EddiesColors.steel + '66'}>
+        SHOWING LAST 500 ENTRIES — ARCHIVE TO SEE OLDER RECORDS
+      </MonoLabel>
+    </View>
+  );
+}
+
+const lb = StyleSheet.create({
+  wrap: {
+    paddingHorizontal: EddiesSpacing.md,
+    paddingVertical: EddiesSpacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: EddiesColors.steel + '18',
+    alignItems: 'center',
+  },
+});
 
 function DayHeader({ section }: { section: DaySection }) {
   const sym = useCurrencySymbol();
@@ -138,7 +170,7 @@ function UndoBar({ label, onUndo }: { label: string; onUndo: () => void }) {
 
 export default function LedgerScreen() {
   const db = useSQLiteContext();
-  const { sections, totalBalance, hasMixedCurrencies, loading, reload } = useLedger();
+  const { sections, totalBalance, hasMixedCurrencies, atRowLimit, loading, reload } = useLedger();
 
   const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingIdRef = useRef<string | null>(null);
@@ -194,6 +226,7 @@ export default function LedgerScreen() {
           />
         )}
         ListHeaderComponent={<LedgerHeader balance={totalBalance} sections={sections} hasMixedCurrencies={hasMixedCurrencies} />}
+        ListFooterComponent={atRowLimit ? <LedgerLimitBanner /> : null}
         ListEmptyComponent={loading ? null : <EmptyState />}
         ItemSeparatorComponent={() => <View style={s.separator} />}
         contentContainerStyle={{ paddingBottom: 100 }}

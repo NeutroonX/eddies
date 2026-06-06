@@ -5,13 +5,14 @@ import { getAllSettings } from '@/lib/db/repos/settings-repo';
 
 export function useInitSettings() {
   const db = useSQLiteContext();
-  const { setCurrency, setFirstDayOfWeek, setHapticsEnabled } = useStore();
+  const { setCurrency, setFirstDayOfWeek, setHapticsEnabled, setOnboardingComplete } = useStore();
 
   useEffect(() => {
     getAllSettings(db).then((settings) => {
       if (settings.currency) setCurrency(settings.currency);
       if (settings.first_day_of_week) setFirstDayOfWeek(parseInt(settings.first_day_of_week, 10));
       if (settings.haptics_enabled) setHapticsEnabled(settings.haptics_enabled === 'true');
+      setOnboardingComplete(settings.onboarding_complete === 'true');
     }).catch(console.error);
-  }, [db, setCurrency, setFirstDayOfWeek, setHapticsEnabled]);
+  }, [db, setCurrency, setFirstDayOfWeek, setHapticsEnabled, setOnboardingComplete]);
 }
