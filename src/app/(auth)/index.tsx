@@ -15,7 +15,6 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Path } from 'react-native-svg';
 
 import { MonoLabel } from '@/components/ui/mono-label';
 import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
@@ -70,105 +69,123 @@ const tp = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
 });
 
-// ── Terminal icon ──────────────────────────────────────────────────────────
-function TerminalMark({ size = 18, dim }: { size?: number; dim?: boolean }) {
+// ── Unified invite input + validate button ─────────────────────────────────
+function InviteInput({ value, onChangeText, onSubmit, loading }: {
+  value: string;
+  onChangeText: (t: string) => void;
+  onSubmit: () => void;
+  loading: boolean;
+}) {
+  const [focused, setFocused] = useState(false);
+  const disabled = loading || !value.trim();
+
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path
-        d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6.5 9.5L8 8 5 11l3 3-1.5-1.5L7 11zm4.5 5h5v-1.5h-5V14z"
-        fill={dim ? EddiesColors.steel + '80' : EddiesColors.alert + 'CC'}
+    <View style={[ii.wrap, focused && ii.wrapFocused]}>
+      <View style={ii.accent} />
+      <TextInput
+        style={ii.input}
+        value={value}
+        onChangeText={onChangeText}
+        onSubmitEditing={onSubmit}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        maxLength={32}
+        autoCapitalize="characters"
+        returnKeyType="go"
+        editable={!loading}
+        placeholder="XXXX-YYYY-ZZZZ"
+        placeholderTextColor={EddiesColors.steel + '35'}
+        autoCorrect={false}
+        spellCheck={false}
       />
-    </Svg>
+      <View style={ii.divider} />
+      <Pressable
+        style={({ pressed }) => [
+          ii.btn,
+          pressed && !disabled && ii.btnPressed,
+          disabled && ii.btnDisabled,
+        ]}
+        onPress={disabled ? undefined : onSubmit}
+        accessibilityRole="button"
+        accessibilityLabel="Validate invite code"
+        accessibilityState={{ disabled }}
+      >
+        {loading ? (
+          <ActivityIndicator size="small" color={EddiesColors.alert} />
+        ) : (
+          <View style={ii.btnInner}>
+            <Text style={[ii.btnLabel, disabled && ii.btnLabelDim]}>VALIDATE</Text>
+            <MonoLabel
+              size={15}
+              letterSpacing={0}
+              color={disabled ? EddiesColors.steel + '55' : EddiesColors.alert}
+            >
+              ›
+            </MonoLabel>
+          </View>
+        )}
+      </Pressable>
+    </View>
   );
 }
 
-// ── Auth button ────────────────────────────────────────────────────────────
-function AuthButton({ icon, label, onPress, primary, disabled }: {
-  icon: React.ReactNode;
-  label: string;
-  onPress: () => void;
-  primary?: boolean;
-  disabled?: boolean;
-}) {
-  return (
-    <Pressable
-      style={({ pressed }) => [
-        ab.root,
-        primary ? ab.rootPrimary : ab.rootSecondary,
-        pressed && !disabled && ab.pressed,
-        disabled && ab.disabled,
-      ]}
-      onPress={disabled ? undefined : onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled }}
-    >
-      {primary && <View style={ab.accentStrip} />}
-      <View style={ab.inner}>
-        <View style={ab.iconWrap}>{icon}</View>
-        <Text style={[ab.label, !primary && ab.labelDim]}>{label}</Text>
-        <MonoLabel
-          size={14}
-          letterSpacing={0}
-          color={primary ? EddiesColors.alert : EddiesColors.steel + '44'}
-        >
-          ›
-        </MonoLabel>
-      </View>
-    </Pressable>
-  );
-}
-const ab = StyleSheet.create({
-  root: {
-    overflow: 'hidden',
-    borderWidth: 1,
-  },
-  rootPrimary: {
-    borderColor: EddiesColors.alert + '55',
-    backgroundColor: EddiesColors.alert + '06',
-  },
-  rootSecondary: {
-    borderColor: EddiesColors.steel + '28',
-    backgroundColor: EddiesColors.surface,
-  },
-  pressed: {
-    backgroundColor: EddiesColors.alert + '12',
-  },
-  disabled: {
-    opacity: 0.45,
-  },
-  accentStrip: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 2,
-    backgroundColor: EddiesColors.alert + 'CC',
-  },
-  inner: {
+const ii = StyleSheet.create({
+  wrap: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 18,
-    paddingRight: EddiesSpacing.md,
-    gap: EddiesSpacing.md,
+    alignItems: 'stretch',
+    borderWidth: 1,
+    borderColor: EddiesColors.steel + '30',
+    backgroundColor: EddiesColors.surface,
+    overflow: 'hidden',
   },
-  iconWrap: {
-    width: 52,
+  wrapFocused: {
+    borderColor: EddiesColors.alert + '70',
+  },
+  accent: {
+    width: 2,
+    backgroundColor: EddiesColors.alert,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 18,
+    paddingLeft: EddiesSpacing.md,
+    paddingRight: EddiesSpacing.sm,
+    fontFamily: 'SpaceMono_400Regular',
+    fontSize: 13,
+    color: EddiesColors.bone,
+    letterSpacing: 2,
+  },
+  divider: {
+    width: 1,
     alignSelf: 'stretch',
+    backgroundColor: EddiesColors.steel + '25',
+    marginVertical: 12,
+  },
+  btn: {
+    width: 116,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRightWidth: 1,
-    borderRightColor: EddiesColors.steel + '20',
+    paddingHorizontal: EddiesSpacing.md,
   },
-  label: {
-    flex: 1,
+  btnInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: EddiesSpacing.xs,
+  },
+  btnPressed: {
+    backgroundColor: EddiesColors.alert + '10',
+  },
+  btnDisabled: {
+    opacity: 0.38,
+  },
+  btnLabel: {
     fontFamily: EddiesFonts.displayBold,
-    fontSize: 16,
+    fontSize: 15,
     color: EddiesColors.bone,
     letterSpacing: 3,
   },
-  labelDim: {
-    color: EddiesColors.bone + 'BB',
+  btnLabelDim: {
+    color: EddiesColors.steel,
   },
 });
 
@@ -289,37 +306,12 @@ export default function InviteScreen() {
             <View style={s.dividerLine} />
           </View>
 
-          <View style={s.btnStack}>
-            {/* Code input */}
-            <View style={s.inputWrap}>
-              <View style={s.inputAccent} />
-              <TextInput
-                style={s.input}
-                value={code}
-                onChangeText={(t) => { setCode(t); setAuthError(null); }}
-                onSubmitEditing={handleValidate}
-                maxLength={32}
-                autoCapitalize="characters"
-                returnKeyType="go"
-                editable={!loading}
-                placeholder="XXXX-YYYY-ZZZZ"
-                placeholderTextColor={EddiesColors.steel + '40'}
-                autoCorrect={false}
-                spellCheck={false}
-              />
-            </View>
-
-            <AuthButton
-              icon={loading
-                ? <ActivityIndicator size="small" color={EddiesColors.alert} />
-                : <TerminalMark size={22} />
-              }
-              label="VALIDATE CODE"
-              onPress={handleValidate}
-              primary
-              disabled={loading || !code.trim()}
-            />
-          </View>
+          <InviteInput
+            value={code}
+            onChangeText={(t) => { setCode(t); setAuthError(null); }}
+            onSubmit={handleValidate}
+            loading={loading}
+          />
 
           {authError !== null && (
             <MonoLabel size={8} letterSpacing={1} color={EddiesColors.alert + 'CC'}>
@@ -412,29 +404,6 @@ const s = StyleSheet.create({
     flex: 1,
     height: 1,
     backgroundColor: EddiesColors.steel + '18',
-  },
-  btnStack: {
-    gap: EddiesSpacing.sm,
-  },
-  inputWrap: {
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: EddiesColors.steel + '40',
-    backgroundColor: EddiesColors.ink,
-    flexDirection: 'row',
-  },
-  inputAccent: {
-    width: 2,
-    backgroundColor: EddiesColors.alert + 'CC',
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 18,
-    paddingHorizontal: EddiesSpacing.md,
-    fontFamily: 'SpaceMono_400Regular',
-    fontSize: 14,
-    color: EddiesColors.bone,
-    letterSpacing: 2,
   },
   footnote: {
     alignItems: 'center',
