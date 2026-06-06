@@ -48,3 +48,18 @@ export async function updateCategory(
 export async function archiveCategory(db: SQLiteDatabase, id: string): Promise<void> {
   await db.runAsync('UPDATE categories SET archived = 1 WHERE id = ?', id);
 }
+
+// Returns an existing non-archived category matching name+kind (case-insensitive),
+// or creates a new one. Prevents duplicate "Other" rows on repeated saves.
+export async function findOrCreateCategory(
+  db: SQLiteDatabase,
+  data: NewCategory
+): Promise<Category> {
+  const row = await db.getFirstAsync(
+    'SELECT * FROM categories WHERE lower(name) = lower(?) AND kind = ? AND archived = 0 LIMIT 1',
+    data.name.trim(),
+    data.kind
+  );
+  if (row) return CategorySchema.parse(row);
+  return createCategory(db, data);
+}

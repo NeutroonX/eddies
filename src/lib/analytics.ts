@@ -1,8 +1,5 @@
 // All aggregations are pure SQL / TS — deterministic, no estimates labeled as facts.
 import type { SQLiteDatabase } from 'expo-sqlite';
-import { getCached, setCached } from './query-cache';
-
-const TTL = 60_000; // 60 s — invalidated on transaction writes via clearCache()
 import {
   CategorySpendSchema,
   InflowOutflowSchema,
@@ -129,10 +126,6 @@ export async function getInflowVsOutflow(
   fromMs: number,
   toMs: number
 ): Promise<InflowOutflow> {
-  const key = `io_${fromMs}_${toMs}`;
-  const hit = getCached<InflowOutflow>(key, TTL);
-  if (hit) return hit;
-
   const row = await db.getFirstAsync<{ inflow: number; outflow: number }>(
     `SELECT
        COALESCE(SUM(CASE WHEN kind='inflow'  THEN amount_minor ELSE 0 END),0) AS inflow,
@@ -145,9 +138,7 @@ export async function getInflowVsOutflow(
 
   const inflow = row?.inflow ?? 0;
   const outflow = row?.outflow ?? 0;
-  const result = { inflow, outflow, net: inflow - outflow };
-  setCached(key, result);
-  return result;
+  return { inflow, outflow, net: inflow - outflow };
 }
 
 export async function getDailyBurn(
@@ -155,10 +146,6 @@ export async function getDailyBurn(
   fromMs: number,
   toMs: number
 ): Promise<DailyBurn> {
-  const key = `burn_${fromMs}_${toMs}`;
-  const hit = getCached<DailyBurn>(key, TTL);
-  if (hit) return hit;
-
   const row = await db.getFirstAsync<{ outflow: number }>(
     `SELECT
        COALESCE(SUM(CASE WHEN kind='outflow' THEN amount_minor ELSE 0 END),0) AS outflow
@@ -177,9 +164,7 @@ export async function getDailyBurn(
   const daysRemainingInMonth = Math.max(0, 30 - daysInPeriod);
   const projectedMonthEndMinor = outflow + avgDailyMinor * daysRemainingInMonth;
 
-  const result = { avgDailyMinor, projectedMonthEndMinor, daysInPeriod };
-  setCached(key, result);
-  return result;
+  return { avgDailyMinor, projectedMonthEndMinor, daysInPeriod };
 }
 
 export async function getNetWorthSeries(

@@ -16,12 +16,12 @@ import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
 import { useAccounts } from '@/hooks/use-accounts';
 import { useCategories } from '@/hooks/use-categories';
 import { createTransaction, updateTransaction, getTransactionById } from '@/lib/db/repos/transactions';
-import { createCategory } from '@/lib/db/repos/categories';
+import { findOrCreateCategory } from '@/lib/db/repos/categories';
 import { toMinorUnits, formatAmountTabular } from '@/lib/money';
 import { useStore } from '@/store/index';
 import type { Transaction } from '@/lib/schemas';
 
-type Kind = 'outflow' | 'inflow' | 'transfer';
+type Kind = 'outflow' | 'inflow';
 
 export default function EntryModal() {
   const db = useSQLiteContext();
@@ -80,9 +80,8 @@ export default function EntryModal() {
   }
 
   const filteredCats = useMemo(() =>
-    kind === 'transfer' ? [] : categories.filter(c =>
-      c.kind === (kind === 'outflow' ? 'expense' : 'income')
-    ), [categories, kind]);
+    categories.filter(c => c.kind === (kind === 'outflow' ? 'expense' : 'income')),
+    [categories, kind]);
 
   const amountMinor = useMemo(() => {
     const n = parseFloat(rawAmount || '0');
@@ -98,7 +97,7 @@ export default function EntryModal() {
     }
   }, [tagIsOther]);
   const isValid = amountMinor > 0 && vaultId !== null &&
-    (kind === 'transfer' || (categoryId !== null && (!tagIsOther || otherName.trim().length > 0)));
+    (categoryId !== null && (!tagIsOther || otherName.trim().length > 0));
 
   const todayLabel = new Date().toLocaleDateString('en-US', {
     weekday: 'short', day: '2-digit', month: 'short',
@@ -110,7 +109,7 @@ export default function EntryModal() {
     try {
       let resolvedCategoryId = categoryId;
       if (tagIsOther && otherName.trim()) {
-        const cat = await createCategory(db, {
+        const cat = await findOrCreateCategory(db, {
           name: otherName.trim(),
           kind: kind === 'outflow' ? 'expense' : 'income',
           glyph: 'tag',
@@ -123,7 +122,7 @@ export default function EntryModal() {
       if (isEditMode && existingEntry) {
         await updateTransaction(db, existingEntry.id, {
           account_id: vaultId!,
-          category_id: kind === 'transfer' ? null : resolvedCategoryId,
+          category_id: resolvedCategoryId,
           kind,
           amount_minor: amountMinor,
           note: note.trim() || null,
@@ -133,7 +132,7 @@ export default function EntryModal() {
       } else {
         await createTransaction(db, {
           account_id: vaultId!,
-          category_id: kind === 'transfer' ? null : resolvedCategoryId,
+          category_id: resolvedCategoryId,
           kind,
           amount_minor: amountMinor,
           note: note.trim() || null,
@@ -187,7 +186,7 @@ export default function EntryModal() {
 
           {/* Kind toggle */}
           <View style={s.kindRow}>
-            {(['outflow', 'inflow', 'transfer'] as Kind[]).map(k => (
+            {(['outflow', 'inflow'] as Kind[]).map(k => (
               <Pressable
                 key={k}
                 onPress={() => handleKindChange(k)}
@@ -207,10 +206,7 @@ export default function EntryModal() {
           {/* TAG */}
           <View style={s.field}>
             <MonoLabel size={9} letterSpacing={2}>TAG</MonoLabel>
-            {kind === 'transfer' ? (
-              <MonoLabel size={10} color={EddiesColors.steel}>TRANSFERS // M2</MonoLabel>
-            ) : (
-              <>
+            <>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.rail}>
                   {filteredCats.map(c => (
                     <Pill
@@ -244,7 +240,6 @@ export default function EntryModal() {
                   </View>
                 )}
               </>
-            )}
           </View>
 
           {/* VAULT */}

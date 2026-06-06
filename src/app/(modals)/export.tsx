@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, Keyboard, ActivityIndicator } from 'react-native';
+import { Pressable, ScrollView, Share, StyleSheet, Text, View, Keyboard, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -61,11 +61,11 @@ export default function ExportModal() {
       setExporting(true);
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       const range = getExportRange();
-      if (format === 'csv') {
-        await exportAsCSV(db, range);
-      } else {
-        await exportAsJSON(db, range);
-      }
+      const today = new Date().toISOString().split('T')[0];
+      const content = format === 'csv'
+        ? await exportAsCSV(db, range)
+        : await exportAsJSON(db, range);
+      await Share.share({ title: `eddies_${today}.${format}`, message: content });
       showToast(`${format.toUpperCase()} export ready`);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTimeout(() => router.back(), 600);

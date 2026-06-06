@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View, Keyboard, ActivityIndicator } from 'react-native';
+import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, View, Keyboard, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -82,8 +82,10 @@ export default function SettingsModal() {
     try {
       setBackupLoading(true);
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      await createBackup(db);
-      showToast('Backup created');
+      const json = await createBackup(db);
+      const filename = `eddies_backup_${new Date().toISOString().split('T')[0]}.json`;
+      await Share.share({ title: filename, message: json });
+      showToast('Backup ready to save');
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err) {
       console.error('Backup creation error:', err);
@@ -92,10 +94,6 @@ export default function SettingsModal() {
     } finally {
       setBackupLoading(false);
     }
-  }
-
-  async function handleRestoreBackup() {
-    showToast('Restore coming soon');
   }
 
   function handleDeleteAllData() {
@@ -255,13 +253,6 @@ export default function SettingsModal() {
                 ) : (
                   <Text style={s.controlText}>CREATE BACKUP</Text>
                 )}
-              </Pressable>
-              <Pressable
-                style={[s.control, backupLoading && s.controlDisabled]}
-                onPress={handleRestoreBackup}
-                disabled={backupLoading}
-              >
-                <Text style={s.controlText}>RESTORE FROM BACKUP</Text>
               </Pressable>
               <View style={s.hairline} />
               <Pressable

@@ -19,7 +19,7 @@ import { MonoLabel } from '@/components/ui/mono-label';
 import { StampButton } from '@/components/ui/stamp-button';
 import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
 import { useCategories } from '@/hooks/use-categories';
-import { createCategory } from '@/lib/db/repos/categories';
+import { findOrCreateCategory } from '@/lib/db/repos/categories';
 import { createBudget, deleteBudget, updateBudget } from '@/lib/db/repos/budgets';
 import { toMinorUnits } from '@/lib/money';
 import type { Budget } from '@/lib/schemas';
@@ -74,7 +74,7 @@ export default function CapModal() {
     try {
       let resolvedId = categoryId!;
       if (capIsOther && otherName.trim()) {
-        const cat = await createCategory(db, { name: otherName.trim(), kind: 'expense', glyph: 'tag', color: EddiesColors.steel, sort: 999 });
+        const cat = await findOrCreateCategory(db, { name: otherName.trim(), kind: 'expense', glyph: 'tag', color: EddiesColors.steel, sort: 999 });
         resolvedId = cat.id;
       }
       const amount = toMinorUnits(parseFloat(rawAmount));

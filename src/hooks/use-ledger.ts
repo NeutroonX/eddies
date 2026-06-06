@@ -52,10 +52,11 @@ export function useLedger() {
   const db = useSQLiteContext();
   const [sections, setSections] = useState<DaySection[]>([]);
   const [totalBalance, setTotalBalance] = useState(0);
+  const [hasMixedCurrencies, setHasMixedCurrencies] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
-    const [rows, balance] = await Promise.all([
+    const [rows, balance, mixedRow] = await Promise.all([
       db.getAllAsync<LedgerRow>(`
         SELECT
           t.id, t.account_id, t.category_id, t.kind, t.amount_minor,
@@ -72,14 +73,18 @@ export function useLedger() {
         LIMIT 500
       `),
       getTotalBalance(db),
+      db.getFirstAsync<{ cnt: number }>(
+        'SELECT COUNT(DISTINCT currency) AS cnt FROM accounts WHERE archived = 0'
+      ),
     ]);
     setSections(groupByDay(rows));
     setTotalBalance(balance);
+    setHasMixedCurrencies((mixedRow?.cnt ?? 1) > 1);
     setLoading(false);
   }, [db]);
 
   // Reload whenever this screen regains focus — catches entry saves and deletes.
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
 
-  return { sections, totalBalance, loading, reload };
+  return { sections, totalBalance, hasMixedCurrencies, loading, reload };
 }

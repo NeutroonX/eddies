@@ -15,7 +15,7 @@ import { deleteTransaction } from '@/lib/db/repos/transactions';
 import { formatAmountTabular } from '@/lib/money';
 import { useCurrencySymbol } from '@/hooks/use-currency-symbol';
 
-function LedgerHeader({ balance, sections }: { balance: number; sections: DaySection[] }) {
+function LedgerHeader({ balance, sections, hasMixedCurrencies }: { balance: number; sections: DaySection[]; hasMixedCurrencies: boolean }) {
   const sym = useCurrencySymbol();
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
@@ -37,8 +37,13 @@ function LedgerHeader({ balance, sections }: { balance: number; sections: DaySec
       <BarcodeMark height={28} />
 
       <MonoLabel size={9} letterSpacing={2} color={EddiesColors.steel} style={hs.balanceLabel}>
-        TOTAL BALANCE
+        TOTAL BALANCE{hasMixedCurrencies ? ' *' : ''}
       </MonoLabel>
+      {hasMixedCurrencies && (
+        <MonoLabel size={8} letterSpacing={1} color={EddiesColors.steel + '88'}>
+          * VAULTS HAVE MIXED CURRENCIES — SUM IS APPROXIMATE
+        </MonoLabel>
+      )}
       <Numerals size={56} weight="bold" color={balance < 0 ? EddiesColors.alert : EddiesColors.bone}>
         {balance < 0 ? '−' : ''}{sym}{formatAmountTabular(Math.abs(balance))}
       </Numerals>
@@ -133,7 +138,7 @@ function UndoBar({ label, onUndo }: { label: string; onUndo: () => void }) {
 
 export default function LedgerScreen() {
   const db = useSQLiteContext();
-  const { sections, totalBalance, loading, reload } = useLedger();
+  const { sections, totalBalance, hasMixedCurrencies, loading, reload } = useLedger();
 
   const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingIdRef = useRef<string | null>(null);
@@ -180,7 +185,7 @@ export default function LedgerScreen() {
             onDelete={() => handleDelete(item)}
           />
         )}
-        ListHeaderComponent={<LedgerHeader balance={totalBalance} sections={sections} />}
+        ListHeaderComponent={<LedgerHeader balance={totalBalance} sections={sections} hasMixedCurrencies={hasMixedCurrencies} />}
         ListEmptyComponent={loading ? null : <EmptyState />}
         ItemSeparatorComponent={() => <View style={s.separator} />}
         contentContainerStyle={{ paddingBottom: 100 }}
