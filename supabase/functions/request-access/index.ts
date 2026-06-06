@@ -4,7 +4,6 @@ const corsHeaders = {
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const OWNER_EMAIL = 'kranthicodes4@gmail.com';
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -22,7 +21,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const resendKey = Deno.env.get('RESEND_API_KEY');
-    if (!resendKey) {
+    const ownerEmail = Deno.env.get('OWNER_EMAIL');
+    if (!resendKey || !ownerEmail) {
       console.error('RESEND_API_KEY secret is not set');
       return new Response(
         JSON.stringify({ error: 'SERVICE_UNAVAILABLE' }),
@@ -40,7 +40,7 @@ Deno.serve(async (req: Request) => {
       },
       body: JSON.stringify({
         from: 'Eddies <onboarding@resend.dev>',
-        to: [OWNER_EMAIL],
+        to: [ownerEmail],
         subject: `Beta Access Request — ${sanitised}`,
         html: `
           <p>Someone wants access to <strong>Eddies</strong>.</p>
