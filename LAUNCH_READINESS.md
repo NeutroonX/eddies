@@ -134,18 +134,20 @@ and make a release impossible while either fails.
 
 ---
 
-## 6. INFRA — Store submission plumbing (none of this exists yet)
+## 6. INFRA — Store submission plumbing
 
-- [ ] **`eas.json`** — no EAS build/submit config in repo. Required for store builds.
-- [ ] **iOS `bundleIdentifier`** — `app.json` has `android.package` (`com.jasopiw637.Eddies`) but **no `ios.bundleIdentifier`**. iOS build will fail. Also pick a real org id (the `jasopiw637` autogen string is ugly for a public listing).
-- [ ] **App icon / logo** — you're bringing this. Slots to fill in `app.json`: `icon`, `android.adaptiveIcon` (foreground/background/monochrome), `web.favicon`, splash `image`. Provide 1024×1024 master.
-- [ ] **`versionCode` / `buildNumber`** — only `version: "1.0.0"` is set; add platform build numbers (or let EAS auto-increment).
-- [ ] **Privacy policy URL** — both stores require one even though the app collects nothing. State "all data stays on device, no collection." Apple Privacy Nutrition Label = "Data Not Collected."
-- [ ] **Store listing assets** — screenshots (per device class), description, keywords, category (Finance), age rating.
-- [ ] **`README.md` is still the Expo template** — replace with real product/setup docs before the repo is public.
-- [ ] **`expo-doctor`** — run `npx expo-doctor` to catch version mismatches (you're on the bleeding edge: Expo 56, RN 0.85, React 19.2, Reanimated 4, `reactCompiler: true`). Verify the React Compiler experiment is stable for a release build, not just dev.
-- [ ] **Onboarding (Phase 4.3)** — deferred per memory. Confirm first-run UX is acceptable without it: cold start lands on an empty Ledger with a "TAP + TO LOG" hint and a default "Cash" vault (migration 3). That's a defensible v1, but there's no "what is this app" moment.
-- [ ] **License/branding** — `LICENSE` present; confirm it's the license you want for a shipped app.
+- [x] **`eas.json`** — created with development/preview/production profiles and submit config stubs.
+- [x] **iOS `bundleIdentifier`** — set to `com.eddies.app`; Android package updated to same. Both are in `app.json`.
+- [x] **`versionCode` / `buildNumber`** — `ios.buildNumber: "1"` and `android.versionCode: 1` added; `production` profile uses `autoIncrement: true` so EAS handles future bumps.
+- [x] **`README.md`** — replaced Expo template with real product/setup/build docs.
+- [x] **License/branding** — LICENSE copyright updated from Expo to Eddies (2026-present).
+- [x] **`expo-doctor`** — 21/21 checks pass after updating 7 packages (`expo`, `@expo/ui`, `expo-constants`, `expo-image`, `expo-router`, `expo-symbols`, `@types/jest`) to SDK-56 expected versions.
+- [ ] **App icon / logo** — icon slot already wired in `app.json`. Drop a 1024×1024 master at `assets/images/icon.png`; Android adaptive icon layers are at `android-icon-foreground.png`, `android-icon-background.png`, `android-icon-monochrome.png`.
+- [ ] **Privacy policy URL** — both stores require one. Content can be minimal: "All data stays on device. Nothing is collected or transmitted." Host it (GitHub Pages, Notion, etc.) and add the URL to App Store Connect / Play Console at submission time. No `app.json` change needed.
+- [ ] **Store listing assets** — screenshots (6.7" and 6.5" for iOS; 16:9 for Android), short description, full description, keywords, category (Finance), age rating (4+/Everyone).
+- [ ] **EAS submit credentials** — fill in `eas.json` submit block: `appleId`, `ascAppId`, `appleTeamId`; replace `google-services.json` stub with real service account key.
+- [ ] **Onboarding (Phase 4.3)** — deferred. Cold start lands on empty Ledger with a default "Cash" vault; acceptable for v1.
+- [ ] **React Compiler stability** — `reactCompiler: true` is still experimental in Expo 56. Test a production build on device before submitting; disable if crashes appear.
 
 ---
 
