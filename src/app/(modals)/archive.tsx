@@ -96,7 +96,7 @@ export default function ArchiveModal() {
       <View style={s.header}>
         <SectionTag label="EDDIES // ARCHIVE 06-A" />
         <BarcodeMark height={16} />
-        <Pressable onPress={dismiss} hitSlop={12}>
+        <Pressable onPress={dismiss} hitSlop={12} accessibilityRole="button" accessibilityLabel="Dismiss archive prompt">
           <MonoLabel size={11} weight="bold" color={EddiesColors.steel}>LATER</MonoLabel>
         </Pressable>
       </View>
@@ -151,13 +151,13 @@ export default function ArchiveModal() {
         <View style={s.section}>
           <MonoLabel size={9} letterSpacing={2} color={EddiesColors.steel}>EXPORT FIRST</MonoLabel>
 
-          <Pressable style={[s.exportBtn, csvDone && s.exportBtnDone]} onPress={handleExportCSV}>
+          <Pressable style={[s.exportBtn, csvDone && s.exportBtnDone]} onPress={handleExportCSV} accessibilityRole="button" accessibilityLabel={csvDone ? 'CSV exported' : 'Export CSV'}>
             <MonoLabel size={11} weight="bold" color={csvDone ? EddiesColors.steel : EddiesColors.bone} letterSpacing={1}>
               {csvDone ? '✓ CSV EXPORTED' : 'EXPORT CSV'}
             </MonoLabel>
           </Pressable>
 
-          <Pressable style={[s.exportBtn, pdfDone && s.exportBtnDone]} onPress={handleExportPDF}>
+          <Pressable style={[s.exportBtn, pdfDone && s.exportBtnDone]} onPress={handleExportPDF} accessibilityRole="button" accessibilityLabel={pdfDone ? 'PDF report exported' : 'Export PDF report'}>
             <MonoLabel size={11} weight="bold" color={pdfDone ? EddiesColors.steel : EddiesColors.bone} letterSpacing={1}>
               {pdfDone ? '✓ REPORT EXPORTED' : 'EXPORT PDF REPORT'}
             </MonoLabel>
@@ -176,6 +176,8 @@ export default function ArchiveModal() {
             style={[s.archiveBtn, (!csvDone && !pdfDone) && s.archiveBtnLocked]}
             onPress={handleArchive}
             disabled={archiving}
+            accessibilityRole="button"
+            accessibilityLabel={(!csvDone && !pdfDone) ? 'Export first to unlock archive' : 'Archive and clear month'}
           >
             {archiving ? (
               <ActivityIndicator color={EddiesColors.bone} />

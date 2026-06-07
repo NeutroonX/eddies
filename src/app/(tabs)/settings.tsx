@@ -121,6 +121,8 @@ export default function SystemScreen() {
                     setEditingName(true);
                   }}
                   hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Rename user"
                 >
                   <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.steel}>
                     {editingName ? 'EDITING...' : 'TAP TO RENAME ▸'}
@@ -191,6 +193,8 @@ function ActionRow({ label, onPress }: { label: string; onPress: () => void }) {
     <Pressable
       style={[s.actionRow, pressed && s.actionRowPressed]}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}
     >

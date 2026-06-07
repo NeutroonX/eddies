@@ -6,9 +6,8 @@ import {
   Rajdhani_700Bold,
 } from '@expo-google-fonts/rajdhani';
 import { SpaceMono_400Regular, SpaceMono_700Bold } from '@expo-google-fonts/space-mono';
-import { DarkTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, ThemeProvider, router, Stack, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
-import { router, Stack, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { SQLiteProvider } from 'expo-sqlite';
@@ -45,7 +44,7 @@ class AppErrorBoundary extends React.Component<
         <View style={eb.wrap}>
           <Text style={eb.title}>SOMETHING WENT WRONG</Text>
           <Text style={eb.msg}>{String(this.state.error.message)}</Text>
-          <Pressable onPress={() => this.setState({ error: null })} style={eb.btn}>
+          <Pressable onPress={() => this.setState({ error: null })} style={eb.btn} accessibilityRole="button" accessibilityLabel="Retry">
             <Text style={eb.btnText}>RETRY</Text>
           </Pressable>
         </View>

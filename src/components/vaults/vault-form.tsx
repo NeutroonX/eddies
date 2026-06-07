@@ -129,7 +129,7 @@ export function VaultForm({ initialData, onSave, onCancel }: VaultFormProps) {
             returnKeyType="search"
           />
           {currencySearch.length > 0 && (
-            <Pressable onPress={() => setCurrencySearch('')} hitSlop={8}>
+            <Pressable onPress={() => setCurrencySearch('')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Clear currency search">
               <MonoLabel size={10} color={EddiesColors.steel}>✕</MonoLabel>
             </Pressable>
           )}
@@ -143,6 +143,9 @@ export function VaultForm({ initialData, onSave, onCancel }: VaultFormProps) {
                   key={c.code}
                   style={[s.currencyRow, active && s.currencyRowActive]}
                   onPress={() => { setCurrency(c.code); setCurrencySearch(''); Keyboard.dismiss(); }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${c.code} — ${c.name}`}
+                  accessibilityState={{ selected: active }}
                 >
                   <View style={s.currencyRowLeft}>
                     <MonoLabel size={11} weight="bold" color={active ? EddiesColors.ink : EddiesColors.bone} letterSpacing={1}>
@@ -178,13 +181,13 @@ export function VaultForm({ initialData, onSave, onCancel }: VaultFormProps) {
         <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.steel}>COLOR</MonoLabel>
         <View style={s.colorGrid}>
           {PRESET_COLORS.map(c => (
-            <Pressable key={c} onPress={() => setColor(c)} style={[s.colorSwatch, { backgroundColor: c, borderColor: color === c ? EddiesColors.bone : 'transparent' }]} />
+            <Pressable key={c} onPress={() => setColor(c)} style={[s.colorSwatch, { backgroundColor: c, borderColor: color === c ? EddiesColors.bone : 'transparent' }]} accessibilityRole="button" accessibilityLabel={`Select color ${c}`} accessibilityState={{ selected: color === c }} />
           ))}
         </View>
       </View>
 
       <View style={s.actions}>
-        <Pressable onPress={() => { Keyboard.dismiss(); onCancel(); }} style={s.cancelBtn}>
+        <Pressable onPress={() => { Keyboard.dismiss(); onCancel(); }} style={s.cancelBtn} accessibilityRole="button" accessibilityLabel="Cancel">
           <MonoLabel size={11} weight="bold" color={EddiesColors.steel}>CANCEL</MonoLabel>
         </Pressable>
         <StampButton label="SAVE VAULT" onPress={() => { Keyboard.dismiss(); handleSave(); }} disabled={!isValid || saving} loading={saving} />

@@ -55,6 +55,9 @@ export function initTelemetry(): void {
     },
     beforeSendTransaction(event) {
       if (!_enabled) return null;
+      if (event.extra) {
+        event.extra = scrubFinancialKeys(event.extra as Record<string, unknown>);
+      }
       delete event.user;
       return event;
     },

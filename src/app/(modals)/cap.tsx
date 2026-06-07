@@ -125,7 +125,7 @@ export default function CapModal() {
           <MonoLabel size={9} letterSpacing={2} color={EddiesColors.steel}>
             {existingCap ? 'EDDIES // CAP EDIT' : 'EDDIES // CAP NEW'}
           </MonoLabel>
-          <Pressable onPress={() => { Keyboard.dismiss(); router.back(); }} hitSlop={12}>
+          <Pressable onPress={() => { Keyboard.dismiss(); router.back(); }} hitSlop={12} accessibilityRole="button" accessibilityLabel="Close">
             <MonoLabel size={12} color={EddiesColors.steel}>✕</MonoLabel>
           </Pressable>
         </View>

@@ -46,12 +46,12 @@ export function CapProgress({ categoryName, spent, cap, percentage, isOver, onEd
       ref={swipeRef}
       overshootFriction={8}
       renderLeftActions={() => (
-        <Pressable style={s.editAction} onPress={triggerEdit}>
+        <Pressable style={s.editAction} onPress={triggerEdit} accessibilityRole="button" accessibilityLabel={`Edit ${categoryName} cap`}>
           <MonoLabel size={10} weight="bold" color={EddiesColors.bone} letterSpacing={1}>EDIT</MonoLabel>
         </Pressable>
       )}
       renderRightActions={() => (
-        <Pressable style={s.deleteAction} onPress={triggerDelete}>
+        <Pressable style={s.deleteAction} onPress={triggerDelete} accessibilityRole="button" accessibilityLabel={`Delete ${categoryName} cap`}>
           <MonoLabel size={10} weight="bold" color={EddiesColors.bone} letterSpacing={1}>DEL</MonoLabel>
         </Pressable>
       )}

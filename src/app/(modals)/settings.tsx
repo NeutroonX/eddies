@@ -159,6 +159,8 @@ export default function SettingsModal() {
             setTimeout(() => router.back(), 100);
           }}
           hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
         >
           <MonoLabel size={11} weight="bold" color={EddiesColors.steel}>CLOSE</MonoLabel>
         </Pressable>
@@ -177,6 +179,8 @@ export default function SettingsModal() {
               <Pressable
                 style={s.control}
                 onPress={() => setExpanded(expanded === 'currency' ? null : 'currency')}
+                accessibilityRole="button"
+                accessibilityLabel={`Currency: ${currency}. ${expanded === 'currency' ? 'Collapse' : 'Expand'}`}
               >
                 <Text style={[s.controlText, s.controlValue]}>{currency}</Text>
                 <Text style={[s.controlText, s.controlHint]}>{expanded === 'currency' ? '▲' : '▼'}</Text>
@@ -188,6 +192,9 @@ export default function SettingsModal() {
                       key={c.code}
                       style={[s.option, currency === c.code && s.optionActive]}
                       onPress={() => handleCurrencyChange(c.code)}
+                      accessibilityRole="radio"
+                      accessibilityLabel={`${c.code} — ${c.name}`}
+                      accessibilityState={{ checked: currency === c.code }}
                     >
                       <Text style={[s.optionText, currency === c.code && s.optionTextActive]}>
                         {c.code}
@@ -210,6 +217,9 @@ export default function SettingsModal() {
                     key={option.value}
                     style={[s.segment, firstDayOfWeek === option.value && s.segmentActive]}
                     onPress={() => handleFirstDayOfWeekChange(option.value)}
+                    accessibilityRole="radio"
+                    accessibilityLabel={option.label}
+                    accessibilityState={{ checked: firstDayOfWeek === option.value }}
                   >
                     <Text style={[s.segmentText, firstDayOfWeek === option.value && s.segmentTextActive]}>
                       {option.label}
@@ -226,6 +236,9 @@ export default function SettingsModal() {
                 <Pressable
                   style={[s.toggle, hapticsEnabled && s.toggleActive]}
                   onPress={() => handleHapticsChange(!hapticsEnabled)}
+                  accessibilityRole="switch"
+                  accessibilityLabel="Haptics"
+                  accessibilityState={{ checked: hapticsEnabled }}
                 >
                   <View style={[s.toggleThumb, hapticsEnabled && s.toggleThumbActive]} />
                 </Pressable>
@@ -240,6 +253,9 @@ export default function SettingsModal() {
                 <Pressable
                   style={[s.toggle, biometricStatus === 'enabled' && s.toggleActive]}
                   onPress={() => handleBiometricChange(biometricStatus !== 'enabled')}
+                  accessibilityRole="switch"
+                  accessibilityLabel="App Lock"
+                  accessibilityState={{ checked: biometricStatus === 'enabled' }}
                 >
                   <View style={[s.toggleThumb, biometricStatus === 'enabled' && s.toggleThumbActive]} />
                 </Pressable>
@@ -273,6 +289,8 @@ export default function SettingsModal() {
                 style={[s.control, backupLoading && s.controlDisabled]}
                 onPress={handleCreateBackup}
                 disabled={backupLoading}
+                accessibilityRole="button"
+                accessibilityLabel="Create backup"
               >
                 {backupLoading ? (
                   <ActivityIndicator color={EddiesColors.bone} size="small" />
@@ -285,6 +303,8 @@ export default function SettingsModal() {
                 style={[s.controlDestructive, (deleteLoading || backupLoading) && s.controlDisabled]}
                 onPress={handleDeleteAllData}
                 disabled={deleteLoading || backupLoading}
+                accessibilityRole="button"
+                accessibilityLabel="Delete all data"
               >
                 {deleteLoading ? (
                   <ActivityIndicator color={EddiesColors.alert} size="small" />

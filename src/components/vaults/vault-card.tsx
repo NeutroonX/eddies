@@ -69,12 +69,12 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
       ref={swipeRef}
       overshootFriction={8}
       renderLeftActions={() => (
-        <Pressable style={s.editAction} onPress={triggerEdit}>
+        <Pressable style={s.editAction} onPress={triggerEdit} accessibilityRole="button" accessibilityLabel={`Edit ${account.name}`}>
           <MonoLabel size={11} weight="bold" color={EddiesColors.bone}>EDIT</MonoLabel>
         </Pressable>
       )}
       renderRightActions={() => (
-        <Pressable style={s.deleteAction} onPress={triggerDelete}>
+        <Pressable style={s.deleteAction} onPress={triggerDelete} accessibilityRole="button" accessibilityLabel={`Delete ${account.name}`}>
           <MonoLabel size={11} weight="bold" color={EddiesColors.bone}>DELETE</MonoLabel>
         </Pressable>
       )}

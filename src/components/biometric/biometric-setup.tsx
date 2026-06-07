@@ -69,6 +69,8 @@ export function BiometricSetup() {
             style={({ pressed }) => [s.btnPrimary, pressed && s.btnPressed]}
             onPress={handleEnable}
             disabled={loading}
+            accessibilityRole="button"
+            accessibilityLabel="Enable biometric app lock"
           >
             {loading
               ? <ActivityIndicator size="small" color={EddiesColors.ink} />
@@ -80,6 +82,8 @@ export function BiometricSetup() {
             style={({ pressed }) => [s.btnSecondary, pressed && s.btnPressed]}
             onPress={handleSkip}
             disabled={loading}
+            accessibilityRole="button"
+            accessibilityLabel="Skip app lock setup"
           >
             <Text style={s.btnSecondaryLabel}>SKIP FOR NOW</Text>
           </Pressable>

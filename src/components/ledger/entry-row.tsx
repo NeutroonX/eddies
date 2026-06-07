@@ -58,12 +58,12 @@ export function EntryRow({ row, isPendingDelete = false, onPress, onEdit, onDele
     <Swipeable
       ref={swipeRef}
       renderLeftActions={() => (
-        <Pressable onPress={triggerEdit} style={styles.editBtn}>
+        <Pressable onPress={triggerEdit} style={styles.editBtn} accessibilityRole="button" accessibilityLabel="Edit entry">
           <MonoLabel size={10} letterSpacing={2} color={EddiesColors.bone}>EDIT</MonoLabel>
         </Pressable>
       )}
       renderRightActions={() => (
-        <Pressable onPress={triggerDelete} style={styles.deleteBtn}>
+        <Pressable onPress={triggerDelete} style={styles.deleteBtn} accessibilityRole="button" accessibilityLabel="Delete entry">
           <MonoLabel size={10} letterSpacing={2} color={EddiesColors.bone}>DEL</MonoLabel>
         </Pressable>
       )}
@@ -84,7 +84,9 @@ export function EntryRow({ row, isPendingDelete = false, onPress, onEdit, onDele
             ]
           )
         }
-        accessibilityHint="Hold to edit or delete"
+        accessibilityRole="button"
+        accessibilityLabel={`${row.note?.trim() || row.category_name}, ${row.kind === 'outflow' ? 'outflow' : row.kind === 'inflow' ? 'inflow' : 'transfer'}`}
+        accessibilityHint="Tap to view, hold to edit or delete"
         style={[styles.row, isPendingDelete && styles.fading]}
       >
         {/* Icon */}

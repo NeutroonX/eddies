@@ -20,11 +20,19 @@ export function Pill({ label, active = false, color, onPress, onRemove }: PillPr
     <Pressable
       onPress={onPress}
       style={[styles.pill, { backgroundColor: bg, borderColor }]}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: active }}
     >
       <Text style={[styles.label, { color: textColor }]}>{label}</Text>
       {onRemove != null && (
         <View style={styles.removeWrap}>
-          <Pressable onPress={onRemove} hitSlop={8}>
+          <Pressable
+            onPress={onRemove}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={`Remove ${label}`}
+          >
             <Text style={[styles.label, { color: textColor }]}>✕</Text>
           </Pressable>
         </View>

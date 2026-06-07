@@ -280,7 +280,7 @@ export default function AnalyzeScreen() {
           <MonoLabel size={11} color={EddiesColors.bone} style={{ flex: 1 }}>
             {pendingDelete.name.toUpperCase()} CAP REMOVED
           </MonoLabel>
-          <Pressable onPress={handleUndoDelete} hitSlop={12}>
+          <Pressable onPress={handleUndoDelete} hitSlop={12} accessibilityRole="button" accessibilityLabel="Undo remove cap">
             <MonoLabel size={11} weight="bold" color={EddiesColors.alert}>UNDO</MonoLabel>
           </Pressable>
         </View>

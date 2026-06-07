@@ -349,6 +349,7 @@ export default function InviteScreen() {
 
   const contentOpacity = useSharedValue(0);
   const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(false);
   const [code, setCode] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -359,13 +360,15 @@ export default function InviteScreen() {
   const fadeStyle = useAnimatedStyle(() => ({ opacity: contentOpacity.value }));
 
   async function handleValidate() {
-    if (!code.trim()) return;
+    if (!code.trim() || cooldown) return;
     setLoading(true);
     setAuthError(null);
     const { granted, error } = await validateInviteCode(code);
     setLoading(false);
     if (!granted) {
       setAuthError(error);
+      setCooldown(true);
+      setTimeout(() => setCooldown(false), 2500);
       return;
     }
     try {
@@ -438,7 +441,7 @@ export default function InviteScreen() {
                 setAuthError(null);
               }}
               onSubmit={handleValidate}
-              loading={loading}
+              loading={loading || cooldown}
             />
 
             {authError !== null && (

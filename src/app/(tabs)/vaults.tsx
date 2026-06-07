@@ -25,7 +25,7 @@ function VaultsHeader() {
     <View style={s.headerWrap}>
       <SectionTag label="EDDIES // VAULTS 04-A" />
       <BarcodeMark height={16} />
-      <Pressable onPress={() => router.push('/(modals)/vault?mode=add')} style={s.addBtn}>
+      <Pressable onPress={() => router.push('/(modals)/vault?mode=add')} style={s.addBtn} accessibilityRole="button" accessibilityLabel="Add vault">
         <MonoLabel size={11} weight="bold" color={EddiesColors.bone}>+ ADD VAULT</MonoLabel>
       </Pressable>
     </View>
@@ -58,7 +58,7 @@ function UndoBar({ label, onUndo }: { label: string; onUndo: () => void }) {
       <MonoLabel size={11} color={EddiesColors.bone} style={{ flex: 1 }}>
         {label.toUpperCase()} REMOVED
       </MonoLabel>
-      <Pressable onPress={onUndo} hitSlop={12}>
+      <Pressable onPress={onUndo} hitSlop={12} accessibilityRole="button" accessibilityLabel="Undo remove vault">
         <MonoLabel size={11} weight="bold" color={EddiesColors.alert}>UNDO</MonoLabel>
       </Pressable>
     </View>

@@ -170,7 +170,7 @@ function UndoBar({ label, onUndo }: { label: string; onUndo: () => void }) {
       <MonoLabel size={11} color={EddiesColors.bone} style={{ flex: 1 }}>
         {label.toUpperCase()} DELETED
       </MonoLabel>
-      <Pressable onPress={onUndo} hitSlop={12}>
+      <Pressable onPress={onUndo} hitSlop={12} accessibilityRole="button" accessibilityLabel="Undo delete entry">
         <MonoLabel size={11} weight="bold" color={EddiesColors.alert}>UNDO</MonoLabel>
       </Pressable>
     </View>

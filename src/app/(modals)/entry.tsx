@@ -173,6 +173,8 @@ export default function EntryModal() {
         <Pressable
           onPress={() => { Keyboard.dismiss(); setTimeout(() => router.back(), 100); }}
           hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
         >
           <MonoLabel size={10} color={EddiesColors.steel}>✕ CLOSE</MonoLabel>
         </Pressable>
@@ -222,6 +224,9 @@ export default function EntryModal() {
                 kind === 'outflow' ? s.kindOutflowOn : s.kindOff,
               ]}
               onPress={() => handleKindChange('outflow')}
+              accessibilityRole="radio"
+              accessibilityLabel="Outflow"
+              accessibilityState={{ checked: kind === 'outflow' }}
             >
               <MonoLabel
                 size={11} letterSpacing={2}
@@ -237,6 +242,9 @@ export default function EntryModal() {
                 kind === 'inflow' ? s.kindInflowOn : s.kindOff,
               ]}
               onPress={() => handleKindChange('inflow')}
+              accessibilityRole="radio"
+              accessibilityLabel="Inflow"
+              accessibilityState={{ checked: kind === 'inflow' }}
             >
               <MonoLabel
                 size={11} letterSpacing={2}
@@ -303,6 +311,8 @@ export default function EntryModal() {
             <Pressable
               style={s.vaultEmpty}
               onPress={() => { Keyboard.dismiss(); setTimeout(() => { router.back(); router.push('/(modals)/vault?mode=add'); }, 100); }}
+              accessibilityRole="button"
+              accessibilityLabel="Add vault to continue"
             >
               <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.alert}>+ ADD VAULT TO CONTINUE</MonoLabel>
             </Pressable>

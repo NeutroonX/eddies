@@ -58,6 +58,8 @@ export default function VaultModal() {
               setTimeout(() => router.back(), 100);
             }}
             hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
           >
             <MonoLabel size={11} weight="bold" color={EddiesColors.steel}>CLOSE</MonoLabel>
           </Pressable>

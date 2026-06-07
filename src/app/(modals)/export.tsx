@@ -89,6 +89,8 @@ export default function ExportModal() {
             setTimeout(() => router.back(), 100);
           }}
           hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
         >
           <MonoLabel size={11} weight="bold" color={EddiesColors.steel}>CLOSE</MonoLabel>
         </Pressable>
@@ -107,6 +109,9 @@ export default function ExportModal() {
                   setDateRange(option);
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }}
+                accessibilityRole="radio"
+                accessibilityLabel={getDateRangeLabel(option)}
+                accessibilityState={{ checked: dateRange === option }}
               >
                 <View style={[s.optionRadio, dateRange === option && s.optionRadioActive]} />
                 <Text style={s.optionText}>{getDateRangeLabel(option)}</Text>
@@ -127,6 +132,9 @@ export default function ExportModal() {
                   setFormat(option);
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }}
+                accessibilityRole="radio"
+                accessibilityLabel={option === 'csv' ? 'CSV — Spreadsheet' : 'JSON — Full fidelity'}
+                accessibilityState={{ checked: format === option }}
               >
                 <View style={[s.optionRadio, format === option && s.optionRadioActive]} />
                 <Text style={s.optionText}>
@@ -151,6 +159,8 @@ export default function ExportModal() {
           style={[s.button, exporting && s.buttonDisabled]}
           onPress={handleExport}
           disabled={exporting}
+          accessibilityRole="button"
+          accessibilityLabel={`Export as ${format.toUpperCase()}`}
         >
           {exporting ? (
             <ActivityIndicator color={EddiesColors.bone} />

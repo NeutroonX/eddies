@@ -57,6 +57,8 @@ export function BiometricLock() {
           style={({ pressed }) => [s.btn, pressed && s.btnPressed]}
           onPress={tryUnlock}
           disabled={loading}
+          accessibilityRole="button"
+          accessibilityLabel={failed ? 'Try biometric unlock again' : 'Unlock with biometrics'}
         >
           <Text style={s.btnLabel}>{failed ? 'TRY AGAIN' : 'UNLOCK'}</Text>
         </Pressable>
