@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { AccountSchema, type Account, type NewAccount } from '@/lib/schemas';
 
 function genId(): string {
-  return `acc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  return `acc_${crypto.randomUUID().replace(/-/g, '')}`;
 }
 
 export async function getAllAccounts(db: SQLiteDatabase): Promise<Account[]> {

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { CategorySchema, type Category, type NewCategory } from '@/lib/schemas';
 
 function genId(): string {
-  return `cat_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  return `cat_${crypto.randomUUID().replace(/-/g, '')}`;
 }
 
 export async function getAllCategories(db: SQLiteDatabase): Promise<Category[]> {

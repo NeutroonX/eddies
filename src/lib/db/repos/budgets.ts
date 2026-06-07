@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { BudgetSchema, type Budget, type NewBudget } from '@/lib/schemas';
 
 function genId(): string {
-  return `bgt_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  return `bgt_${crypto.randomUUID().replace(/-/g, '')}`;
 }
 
 export async function getAllBudgets(db: SQLiteDatabase): Promise<Budget[]> {

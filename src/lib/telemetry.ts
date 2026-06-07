@@ -53,6 +53,11 @@ export function initTelemetry(): void {
       delete event.user;
       return event;
     },
+    beforeSendTransaction(event) {
+      if (!_enabled) return null;
+      delete event.user;
+      return event;
+    },
   });
 }
 

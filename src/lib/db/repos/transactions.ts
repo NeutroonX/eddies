@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { TransactionSchema, type NewTransaction, type Transaction } from '@/lib/schemas';
 
 function genId(): string {
-  return `tx_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  return `tx_${crypto.randomUUID().replace(/-/g, '')}`;
 }
 
 export async function getTransactions(

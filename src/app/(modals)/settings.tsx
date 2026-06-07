@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, View, Keyboard, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -12,8 +12,7 @@ import { SectionTag } from '@/components/ui/section-tag';
 import { EddiesColors, EddiesSpacing } from '@/constants/theme';
 import { WORLD_CURRENCIES } from '@/constants/currencies';
 import { useStore } from '@/store';
-import { getSetting, setSetting } from '@/lib/db/repos/settings-repo';
-import { setTelemetryEnabled } from '@/lib/telemetry';
+import { setSetting } from '@/lib/db/repos/settings-repo';
 import { createBackup } from '@/lib/backup';
 import { isBiometricAvailable, authenticate } from '@/lib/biometric';
 
@@ -21,32 +20,11 @@ const APP_VERSION = '1.0.0';
 
 export default function SettingsModal() {
   const db = useSQLiteContext();
-  const { currency, firstDayOfWeek, hapticsEnabled, biometricStatus, setCurrency, setFirstDayOfWeek, setHapticsEnabled, setCrashReportingEnabled, setBiometricStatus, showToast } = useStore();
+  const { currency, firstDayOfWeek, hapticsEnabled, biometricStatus, setCurrency, setFirstDayOfWeek, setHapticsEnabled, setBiometricStatus, showToast } = useStore();
   const [deleteLoading, setDeleteLoading] = useState(false);
-
-  const [loading, setLoading] = useState(true);
+  const [loading] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [backupLoading, setBackupLoading] = useState(false);
-
-  useEffect(() => {
-    async function loadSettings() {
-      try {
-        const savedCurrency = await getSetting(db, 'currency', 'USD');
-        const savedDayOfWeek = await getSetting(db, 'first_day_of_week', '1');
-        const savedHaptics = await getSetting(db, 'haptics_enabled', 'true');
-        const savedCrashReporting = await getSetting(db, 'crash_reporting_enabled', 'true');
-        setCurrency(savedCurrency!);
-        setFirstDayOfWeek(parseInt(savedDayOfWeek!, 10));
-        setHapticsEnabled(savedHaptics === 'true');
-        setCrashReportingEnabled(savedCrashReporting !== 'false');
-      } catch (err) {
-        console.error('Failed to load settings:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadSettings();
-  }, [db, setCurrency, setFirstDayOfWeek, setHapticsEnabled, setCrashReportingEnabled]);
 
   async function handleCurrencyChange(newCurrency: string) {
     try {
