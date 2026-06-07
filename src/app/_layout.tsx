@@ -8,7 +8,7 @@ import {
 import { SpaceMono_400Regular, SpaceMono_700Bold } from '@expo-google-fonts/space-mono';
 import { DarkTheme, ThemeProvider } from 'expo-router';
 import { useFonts } from 'expo-font';
-import { router, Stack } from 'expo-router';
+import { router, Stack, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { SQLiteProvider } from 'expo-sqlite';
@@ -77,33 +77,41 @@ function ArchiveWatcher() {
 }
 
 // ── Onboarding gate ────────────────────────────────────────────────────────
-// Loads settings (including onboarding flag) and redirects to onboarding on
-// first install. Fires once inside SQLiteProvider; null state means "still
-// checking" so we never redirect prematurely.
 function OnboardingGate() {
   useInitSettings();
   const onboardingComplete = useStore((s) => s.onboardingComplete);
+  const segments           = useSegments();
 
   useEffect(() => {
-    if (onboardingComplete === false) {
+    if (onboardingComplete === null) return;
+    const inOnboarding = segments[0] === '(onboarding)';
+    if (!onboardingComplete && !inOnboarding) {
       router.replace('/(onboarding)');
     }
-  }, [onboardingComplete]);
+  }, [onboardingComplete, segments]);
 
   return null;
 }
 
 // ── Invite gate ────────────────────────────────────────────────────────────
-// After onboarding is complete, checks for a stored invite validation.
-// No valid code → send to invite entry screen.
+// Bidirectional: sends validated users to tabs, unvalidated users to auth.
+// null = still loading from SQLite — do nothing to avoid premature redirects.
 function InviteGate() {
   const onboardingComplete = useStore((s) => s.onboardingComplete);
   const inviteValidated    = useStore((s) => s.inviteValidated);
+  const segments           = useSegments();
 
   useEffect(() => {
     if (onboardingComplete !== true) return;
-    if (inviteValidated === false) router.replace('/(auth)');
-  }, [onboardingComplete, inviteValidated]);
+    if (inviteValidated === null) return;
+
+    const inAuth = segments[0] === '(auth)';
+    if (inviteValidated && inAuth) {
+      router.replace('/(tabs)');
+    } else if (!inviteValidated && !inAuth) {
+      router.replace('/(auth)');
+    }
+  }, [onboardingComplete, inviteValidated, segments]);
 
   return null;
 }
@@ -118,11 +126,15 @@ function RootLayout() {
     SpaceMono_700Bold,
   });
 
-  useEffect(() => {
-    if (loaded || error) SplashScreen.hideAsync();
-  }, [loaded, error]);
+  const onboardingComplete = useStore((s) => s.onboardingComplete);
+  const inviteValidated    = useStore((s) => s.inviteValidated);
 
-  if (!loaded && !error) return null;
+  const fontsReady    = loaded || !!error;
+  const settingsReady = onboardingComplete !== null && inviteValidated !== null;
+
+  useEffect(() => {
+    if (fontsReady && settingsReady) SplashScreen.hideAsync();
+  }, [fontsReady, settingsReady]);
 
   const modalOptions = {
     gestureEnabled: false,

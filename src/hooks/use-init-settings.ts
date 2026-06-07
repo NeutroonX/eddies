@@ -18,9 +18,11 @@ export function useInitSettings() {
       setCrashReportingEnabled(crashEnabled);
       setTelemetryEnabled(crashEnabled);
       setOnboardingComplete(settings.onboarding_complete === 'true');
-      if (settings.invite_validated !== undefined) {
-        setInviteValidated(settings.invite_validated === 'true');
-      }
-    }).catch(console.error);
+      setInviteValidated(settings.invite_validated === 'true');
+    }).catch((err) => {
+      console.error(err);
+      setOnboardingComplete(false);
+      setInviteValidated(false);
+    });
   }, [db, setCurrency, setFirstDayOfWeek, setHapticsEnabled, setCrashReportingEnabled, setOnboardingComplete, setInviteValidated]);
 }

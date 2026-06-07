@@ -1,28 +1,30 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import { useSQLiteContext } from "expo-sqlite";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-} from 'react-native-reanimated';
+} from "react-native-reanimated";
 
-import { MonoLabel } from '@/components/ui/mono-label';
-import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
-import { validateInviteCode, requestAccess } from '@/lib/invite';
-import { setSetting } from '@/lib/db/repos/settings-repo';
-import { useStore } from '@/store';
+import { MonoLabel } from "@/components/ui/mono-label";
+import { EddiesColors, EddiesFonts, EddiesSpacing } from "@/constants/theme";
+import { validateInviteCode, requestAccess } from "@/lib/invite";
+import { setSetting } from "@/lib/db/repos/settings-repo";
+import { useStore } from "@/store";
 
-const PROMPT = 'validating access credentials...';
+const PROMPT = "validating access credentials...";
 const CHAR_DELAY = 42;
 const PROMPT_START_DELAY = 600;
 
@@ -30,11 +32,13 @@ const PROMPT_START_DELAY = 600;
 function BlinkingCursor() {
   const [on, setOn] = useState(true);
   useEffect(() => {
-    const t = setInterval(() => setOn(v => !v), 530);
+    const t = setInterval(() => setOn((v) => !v), 530);
     return () => clearInterval(t);
   }, []);
   return on ? (
-    <MonoLabel size={11} letterSpacing={0} color={EddiesColors.alert}>▌</MonoLabel>
+    <MonoLabel size={11} letterSpacing={0} color={EddiesColors.alert}>
+      ▌
+    </MonoLabel>
   ) : null;
 }
 
@@ -51,14 +55,16 @@ function TypewriterPrompt() {
 
   useEffect(() => {
     if (!started || done) return;
-    const t = setTimeout(() => setDisplayed(d => d + 1), CHAR_DELAY);
+    const t = setTimeout(() => setDisplayed((d) => d + 1), CHAR_DELAY);
     return () => clearTimeout(t);
   }, [started, displayed, done]);
 
   return (
     <View style={tp.row}>
-      <MonoLabel size={10} letterSpacing={1} color={EddiesColors.steel}>{'> '}</MonoLabel>
-      <MonoLabel size={10} letterSpacing={0.5} color={EddiesColors.bone + 'BB'}>
+      <MonoLabel size={10} letterSpacing={1} color={EddiesColors.steel}>
+        {"> "}
+      </MonoLabel>
+      <MonoLabel size={10} letterSpacing={0.5} color={EddiesColors.bone + "BB"}>
         {PROMPT.slice(0, displayed)}
       </MonoLabel>
       {done && <BlinkingCursor />}
@@ -66,63 +72,64 @@ function TypewriterPrompt() {
   );
 }
 const tp = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center' },
+  row: { flexDirection: "row", alignItems: "center" },
 });
 
+// ── Auto-format invite code: XXXX-YYYY-ZZZZ ───────────────────────────────
+function formatCode(raw: string): string {
+  const clean = raw
+    .replace(/[^A-Z0-9]/gi, "")
+    .toUpperCase()
+    .slice(0, 12);
+  if (clean.length <= 4) return clean;
+  if (clean.length <= 8) return `${clean.slice(0, 4)}-${clean.slice(4)}`;
+  return `${clean.slice(0, 4)}-${clean.slice(4, 8)}-${clean.slice(8)}`;
+}
+
 // ── Unified invite input + validate button ─────────────────────────────────
-function InviteInput({ value, onChangeText, onSubmit, loading }: {
+function InviteInput({
+  value,
+  onChangeText,
+  onSubmit,
+  loading,
+}: {
   value: string;
   onChangeText: (t: string) => void;
   onSubmit: () => void;
   loading: boolean;
 }) {
-  const [focused, setFocused] = useState(false);
-  const disabled = loading || !value.trim();
+  const isComplete = value.replace(/[^A-Z0-9]/gi, "").length >= 12;
 
   return (
-    <View style={[ii.wrap, focused && ii.wrapFocused]}>
-      <View style={ii.accent} />
+    <View style={ii.wrap}>
       <TextInput
         style={ii.input}
         value={value}
-        onChangeText={onChangeText}
+        onChangeText={(raw) => onChangeText(formatCode(raw))}
         onSubmitEditing={onSubmit}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        maxLength={32}
+        maxLength={14}
         autoCapitalize="characters"
         returnKeyType="go"
         editable={!loading}
         placeholder="XXXX-YYYY-ZZZZ"
-        placeholderTextColor={EddiesColors.steel + '35'}
+        placeholderTextColor={EddiesColors.steel + "77"}
         autoCorrect={false}
         spellCheck={false}
       />
-      <View style={ii.divider} />
       <Pressable
         style={({ pressed }) => [
           ii.btn,
-          pressed && !disabled && ii.btnPressed,
-          disabled && ii.btnDisabled,
+          isComplete ? ii.btnReady : ii.btnIdle,
+          pressed && ii.btnPressed,
         ]}
-        onPress={disabled ? undefined : onSubmit}
+        onPress={onSubmit}
         accessibilityRole="button"
         accessibilityLabel="Validate invite code"
-        accessibilityState={{ disabled }}
       >
         {loading ? (
-          <ActivityIndicator size="small" color={EddiesColors.alert} />
+          <ActivityIndicator size="small" color={EddiesColors.ink} />
         ) : (
-          <View style={ii.btnInner}>
-            <Text style={[ii.btnLabel, disabled && ii.btnLabelDim]}>VALIDATE</Text>
-            <MonoLabel
-              size={15}
-              letterSpacing={0}
-              color={disabled ? EddiesColors.steel + '55' : EddiesColors.alert}
-            >
-              ›
-            </MonoLabel>
-          </View>
+          <Text style={ii.btnLabel}>VALIDATE</Text>
         )}
       </Pressable>
     </View>
@@ -131,145 +138,114 @@ function InviteInput({ value, onChangeText, onSubmit, loading }: {
 
 const ii = StyleSheet.create({
   wrap: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
+    flexDirection: "row",
+    alignItems: "stretch",
     borderWidth: 1,
-    borderColor: EddiesColors.steel + '30',
+    borderColor: EddiesColors.steel + "30",
     backgroundColor: EddiesColors.surface,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
-  wrapFocused: {
-    borderColor: EddiesColors.alert + '70',
-  },
-  accent: {
-    width: 2,
-    backgroundColor: EddiesColors.alert,
-  },
+  accent: { width: 2, backgroundColor: EddiesColors.alert },
   input: {
     flex: 1,
     paddingVertical: 18,
     paddingLeft: EddiesSpacing.md,
     paddingRight: EddiesSpacing.sm,
-    fontFamily: 'SpaceMono_400Regular',
+    fontFamily: "SpaceMono_400Regular",
     fontSize: 13,
     color: EddiesColors.bone,
     letterSpacing: 2,
   },
-  divider: {
-    width: 1,
-    alignSelf: 'stretch',
-    backgroundColor: EddiesColors.steel + '25',
-    marginVertical: 12,
-  },
   btn: {
-    width: 116,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: EddiesSpacing.md,
+    alignItems: "center",
+    justifyContent: "center",
+    width: 100,
   },
-  btnInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: EddiesSpacing.xs,
-  },
-  btnPressed: {
-    backgroundColor: EddiesColors.alert + '10',
-  },
-  btnDisabled: {
-    opacity: 0.38,
-  },
+  btnIdle: { backgroundColor: EddiesColors.alert + "70" },
+  btnReady: { backgroundColor: EddiesColors.alert },
+  btnPressed: { opacity: 0.82 },
   btnLabel: {
     fontFamily: EddiesFonts.displayBold,
-    fontSize: 15,
-    color: EddiesColors.bone,
+    fontSize: 14,
+    color: EddiesColors.ink,
     letterSpacing: 3,
-  },
-  btnLabelDim: {
-    color: EddiesColors.steel,
   },
 });
 
 // ── Request access form ────────────────────────────────────────────────────
 function AccessRequest() {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [focused, setFocused] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
+    "idle",
+  );
   const [errMsg, setErrMsg] = useState<string | null>(null);
 
   async function handleRequest() {
-    if (status === 'sending' || status === 'sent') return;
+    if (status === "sending" || status === "sent") return;
     setErrMsg(null);
-    setStatus('sending');
+    setStatus("sending");
     const { ok, error } = await requestAccess(email);
     if (!ok) {
       setErrMsg(error);
-      setStatus('error');
+      setStatus("error");
       return;
     }
-    setStatus('sent');
+    setStatus("sent");
   }
 
-  if (status === 'sent') {
+  if (status === "sent") {
     return (
       <View style={ar.sentWrap}>
-        <MonoLabel size={8} letterSpacing={1} color={EddiesColors.alert + 'CC'}>
-          ▲  REQUEST SENT — WE'LL EMAIL YOUR CODE
+        <MonoLabel size={8} letterSpacing={1} color={EddiesColors.alert + "CC"}>
+          ▲ REQUEST SENT — WE'LL EMAIL YOUR CODE
         </MonoLabel>
       </View>
     );
   }
 
-  const disabled = status === 'sending' || !email.trim();
-
   return (
     <View style={ar.wrap}>
-      <MonoLabel size={7} letterSpacing={3} color={EddiesColors.steel + '55'}>
+      <MonoLabel size={7} letterSpacing={3} color={EddiesColors.steel}>
         NO CODE?
       </MonoLabel>
       <View style={[ar.bar, focused && ar.barFocused]}>
         <TextInput
           style={ar.input}
           value={email}
-          onChangeText={(t) => { setEmail(t); setErrMsg(null); setStatus('idle'); }}
+          onChangeText={(t) => {
+            setEmail(t);
+            setErrMsg(null);
+            setStatus("idle");
+          }}
           onSubmitEditing={handleRequest}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           placeholder="your@email.com"
-          placeholderTextColor={EddiesColors.steel + '30'}
+          placeholderTextColor={EddiesColors.steel + "77"}
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="send"
-          editable={status !== 'sending'}
+          editable={status !== "sending"}
         />
         <View style={ar.divider} />
         <Pressable
-          style={({ pressed }) => [
-            ar.btn,
-            pressed && !disabled && ar.btnPressed,
-            disabled && ar.btnDisabled,
-          ]}
-          onPress={disabled ? undefined : handleRequest}
+          style={({ pressed }) => [ar.btn, pressed && ar.btnPressed]}
+          onPress={handleRequest}
           accessibilityRole="button"
           accessibilityLabel="Request beta access"
-          accessibilityState={{ disabled }}
         >
-          {status === 'sending' ? (
-            <ActivityIndicator size="small" color={EddiesColors.steel} />
+          {status === "sending" ? (
+            <ActivityIndicator size="small" color={EddiesColors.ink} />
           ) : (
-            <MonoLabel
-              size={9}
-              letterSpacing={2}
-              color={disabled ? EddiesColors.steel + '35' : EddiesColors.steel + 'CC'}
-            >
-              REQUEST ›
-            </MonoLabel>
+            <Text style={ar.btnLabel}>REQUEST</Text>
           )}
         </Pressable>
       </View>
       {errMsg !== null && (
-        <MonoLabel size={7} letterSpacing={1} color={EddiesColors.alert + 'BB'}>
-          ▲  {errMsg}
+        <MonoLabel size={7} letterSpacing={1} color={EddiesColors.alert + "BB"}>
+          ▲ {errMsg}
         </MonoLabel>
       )}
     </View>
@@ -277,86 +253,88 @@ function AccessRequest() {
 }
 
 const ar = StyleSheet.create({
-  wrap: {
-    gap: EddiesSpacing.xs,
-  },
+  wrap: { gap: EddiesSpacing.xs },
   bar: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
+    flexDirection: "row",
+    alignItems: "stretch",
     borderWidth: 1,
-    borderColor: EddiesColors.steel + '20',
+    borderColor: EddiesColors.steel + "25",
     backgroundColor: EddiesColors.surface,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
-  barFocused: {
-    borderColor: EddiesColors.steel + '50',
-  },
+  barFocused: { borderColor: EddiesColors.steel + "45" },
   input: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingLeft: EddiesSpacing.md,
     paddingRight: EddiesSpacing.sm,
-    fontFamily: 'SpaceMono_400Regular',
+    fontFamily: "SpaceMono_400Regular",
     fontSize: 11,
-    color: EddiesColors.bone + 'CC',
+    color: EddiesColors.bone + "CC",
     letterSpacing: 0.5,
   },
   divider: {
     width: 1,
-    alignSelf: 'stretch',
-    backgroundColor: EddiesColors.steel + '18',
+    alignSelf: "stretch",
+    backgroundColor: EddiesColors.steel + "22",
     marginVertical: 8,
   },
   btn: {
+    backgroundColor: EddiesColors.bone,
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: EddiesSpacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 100,
   },
-  btnPressed: {
-    backgroundColor: EddiesColors.steel + '0C',
+  btnPressed: { opacity: 0.82 },
+  btnLabel: {
+    fontFamily: EddiesFonts.displayBold,
+    fontSize: 13,
+    color: EddiesColors.ink,
+    letterSpacing: 3,
   },
-  btnDisabled: {
-    opacity: 0.4,
-  },
-  sentWrap: {
-    alignItems: 'center',
-    paddingVertical: EddiesSpacing.sm,
-  },
+  sentWrap: { alignItems: "center", paddingVertical: EddiesSpacing.sm },
 });
 
 // ── Corner brackets (full screen frame) ────────────────────────────────────
 function CornerBrackets() {
   const size = 14;
-  const color = EddiesColors.steel + '30';
-  const corners = (['tl', 'tr', 'bl', 'br'] as const);
+  const color = EddiesColors.steel + "30";
+  const corners = ["tl", "tr", "bl", "br"] as const;
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      {corners.map(c => {
-        const top  = c[0] === 't';
-        const left = c[1] === 'l';
+      {corners.map((c) => {
+        const top = c[0] === "t";
+        const left = c[1] === "l";
         return (
           <View
             key={c}
             style={[
-              { position: 'absolute' },
-              top  ? { top: 0 }    : { bottom: 0 },
-              left ? { left: 0 }   : { right: 0 },
+              { position: "absolute" },
+              top ? { top: 0 } : { bottom: 0 },
+              left ? { left: 0 } : { right: 0 },
             ]}
           >
-            <View style={{
-              position: 'absolute',
-              width: size, height: 1,
-              backgroundColor: color,
-              ...(top  ? { top: 0 }    : { bottom: 0 }),
-              ...(left ? { left: 0 }   : { right: 0 }),
-            }} />
-            <View style={{
-              position: 'absolute',
-              width: 1, height: size,
-              backgroundColor: color,
-              ...(top  ? { top: 0 }    : { bottom: 0 }),
-              ...(left ? { left: 0 }   : { right: 0 }),
-            }} />
+            <View
+              style={{
+                position: "absolute",
+                width: size,
+                height: 1,
+                backgroundColor: color,
+                ...(top ? { top: 0 } : { bottom: 0 }),
+                ...(left ? { left: 0 } : { right: 0 }),
+              }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                width: 1,
+                height: size,
+                backgroundColor: color,
+                ...(top ? { top: 0 } : { bottom: 0 }),
+                ...(left ? { left: 0 } : { right: 0 }),
+              }}
+            />
           </View>
         );
       })}
@@ -366,12 +344,13 @@ function CornerBrackets() {
 
 // ── Root screen ────────────────────────────────────────────────────────────
 export default function InviteScreen() {
+  const { height } = useWindowDimensions();
   const db = useSQLiteContext();
   const setInviteValidated = useStore((s) => s.setInviteValidated);
 
   const contentOpacity = useSharedValue(0);
   const [loading, setLoading] = useState(false);
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -391,18 +370,17 @@ export default function InviteScreen() {
       return;
     }
     try {
-      await setSetting(db, 'invite_validated', 'true');
+      await setSetting(db, "invite_validated", "true");
     } catch {
-      setAuthError('FAILED TO SAVE — TRY AGAIN');
+      setAuthError("FAILED TO SAVE — TRY AGAIN");
       return;
     }
     setInviteValidated(true);
-    router.replace('/(tabs)');
+    router.replace("/(tabs)");
   }
 
   return (
-    <SafeAreaView style={s.root} edges={['top', 'bottom', 'left', 'right']}>
-
+    <SafeAreaView style={s.root} edges={["top", "bottom", "left", "right"]}>
       {/* Top bar */}
       <View style={s.topBar}>
         <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel}>
@@ -410,71 +388,99 @@ export default function InviteScreen() {
         </MonoLabel>
         <View style={s.statusRow}>
           <View style={s.statusDot} />
-          <MonoLabel size={8} letterSpacing={1} color={EddiesColors.alert + '99'}>
+          <MonoLabel
+            size={8}
+            letterSpacing={1}
+            color={EddiesColors.alert + "99"}
+          >
             SECURE
           </MonoLabel>
         </View>
       </View>
 
       {/* Content */}
-      <Animated.View style={[s.content, fadeStyle]}>
-
-        {/* Brand block */}
-        <View>
-          <Text style={s.brandTitle}>EDDIES</Text>
-          <View style={s.accentLine} />
-          <MonoLabel size={9} letterSpacing={3} color={EddiesColors.steel + 'AA'}>
-            PERSONAL FINANCE · TERMINAL
-          </MonoLabel>
-        </View>
-
-        {/* Typewriter */}
-        <TypewriterPrompt />
-
-        {/* Invite code section */}
-        <View style={s.authSection}>
-          <View style={s.dividerRow}>
-            <View style={s.dividerLine} />
-            <MonoLabel size={8} letterSpacing={3} color={EddiesColors.steel + '50'}>
-              ENTER INVITE CODE
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[s.scroll, { paddingBottom: height * 0.22 }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View style={[s.content, fadeStyle]}>
+          {/* Brand block */}
+          <View>
+            <Text style={s.brandTitle}>EDDIES</Text>
+            <View style={s.accentLine} />
+            <MonoLabel
+              size={9}
+              letterSpacing={3}
+              color={EddiesColors.steel + "AA"}
+            >
+              PERSONAL FINANCE · TERMINAL
             </MonoLabel>
-            <View style={s.dividerLine} />
           </View>
 
-          <InviteInput
-            value={code}
-            onChangeText={(t) => { setCode(t); setAuthError(null); }}
-            onSubmit={handleValidate}
-            loading={loading}
-          />
+          {/* Typewriter */}
+          <TypewriterPrompt />
 
-          {authError !== null && (
-            <MonoLabel size={8} letterSpacing={1} color={EddiesColors.alert + 'CC'}>
-              ▲  {authError}
-            </MonoLabel>
-          )}
-        </View>
+          {/* Invite code section */}
+          <View style={s.authSection}>
+            <View style={s.dividerRow}>
+              <View style={s.dividerLine} />
+              <MonoLabel size={8} letterSpacing={3} color={EddiesColors.steel}>
+                ENTER INVITE CODE
+              </MonoLabel>
+              <View style={s.dividerLine} />
+            </View>
 
-        {/* Request access */}
-        <AccessRequest />
+            <InviteInput
+              value={code}
+              onChangeText={(t) => {
+                setCode(t);
+                setAuthError(null);
+              }}
+              onSubmit={handleValidate}
+              loading={loading}
+            />
 
-      </Animated.View>
+            {authError !== null && (
+              <MonoLabel
+                size={8}
+                letterSpacing={1}
+                color={EddiesColors.alert + "CC"}
+              >
+                ▲ {authError}
+              </MonoLabel>
+            )}
+          </View>
+
+          {/* Request access */}
+          <AccessRequest />
+        </Animated.View>
+      </ScrollView>
 
       {/* Bottom bar */}
       <View style={s.bottomBar}>
-        <MonoLabel size={7} letterSpacing={1} color={EddiesColors.steel + '55'}>
+        <MonoLabel size={7} letterSpacing={1} color={EddiesColors.steel + "55"}>
           SYS-REV: 1.0.0
         </MonoLabel>
         <View style={s.statusRow}>
-          <View style={[s.statusDot, { backgroundColor: EddiesColors.steel + '55' }]} />
-          <MonoLabel size={7} letterSpacing={1} color={EddiesColors.steel + '55'}>
+          <View
+            style={[
+              s.statusDot,
+              { backgroundColor: EddiesColors.steel + "55" },
+            ]}
+          />
+          <MonoLabel
+            size={7}
+            letterSpacing={1}
+            color={EddiesColors.steel + "55"}
+          >
             ENCRYPTED
           </MonoLabel>
         </View>
       </View>
 
       <CornerBrackets />
-
     </SafeAreaView>
   );
 }
@@ -486,17 +492,17 @@ const s = StyleSheet.create({
     backgroundColor: EddiesColors.ink,
   },
   topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: EddiesSpacing.md,
     paddingVertical: EddiesSpacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: EddiesColors.steel + '18',
+    borderBottomColor: EddiesColors.steel + "18",
   },
   statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: EddiesSpacing.xs,
   },
   statusDot: {
@@ -505,10 +511,13 @@ const s = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: EddiesColors.alert,
   },
+  scroll: {
+    flexGrow: 1,
+    justifyContent: "center",
+  },
   content: {
-    flex: 1,
     paddingHorizontal: EddiesSpacing.md,
-    justifyContent: 'center',
+    paddingVertical: EddiesSpacing.xl,
     gap: EddiesSpacing.lg,
   },
   brandTitle: {
@@ -520,29 +529,29 @@ const s = StyleSheet.create({
   },
   accentLine: {
     height: 1,
-    backgroundColor: EddiesColors.alert + '99',
+    backgroundColor: EddiesColors.alert + "99",
     marginVertical: EddiesSpacing.sm,
   },
   authSection: {
     gap: EddiesSpacing.md,
   },
   dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: EddiesSpacing.sm,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: EddiesColors.steel + '18',
+    backgroundColor: EddiesColors.steel + "18",
   },
   bottomBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: EddiesSpacing.md,
     paddingVertical: EddiesSpacing.sm,
     borderTopWidth: 1,
-    borderTopColor: EddiesColors.steel + '18',
+    borderTopColor: EddiesColors.steel + "18",
   },
 });
