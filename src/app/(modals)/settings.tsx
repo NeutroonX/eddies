@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View, Keyboard, ActivityIndicator } from 'react-native';
+import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, View, Keyboard, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -87,8 +87,8 @@ export default function SettingsModal() {
       if (enable) {
         const available = await isBiometricAvailable();
         if (!available) { showToast('No biometric hardware enrolled', 'err'); return; }
-        const passed = await authenticate('Verify to enable app lock');
-        if (!passed) return;
+        const result = await authenticate('Verify to enable app lock');
+        if (!result.success) return;
         await setSetting(db, 'biometric_lock_enabled', 'true');
         setBiometricStatus('enabled');
         showToast('App lock enabled');
@@ -256,20 +256,18 @@ export default function SettingsModal() {
             </View>
 
             {/* App Lock */}
-            {Platform.OS === 'android' && (
-              <View style={s.section}>
-                <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>APP LOCK</MonoLabel>
-                <View style={s.toggleRow}>
-                  <Pressable
-                    style={[s.toggle, biometricStatus === 'enabled' && s.toggleActive]}
-                    onPress={() => handleBiometricChange(biometricStatus !== 'enabled')}
-                  >
-                    <View style={[s.toggleThumb, biometricStatus === 'enabled' && s.toggleThumbActive]} />
-                  </Pressable>
-                  <Text style={s.toggleLabel}>{biometricStatus === 'enabled' ? 'ENABLED' : 'DISABLED'}</Text>
-                </View>
+            <View style={s.section}>
+              <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>APP LOCK</MonoLabel>
+              <View style={s.toggleRow}>
+                <Pressable
+                  style={[s.toggle, biometricStatus === 'enabled' && s.toggleActive]}
+                  onPress={() => handleBiometricChange(biometricStatus !== 'enabled')}
+                >
+                  <View style={[s.toggleThumb, biometricStatus === 'enabled' && s.toggleThumbActive]} />
+                </Pressable>
+                <Text style={s.toggleLabel}>{biometricStatus === 'enabled' ? 'ENABLED' : 'DISABLED'}</Text>
               </View>
-            )}
+            </View>
 
             {/* Crash Reporting — always on */}
             <View style={s.section}>

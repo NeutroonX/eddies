@@ -25,8 +25,8 @@ export function BiometricSetup() {
       setLoading(false);
       return;
     }
-    const passed = await authenticate('Verify to enable app lock');
-    if (passed) {
+    const result = await authenticate('Verify to enable app lock');
+    if (result.success) {
       await setSetting(db, 'biometric_lock_enabled', 'true');
       setBiometricStatus('enabled');
       setAppLocked(false);

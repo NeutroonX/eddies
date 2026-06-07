@@ -13,7 +13,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { SQLiteProvider } from 'expo-sqlite';
 import { useEffect, useRef } from 'react';
-import { AppState, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { runMigrations } from '@/lib/db/migrations';
@@ -115,8 +115,8 @@ function InviteGate() {
 }
 
 // ── Biometric gate ─────────────────────────────────────────────────────────
-// Android-only. Shows setup prompt on first entry, lock screen on subsequent
-// launches and when app returns from background.
+// Shows setup prompt on first entry, lock screen on subsequent launches and
+// when app returns from background. Works on both Android and iOS.
 function BiometricGate() {
   const biometricStatus  = useStore((s) => s.biometricStatus);
   const inviteValidated  = useStore((s) => s.inviteValidated);
@@ -128,7 +128,6 @@ function BiometricGate() {
 
   // Lock when app moves to background, unlock prompt when it returns.
   useEffect(() => {
-    if (Platform.OS !== 'android') return;
     if (biometricStatus !== 'enabled') return;
 
     const sub = AppState.addEventListener('change', (next) => {
@@ -140,15 +139,14 @@ function BiometricGate() {
     return () => sub.remove();
   }, [biometricStatus, setAppLocked]);
 
-  // Lock on first mount when biometric is enabled.
+  // Lock on first mount when biometric is enabled and the user is logged in.
+  // Guard on inviteValidated so the lock overlay never fires on the auth screen.
   useEffect(() => {
-    if (Platform.OS !== 'android') return;
+    if (inviteValidated !== true) return;
     if (biometricStatus === 'enabled') {
       setAppLocked(true);
     }
-  }, [biometricStatus, setAppLocked]);
-
-  if (Platform.OS !== 'android') return null;
+  }, [biometricStatus, inviteValidated, setAppLocked]);
 
   const inTabs = segments[0] === '(tabs)';
 
