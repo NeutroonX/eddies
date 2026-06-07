@@ -19,6 +19,7 @@ import { MonoLabel } from '@/components/ui/mono-label';
 import { StampButton } from '@/components/ui/stamp-button';
 import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
 import { useCategories } from '@/hooks/use-categories';
+import { useCurrencySymbol } from '@/hooks/use-currency-symbol';
 import { useStore } from '@/store';
 import { findOrCreateCategory } from '@/lib/db/repos/categories';
 import { createBudget, deleteBudget, updateBudget } from '@/lib/db/repos/budgets';
@@ -28,6 +29,7 @@ import type { Budget } from '@/lib/schemas';
 export default function CapModal() {
   const db = useSQLiteContext();
   const { categories } = useCategories();
+  const sym = useCurrencySymbol();
   const { showToast } = useStore();
   const params = useLocalSearchParams<{ capId?: string }>();
 
@@ -138,7 +140,7 @@ export default function CapModal() {
 
           {/* Amount — big number input */}
           <View style={s.amountBlock}>
-            <Text style={s.amountCurrency}>$</Text>
+            <Text style={s.amountCurrency}>{sym}</Text>
             <TextInput
               style={s.amountInput}
               placeholder="0.00"

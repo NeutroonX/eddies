@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -74,7 +74,7 @@ export default function SystemScreen() {
 
   async function nav(path: string) {
     if (hapticsEnabled) await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(path as any);
+    router.push(path as Href);
   }
 
   const monogram = (userName[0] ?? 'E').toUpperCase();

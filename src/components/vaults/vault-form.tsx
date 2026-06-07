@@ -20,7 +20,7 @@ const PRESET_COLORS = [EddiesColors.stock, EddiesColors.bone, EddiesColors.alert
 
 export function VaultForm({ initialData, onSave, onCancel }: VaultFormProps) {
   const preferredCurrency = useStore(s => s.currency);
-  const isPreset = PRESET_TYPES.includes(initialData?.type as any);
+  const isPreset = (PRESET_TYPES as readonly string[]).includes(initialData?.type ?? '');
   const [name, setName] = useState(initialData?.name ?? '');
   const [type, setType] = useState<string>(initialData?.type ?? 'cash');
   const [typeIsOther, setTypeIsOther] = useState(!isPreset && !!initialData?.type);

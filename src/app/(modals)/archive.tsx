@@ -37,7 +37,7 @@ export default function ArchiveModal() {
     getPendingMonths(db).then((months) => {
       const m = months.find((m) => m.year === archivePrompt.year && m.month === archivePrompt.month);
       setData(m ?? null);
-    });
+    }).catch(() => showToast('Failed to load month data', 'err'));
   }, [archivePrompt, db]);
 
   function dismiss() {

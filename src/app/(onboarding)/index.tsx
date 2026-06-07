@@ -474,6 +474,7 @@ const p2 = StyleSheet.create({
 export default function OnboardingScreen() {
   const db = useSQLiteContext();
   const setOnboardingComplete = useStore((s) => s.setOnboardingComplete);
+  const showToast = useStore((s) => s.showToast);
   const listRef = useRef<FlatList>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [pageHeight, setPageHeight] = useState(0);
@@ -485,7 +486,12 @@ export default function OnboardingScreen() {
   );
 
   async function handleDeploy() {
-    await setSetting(db, 'onboarding_complete', 'true').catch(console.error);
+    try {
+      await setSetting(db, 'onboarding_complete', 'true');
+    } catch {
+      showToast('Setup failed — try again', 'err');
+      return;
+    }
     setOnboardingComplete(true);
     router.replace('/(auth)');
   }
