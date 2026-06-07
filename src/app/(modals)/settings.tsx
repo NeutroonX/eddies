@@ -447,11 +447,11 @@ const s = StyleSheet.create({
   segmentTextActive: { color: EddiesColors.bone },
   toggleGrid: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: EddiesSpacing.xxl,
+    justifyContent: 'space-between',
+    paddingHorizontal: EddiesSpacing.md,
   },
   toggleCell: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: EddiesSpacing.sm,
   },
   toggleRow: {
