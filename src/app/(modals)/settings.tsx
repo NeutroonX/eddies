@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, View, Keyboard, ActivityIndicator } from 'react-native';
+import { Pressable, ScrollView, Share, StyleSheet, Text, View, Keyboard, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -22,6 +22,7 @@ export default function SettingsModal() {
   const db = useSQLiteContext();
   const { currency, firstDayOfWeek, hapticsEnabled, biometricStatus, setCurrency, setFirstDayOfWeek, setHapticsEnabled, setBiometricStatus, showToast } = useStore();
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [loading] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [backupLoading, setBackupLoading] = useState(false);
@@ -100,18 +101,7 @@ export default function SettingsModal() {
   }
 
   function handleDeleteAllData() {
-    Alert.alert(
-      'DELETE ALL DATA',
-      'This will permanently erase all transactions, vaults, caps and custom categories.\n\nYour name and join date will be kept.\n\nThis cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'DELETE EVERYTHING',
-          style: 'destructive',
-          onPress: confirmDeleteAllData,
-        },
-      ]
-    );
+    setShowDeleteConfirm(true);
   }
 
   async function confirmDeleteAllData() {
@@ -154,10 +144,7 @@ export default function SettingsModal() {
         <SectionTag label="EDDIES // SETTINGS 01-A" />
         <BarcodeMark height={16} />
         <Pressable
-          onPress={() => {
-            Keyboard.dismiss();
-            setTimeout(() => router.back(), 100);
-          }}
+          onPress={() => { Keyboard.dismiss(); setTimeout(() => router.back(), 100); }}
           hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel="Close"
@@ -328,6 +315,44 @@ export default function SettingsModal() {
           </>
         )}
       </ScrollView>
+
+      {/* ── Delete confirmation overlay ───────────────────── */}
+      {showDeleteConfirm && (
+        <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(150)} style={s.overlay}>
+          <Pressable style={s.scrim} onPress={() => setShowDeleteConfirm(false)} />
+          <View style={s.confirmPanel}>
+            <MonoLabel size={9} letterSpacing={3} color={EddiesColors.alert} weight="bold">
+              ⚠ DESTRUCTIVE ACTION
+            </MonoLabel>
+            <Text style={s.confirmTitle}>DELETE ALL DATA</Text>
+            <Text style={s.confirmBody}>
+              {'Permanently erases all transactions, vaults, caps and custom categories.\n\nYour name and join date are kept. This cannot be undone.'}
+            </Text>
+            <View style={s.confirmActions}>
+              <Pressable
+                style={s.confirmCancel}
+                onPress={() => setShowDeleteConfirm(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel delete"
+              >
+                <Text style={s.confirmCancelText}>CANCEL</Text>
+              </Pressable>
+              <Pressable
+                style={[s.confirmDelete, deleteLoading && s.controlDisabled]}
+                onPress={() => { setShowDeleteConfirm(false); confirmDeleteAllData(); }}
+                disabled={deleteLoading}
+                accessibilityRole="button"
+                accessibilityLabel="Confirm delete all data"
+              >
+                {deleteLoading
+                  ? <ActivityIndicator color={EddiesColors.bone} size="small" />
+                  : <Text style={s.confirmDeleteText}>DELETE EVERYTHING</Text>
+                }
+              </Pressable>
+            </View>
+          </View>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
@@ -488,5 +513,66 @@ const s = StyleSheet.create({
     fontSize: 12,
     color: EddiesColors.bone,
     fontWeight: '600',
+  },
+  // Delete confirmation overlay
+  overlay: {
+    ...StyleSheet.absoluteFill,
+    justifyContent: 'flex-end',
+    zIndex: 50,
+  },
+  scrim: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0,0,0,0.72)',
+  },
+  confirmPanel: {
+    backgroundColor: EddiesColors.surface,
+    borderTopWidth: 1,
+    borderTopColor: EddiesColors.alert + '40',
+    paddingHorizontal: EddiesSpacing.md,
+    paddingTop: EddiesSpacing.lg,
+    paddingBottom: EddiesSpacing.xl,
+    gap: EddiesSpacing.md,
+  },
+  confirmTitle: {
+    fontFamily: 'Rajdhani_700Bold',
+    fontSize: 28,
+    color: EddiesColors.alert,
+    letterSpacing: 2,
+  },
+  confirmBody: {
+    fontFamily: 'SpaceMono_400Regular',
+    fontSize: 11,
+    lineHeight: 18,
+    color: EddiesColors.steel,
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    gap: EddiesSpacing.sm,
+    marginTop: EddiesSpacing.xs,
+  },
+  confirmCancel: {
+    flex: 1,
+    paddingVertical: EddiesSpacing.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: EddiesColors.steel + '30',
+  },
+  confirmCancelText: {
+    fontFamily: 'Rajdhani_700Bold',
+    fontSize: 14,
+    letterSpacing: 2,
+    color: EddiesColors.steel,
+  },
+  confirmDelete: {
+    flex: 2,
+    paddingVertical: EddiesSpacing.md,
+    alignItems: 'center',
+    backgroundColor: EddiesColors.alert,
+  },
+  confirmDeleteText: {
+    fontFamily: 'Rajdhani_700Bold',
+    fontSize: 14,
+    letterSpacing: 2,
+    color: EddiesColors.bone,
   },
 });

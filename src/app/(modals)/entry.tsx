@@ -17,6 +17,7 @@ import { createTransaction, updateTransaction, getTransactionById } from '@/lib/
 import { findOrCreateCategory } from '@/lib/db/repos/categories';
 import { toMinorUnits, formatAmountTabular } from '@/lib/money';
 import { useStore } from '@/store/index';
+import { useCurrencySymbol } from '@/hooks/use-currency-symbol';
 import type { Transaction } from '@/lib/schemas';
 
 type Kind = 'outflow' | 'inflow';
@@ -29,6 +30,7 @@ export default function EntryModal() {
   const lastVaultId = useStore(s => s.lastVaultId);
   const setLastVaultId = useStore(s => s.setLastVaultId);
   const showToast = useStore(s => s.showToast);
+  const sym = useCurrencySymbol();
   const params = useLocalSearchParams<{ mode?: string; id?: string }>();
 
   const [rawAmount, setRawAmount] = useState('');
@@ -355,7 +357,7 @@ export default function EntryModal() {
       <View style={s.footer}>
         <View style={s.previewRow}>
           <Text style={[s.previewAmount, { color: amountColor }]}>
-            ${formatAmountTabular(amountMinor)}
+            {sym}{formatAmountTabular(amountMinor)}
           </Text>
           <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel + '66'}>{' · '}</MonoLabel>
           <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.steel}>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View, Keyboard } from 'react-native';
 
 import { MonoLabel } from '@/components/ui/mono-label';
@@ -26,6 +26,11 @@ export function VaultForm({ initialData, onSave, onCancel }: VaultFormProps) {
   const [typeIsOther, setTypeIsOther] = useState(!isPreset && !!initialData?.type);
   const [otherType, setOtherType] = useState(!isPreset ? (initialData?.type ?? '') : '');
   const [currency, setCurrency] = useState(initialData?.currency ?? preferredCurrency);
+
+  // Keep default currency in sync when user changes it in settings (new vault only)
+  useEffect(() => {
+    if (!initialData) setCurrency(preferredCurrency);
+  }, [preferredCurrency, initialData]);
   const [currencySearch, setCurrencySearch] = useState('');
   const [rawBalance, setRawBalance] = useState(initialData ? (initialData.opening_balance_minor / 100).toString() : '0');
   const [color, setColor] = useState(initialData?.color ?? EddiesColors.stock);
