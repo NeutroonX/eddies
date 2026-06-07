@@ -1,36 +1,16 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
 import { MonoLabel } from '@/components/ui/mono-label';
 import { authenticate } from '@/lib/biometric';
 import { useStore } from '@/store';
 
-function CornerBrackets({ color }: { color: string }) {
-  const size = 18;
-  const corners = ['tl', 'tr', 'bl', 'br'] as const;
-  return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      {corners.map((c) => {
-        const top  = c[0] === 't';
-        const left = c[1] === 'l';
-        const pad  = 20;
-        return (
-          <View key={c} style={[{ position: 'absolute' }, top ? { top: pad } : { bottom: pad }, left ? { left: pad } : { right: pad }]}>
-            <View style={{ position: 'absolute', width: size, height: 1, backgroundColor: color, ...(top ? { top: 0 } : { bottom: 0 }), ...(left ? { left: 0 } : { right: 0 }) }} />
-            <View style={{ position: 'absolute', width: 1, height: size, backgroundColor: color, ...(top ? { top: 0 } : { bottom: 0 }), ...(left ? { left: 0 } : { right: 0 }) }} />
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
 export function BiometricLock() {
-  const setAppLocked = useStore((s) => s.setAppLocked);
-  const [loading, setLoading] = useState(false);
-  const [failed, setFailed]   = useState(false);
-  const [attempts, setAttempts] = useState(0);
+  const setAppLocked              = useStore((s) => s.setAppLocked);
+  const [loading, setLoading]     = useState(false);
+  const [failed, setFailed]       = useState(false);
+  const [attempts, setAttempts]   = useState(0);
 
   async function tryUnlock() {
     setLoading(true);
@@ -50,82 +30,34 @@ export function BiometricLock() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const statusLabel = loading ? 'VERIFYING...' : failed ? `FAILED${attempts > 1 ? ` (${attempts}×)` : ''} — TRY AGAIN` : 'TOUCH SENSOR TO UNLOCK';
+
   return (
     <View style={s.root}>
-      {/* Blurred app preview underneath */}
-      <BlurView
-        intensity={Platform.OS === 'android' ? 80 : 100}
-        style={StyleSheet.absoluteFill}
-        tint="dark"
-      />
+      <BlurView intensity={Platform.OS === 'android' ? 80 : 100} style={StyleSheet.absoluteFill} tint="dark" />
       <View style={[StyleSheet.absoluteFill, s.scrim]} />
 
-      <CornerBrackets color={EddiesColors.steel + '40'} />
-
-      {/* Top status bar */}
-      <View style={s.topBar}>
-        <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel + '80'}>
-          SEC-LOCK // EDDIES
-        </MonoLabel>
-        <View style={s.statusRow}>
-          <View style={s.statusDot} />
-          <MonoLabel size={8} letterSpacing={1} color={EddiesColors.alert + '99'}>
-            LOCKED
-          </MonoLabel>
-        </View>
-      </View>
-
-      {/* Center lock UI */}
       <View style={s.center}>
-
-        {/* Lock icon */}
-        <View style={s.iconWrap}>
-          <View style={s.iconRing}>
-            <Image source={require('@/assets/images/logo_no_bg.png')} style={s.logo} resizeMode="contain" />
-          </View>
-          <MonoLabel size={7} letterSpacing={3} color={EddiesColors.steel + '55'} style={{ marginTop: EddiesSpacing.sm }}>
-            {loading ? 'READING...' : failed ? 'RETRY' : 'TOUCH SENSOR'}
-          </MonoLabel>
-        </View>
-
-        {/* Brand */}
         <Text style={s.brand}>EDDIES</Text>
         <View style={s.accentLine} />
-        <MonoLabel size={9} letterSpacing={4} color={EddiesColors.steel + 'AA'}>
-          AUTHENTICATION REQUIRED
-        </MonoLabel>
 
-        {/* Failure message */}
-        {failed && (
-          <View style={s.errorRow}>
-            <MonoLabel size={8} letterSpacing={1} color={EddiesColors.alert + 'CC'}>
-              {`▲ VERIFICATION FAILED${attempts > 1 ? ` (${attempts}×)` : ''} — TRY AGAIN`}
-            </MonoLabel>
-          </View>
-        )}
+        <View style={s.statusRow}>
+          {loading
+            ? <ActivityIndicator size="small" color={EddiesColors.steel} />
+            : <View style={[s.dot, failed && s.dotFailed]} />
+          }
+          <MonoLabel size={9} letterSpacing={2} color={failed ? EddiesColors.alert + 'CC' : EddiesColors.steel}>
+            {statusLabel}
+          </MonoLabel>
+        </View>
 
-        {/* Unlock button */}
         <Pressable
-          style={({ pressed }) => [s.btn, failed && s.btnFailed, pressed && s.btnPressed]}
+          style={({ pressed }) => [s.btn, pressed && s.btnPressed]}
           onPress={tryUnlock}
           disabled={loading}
         >
-          {loading ? (
-            <View style={s.btnInner}>
-              <ActivityIndicator size="small" color={EddiesColors.bone + '99'} />
-              <Text style={s.btnLabel}>VERIFYING</Text>
-            </View>
-          ) : (
-            <Text style={s.btnLabel}>{failed ? 'TRY AGAIN' : 'UNLOCK'}</Text>
-          )}
+          <Text style={s.btnLabel}>{failed ? 'TRY AGAIN' : 'UNLOCK'}</Text>
         </Pressable>
-      </View>
-
-      {/* Bottom hint */}
-      <View style={s.bottomBar}>
-        <MonoLabel size={7} letterSpacing={1} color={EddiesColors.steel + '40'}>
-          FINGERPRINT · FACE · PIN ACCEPTED
-        </MonoLabel>
       </View>
     </View>
   );
@@ -137,106 +69,52 @@ const s = StyleSheet.create({
     zIndex: 200,
   },
   scrim: {
-    backgroundColor: 'rgba(0,0,0,0.72)',
-  },
-  topBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: EddiesSpacing.md,
-    paddingTop: 52,
-    paddingBottom: EddiesSpacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: EddiesColors.steel + '15',
-  },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: EddiesSpacing.xs,
-  },
-  statusDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: EddiesColors.alert,
+    backgroundColor: 'rgba(0,0,0,0.78)',
   },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: EddiesSpacing.lg,
-    gap: EddiesSpacing.md,
-  },
-  iconWrap: {
-    alignItems: 'center',
-    marginBottom: EddiesSpacing.sm,
-  },
-  iconRing: {
-    width: 80,
-    height: 80,
-    borderWidth: 1,
-    borderColor: EddiesColors.alert + '50',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: EddiesColors.surface,
-  },
-  logo: {
-    width: 48,
-    height: 48,
+    gap: EddiesSpacing.lg,
   },
   brand: {
     fontFamily: EddiesFonts.displayBold,
-    fontSize: 56,
+    fontSize: 64,
     color: EddiesColors.bone,
-    letterSpacing: 10,
+    letterSpacing: 12,
   },
   accentLine: {
-    width: '60%',
+    width: 48,
     height: 1,
-    backgroundColor: EddiesColors.alert + '70',
+    backgroundColor: EddiesColors.alert,
   },
-  errorRow: {
-    borderLeftWidth: 2,
-    borderLeftColor: EddiesColors.alert,
-    paddingLeft: EddiesSpacing.sm,
-  },
-  btn: {
-    width: '100%',
-    paddingVertical: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: EddiesColors.steel + '35',
-    marginTop: EddiesSpacing.sm,
-  },
-  btnFailed: {
-    borderColor: EddiesColors.alert + '60',
-  },
-  btnPressed: { opacity: 0.75 },
-  btnInner: {
+  statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: EddiesSpacing.sm,
   },
+  dot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: EddiesColors.steel,
+  },
+  dotFailed: {
+    backgroundColor: EddiesColors.alert,
+  },
+  btn: {
+    marginTop: EddiesSpacing.xs,
+    borderWidth: 1,
+    borderColor: EddiesColors.steel + '30',
+    paddingVertical: 14,
+    paddingHorizontal: EddiesSpacing.xxl,
+  },
+  btnPressed: { opacity: 0.7 },
   btnLabel: {
     fontFamily: EddiesFonts.displayBold,
-    fontSize: 16,
+    fontSize: 14,
     color: EddiesColors.bone,
     letterSpacing: 5,
-  },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    paddingBottom: 36,
-    paddingTop: EddiesSpacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: EddiesColors.steel + '15',
   },
 });
