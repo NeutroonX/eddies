@@ -9,7 +9,7 @@ import { CapProgress } from '@/components/ui/cap-progress';
 import { MonoLabel } from '@/components/ui/mono-label';
 import { Numerals } from '@/components/ui/numerals';
 import { SpendBar } from '@/components/ui/spend-bar';
-import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
+import { EddiesColors, EddiesSpacing } from '@/constants/theme';
 import { formatMinor } from '@/lib/format';
 import { useCurrencySymbol } from '@/hooks/use-currency-symbol';
 import {

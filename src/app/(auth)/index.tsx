@@ -145,7 +145,6 @@ const ii = StyleSheet.create({
     backgroundColor: EddiesColors.surface,
     overflow: "hidden",
   },
-  accent: { width: 2, backgroundColor: EddiesColors.alert },
   input: {
     flex: 1,
     paddingVertical: 18,

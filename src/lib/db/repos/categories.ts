@@ -14,11 +14,6 @@ export async function getAllCategories(db: SQLiteDatabase): Promise<Category[]> 
   return z.array(CategorySchema).parse(rows);
 }
 
-export async function getCategoryById(db: SQLiteDatabase, id: string): Promise<Category | null> {
-  const row = await db.getFirstAsync('SELECT * FROM categories WHERE id = ?', id);
-  return row ? CategorySchema.parse(row) : null;
-}
-
 export async function createCategory(db: SQLiteDatabase, data: NewCategory): Promise<Category> {
   const category: Category = { id: genId(), ...data, archived: 0 };
   await db.runAsync(

@@ -330,7 +330,6 @@ const p1 = StyleSheet.create({
   subRow:     { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
   accentBar:  { width: 28, height: 1, backgroundColor: EddiesColors.alert },
   subText:    { fontFamily: EddiesFonts.mono, fontSize: 10, color: EddiesColors.steel, letterSpacing: 5 },
-  cursor:     { fontFamily: EddiesFonts.mono, fontSize: 10, color: EddiesColors.alert },
   body:       { gap: EddiesSpacing.sm },
   bodyInner:  { gap: EddiesSpacing.sm, paddingTop: EddiesSpacing.sm },
   headline:   { fontFamily: EddiesFonts.displayBold, fontSize: 18, color: EddiesColors.bone, letterSpacing: 3 },

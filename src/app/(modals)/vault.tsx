@@ -76,7 +76,6 @@ export default function VaultModal() {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: EddiesColors.ink },
-  flex: { flex: 1 },
   header: {
     paddingHorizontal: EddiesSpacing.md,
     paddingTop: EddiesSpacing.md,

@@ -87,7 +87,3 @@ export async function exportAsJSON(
 
   return JSON.stringify(exportData, null, 2);
 }
-
-export async function formatCurrencyForExport(minorUnits: number): Promise<string> {
-  return (minorUnits / 100).toFixed(2);
-}

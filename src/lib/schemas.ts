@@ -58,66 +58,32 @@ export const BudgetSchema = z.object({
 export type Budget = z.infer<typeof BudgetSchema>;
 export type NewBudget = Omit<Budget, 'id'>;
 
-// ── Settings ──────────────────────────────────────────────────────────────────
-export const SettingSchema = z.object({
-  key: z.string(),
-  value: z.string(),
-});
-export type Setting = z.infer<typeof SettingSchema>;
-
 // ── Analytics ─────────────────────────────────────────────────────────────────
-export const CategorySpendSchema = z.object({
-  category_id: z.string(),
-  category_name: z.string(),
-  total_minor: z.number().int().nonnegative(),
-  percentage: z.number().nonnegative(),
-});
-export type CategorySpend = z.infer<typeof CategorySpendSchema>;
+export type CategorySpend = {
+  category_id: string;
+  category_name: string;
+  total_minor: number;
+  percentage: number;
+};
 
-export const InflowOutflowSchema = z.object({
-  inflow: z.number().int().nonnegative(),
-  outflow: z.number().int().nonnegative(),
-  net: z.number().int(),
-});
-export type InflowOutflow = z.infer<typeof InflowOutflowSchema>;
+export type InflowOutflow = {
+  inflow: number;
+  outflow: number;
+  net: number;
+};
 
-export const DailyBurnSchema = z.object({
-  avgDailyMinor: z.number().int().nonnegative(),
-  projectedMonthEndMinor: z.number().int().nonnegative(),
-  daysInPeriod: z.number().int().positive(),
-});
-export type DailyBurn = z.infer<typeof DailyBurnSchema>;
+export type DailyBurn = {
+  avgDailyMinor: number;
+  projectedMonthEndMinor: number;
+  daysInPeriod: number;
+};
 
-export const NetWorthPointSchema = z.object({
-  date: z.number().int(),
-  balance: z.number().int(),
-});
-export type NetWorthPoint = z.infer<typeof NetWorthPointSchema>;
-
-export const CategoryTopSchema = z.object({
-  category_id: z.string(),
-  category_name: z.string(),
-  total_minor: z.number().int().nonnegative(),
-  transaction_count: z.number().int().nonnegative(),
-});
-export type CategoryTop = z.infer<typeof CategoryTopSchema>;
-
-export const PeriodSummarySchema = z.object({
-  total_inflow: z.number().int().nonnegative(),
-  total_outflow: z.number().int().nonnegative(),
-  net: z.number().int(),
-  daily_burn: z.number().int().nonnegative(),
-  days_in_period: z.number().int().positive(),
-});
-export type PeriodSummary = z.infer<typeof PeriodSummarySchema>;
-
-export const CapProgressSchema = z.object({
-  cap_id: z.string(),
-  category_id: z.string(),
-  category_name: z.string(),
-  cap_amount_minor: z.number().int().positive(),
-  spent_minor: z.number().int().nonnegative(),
-  percentage: z.number().nonnegative(),
-  is_over: z.boolean(),
-});
-export type CapProgress = z.infer<typeof CapProgressSchema>;
+export type CapProgress = {
+  cap_id: string;
+  category_id: string;
+  category_name: string;
+  cap_amount_minor: number;
+  spent_minor: number;
+  percentage: number;
+  is_over: boolean;
+};

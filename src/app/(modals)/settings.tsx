@@ -21,7 +21,7 @@ const APP_VERSION = '1.0.0';
 
 export default function SettingsModal() {
   const db = useSQLiteContext();
-  const { currency, firstDayOfWeek, hapticsEnabled, crashReportingEnabled, biometricStatus, setCurrency, setFirstDayOfWeek, setHapticsEnabled, setCrashReportingEnabled, setBiometricStatus, showToast } = useStore();
+  const { currency, firstDayOfWeek, hapticsEnabled, biometricStatus, setCurrency, setFirstDayOfWeek, setHapticsEnabled, setCrashReportingEnabled, setBiometricStatus, showToast } = useStore();
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [loading, setLoading] = useState(true);
@@ -197,7 +197,7 @@ export default function SettingsModal() {
             <View style={s.section}>
               <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>CURRENCY</MonoLabel>
               <Pressable
-                style={[s.control, expanded === 'currency' && s.controlActive]}
+                style={s.control}
                 onPress={() => setExpanded(expanded === 'currency' ? null : 'currency')}
               >
                 <Text style={[s.controlText, s.controlValue]}>{currency}</Text>
@@ -368,7 +368,6 @@ const s = StyleSheet.create({
     backgroundColor: EddiesColors.surface,
     borderRadius: 6,
   },
-  controlActive: {},
   controlDisabled: { opacity: 0.6 },
   controlText: {
     fontFamily: 'SpaceMono_400Regular',
@@ -441,15 +440,6 @@ const s = StyleSheet.create({
     color: EddiesColors.steel,
   },
   segmentTextActive: { color: EddiesColors.bone },
-  toggleGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: EddiesSpacing.md,
-  },
-  toggleCell: {
-    alignItems: 'flex-start',
-    gap: EddiesSpacing.sm,
-  },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',

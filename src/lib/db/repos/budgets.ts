@@ -12,19 +12,6 @@ export async function getAllBudgets(db: SQLiteDatabase): Promise<Budget[]> {
   return z.array(BudgetSchema).parse(rows);
 }
 
-export async function getBudgetByCategoryAndPeriod(
-  db: SQLiteDatabase,
-  categoryId: string,
-  period: 'weekly' | 'monthly'
-): Promise<Budget | null> {
-  const row = await db.getFirstAsync(
-    'SELECT * FROM budgets WHERE category_id = ? AND period = ? ORDER BY start_date DESC LIMIT 1',
-    categoryId,
-    period
-  );
-  return row ? BudgetSchema.parse(row) : null;
-}
-
 export async function createBudget(db: SQLiteDatabase, data: NewBudget): Promise<Budget> {
   const budget: Budget = { id: genId(), ...data };
   await db.runAsync(
