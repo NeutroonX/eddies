@@ -24,8 +24,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.eddies.app",
-      "versionCode": 1
+      "package": "com.eddies.app"
     },
     "web": {
       "output": "static",
@@ -54,7 +53,17 @@
       "expo-web-browser",
       "expo-secure-store",
       "expo-apple-authentication",
-      "expo-local-authentication"
+      "expo-local-authentication",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraPropertiesEntries": {
+              "archivesBaseName": "eddies"
+            }
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

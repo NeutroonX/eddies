@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -20,7 +21,7 @@ import { useStore } from '@/store';
 import { useAccounts } from '@/hooks/use-accounts';
 import { getSetting, setSetting } from '@/lib/db/repos/settings-repo';
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.0.0 Beta 1';
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
 export default function SystemScreen() {
@@ -172,10 +173,13 @@ export default function SystemScreen() {
           <ActionRow label="CREATE BACKUP" onPress={() => nav('/(modals)/settings')} />
         </View>
 
-        {/* ── Support ──────────────────────────────────── */}
+        {/* ── Feedback ─────────────────────────────────── */}
         <View style={s.section}>
-          <SectionTag label="SUPPORT" />
-          <ActionRow label="SUPPORT DEV" onPress={() => nav('/(modals)/support')} />
+          <SectionTag label="FEEDBACK" />
+          <ActionRow
+            label="SEND FEEDBACK"
+            onPress={() => Linking.openURL('mailto:feedback.eddies.dev@atomicmail.io?subject=Feedback%20%2F%20Suggestion')}
+          />
         </View>
 
         {/* ── Build ────────────────────────────────────── */}
