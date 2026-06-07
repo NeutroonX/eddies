@@ -1,10 +1,11 @@
+import * as Crypto from 'expo-crypto';
 import type { SQLiteDatabase } from 'expo-sqlite';
 import { z } from 'zod';
 
 import { CategorySchema, type Category, type NewCategory } from '@/lib/schemas';
 
 function genId(): string {
-  return `cat_${crypto.randomUUID().replace(/-/g, '')}`;
+  return `cat_${Crypto.randomUUID().replace(/-/g, '')}`;
 }
 
 export async function getAllCategories(db: SQLiteDatabase): Promise<Category[]> {

@@ -1,10 +1,11 @@
+import * as Crypto from 'expo-crypto';
 import type { SQLiteDatabase } from 'expo-sqlite';
 import { z } from 'zod';
 
 import { TransactionSchema, type NewTransaction, type Transaction } from '@/lib/schemas';
 
 function genId(): string {
-  return `tx_${crypto.randomUUID().replace(/-/g, '')}`;
+  return `tx_${Crypto.randomUUID().replace(/-/g, '')}`;
 }
 
 export async function getTransactions(

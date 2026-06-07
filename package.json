@@ -13,6 +13,7 @@
     "expo-auth-session": "~56.0.13",
     "expo-blur": "~56.0.3",
     "expo-constants": "~56.0.17",
+    "expo-crypto": "~56.0.4",
     "expo-dev-client": "~56.0.19",
     "expo-font": "~56.0.5",
     "expo-glass-effect": "~56.0.4",

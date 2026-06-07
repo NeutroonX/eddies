@@ -1,10 +1,11 @@
+import * as Crypto from 'expo-crypto';
 import type { SQLiteDatabase } from 'expo-sqlite';
 import { z } from 'zod';
 
 import { AccountSchema, type Account, type NewAccount } from '@/lib/schemas';
 
 function genId(): string {
-  return `acc_${crypto.randomUUID().replace(/-/g, '')}`;
+  return `acc_${Crypto.randomUUID().replace(/-/g, '')}`;
 }
 
 export async function getAllAccounts(db: SQLiteDatabase): Promise<Account[]> {

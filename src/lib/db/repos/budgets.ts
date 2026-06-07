@@ -1,10 +1,11 @@
+import * as Crypto from 'expo-crypto';
 import type { SQLiteDatabase } from 'expo-sqlite';
 import { z } from 'zod';
 
 import { BudgetSchema, type Budget, type NewBudget } from '@/lib/schemas';
 
 function genId(): string {
-  return `bgt_${crypto.randomUUID().replace(/-/g, '')}`;
+  return `bgt_${Crypto.randomUUID().replace(/-/g, '')}`;
 }
 
 export async function getAllBudgets(db: SQLiteDatabase): Promise<Budget[]> {
