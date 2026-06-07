@@ -451,12 +451,6 @@ const s = StyleSheet.create({
   },
   toggleCell: {
     flex: 1,
-    backgroundColor: EddiesColors.surface,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: EddiesColors.steel + '1A',
-    paddingHorizontal: EddiesSpacing.md,
-    paddingVertical: EddiesSpacing.sm,
     gap: EddiesSpacing.sm,
   },
   toggleRow: {
