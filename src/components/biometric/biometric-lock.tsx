@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
 import { MonoLabel } from '@/components/ui/mono-label';
@@ -81,7 +81,7 @@ export function BiometricLock() {
         {/* Lock icon */}
         <View style={s.iconWrap}>
           <View style={s.iconRing}>
-            <Text style={s.icon}>◉</Text>
+            <Image source={require('@/assets/images/logo_no_bg.png')} style={s.logo} resizeMode="contain" />
           </View>
           <MonoLabel size={7} letterSpacing={3} color={EddiesColors.steel + '55'} style={{ marginTop: EddiesSpacing.sm }}>
             {loading ? 'READING...' : failed ? 'RETRY' : 'TOUCH SENSOR'}
@@ -184,11 +184,9 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: EddiesColors.surface,
   },
-  icon: {
-    fontFamily: EddiesFonts.mono,
-    fontSize: 34,
-    color: EddiesColors.alert,
-    lineHeight: 42,
+  logo: {
+    width: 48,
+    height: 48,
   },
   brand: {
     fontFamily: EddiesFonts.displayBold,

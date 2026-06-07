@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSQLiteContext } from 'expo-sqlite';
 import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
@@ -96,7 +96,7 @@ export function BiometricSetup() {
         {/* Icon block */}
         <View style={s.iconBlock}>
           <View style={s.iconFrame}>
-            <Text style={s.icon}>◉</Text>
+            <Image source={require('@/assets/images/logo_no_bg.png')} style={s.logo} resizeMode="contain" />
           </View>
           <View style={s.iconLineH} />
           <View style={s.iconLineV} />
@@ -229,11 +229,9 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: EddiesColors.surface,
   },
-  icon: {
-    fontFamily: EddiesFonts.mono,
-    fontSize: 32,
-    color: EddiesColors.alert,
-    lineHeight: 40,
+  logo: {
+    width: 48,
+    height: 48,
   },
   iconLineH: {
     position: 'absolute',
