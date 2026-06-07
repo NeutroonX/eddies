@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { SymbolView } from 'expo-symbols';
 
@@ -71,7 +71,22 @@ export function EntryRow({ row, isPendingDelete = false, onPress, onEdit, onDele
       onSwipeableRightOpen={triggerDelete}
       overshootFriction={8}
     >
-      <Pressable onPress={onPress} style={[styles.row, isPendingDelete && styles.fading]}>
+      <Pressable
+        onPress={onPress}
+        onLongPress={() =>
+          Alert.alert(
+            row.note?.trim() || row.category_name || 'Entry',
+            undefined,
+            [
+              { text: 'Edit', onPress: triggerEdit },
+              { text: 'Delete', style: 'destructive', onPress: triggerDelete },
+              { text: 'Cancel', style: 'cancel' },
+            ]
+          )
+        }
+        accessibilityHint="Hold to edit or delete"
+        style={[styles.row, isPendingDelete && styles.fading]}
+      >
         {/* Icon */}
         <CategoryIcon glyph={row.category_glyph} color={row.category_color} />
 

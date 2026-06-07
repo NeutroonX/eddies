@@ -10,7 +10,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, type Href } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 
 import { BarcodeMark } from '@/components/ui/barcode-mark';
@@ -51,8 +50,6 @@ export default function SystemScreen() {
       // non-critical
     }
   }, [db]);
-
-  useFocusEffect(useCallback(() => { loadStats(); }, [loadStats]));
 
   useEffect(() => { loadStats(); }, [dbVersion, loadStats]);
 

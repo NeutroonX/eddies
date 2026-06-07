@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
 import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SymbolView } from 'expo-symbols';
 
@@ -83,7 +83,23 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
         else if (direction === 'left') triggerDelete();
       }}
     >
-      <Pressable onPress={onPress} style={s.wrapper} accessibilityRole="button">
+      <Pressable
+        onPress={onPress}
+        onLongPress={() =>
+          Alert.alert(
+            account.name,
+            undefined,
+            [
+              { text: 'Edit', onPress: triggerEdit },
+              { text: 'Delete', style: 'destructive', onPress: triggerDelete },
+              { text: 'Cancel', style: 'cancel' },
+            ]
+          )
+        }
+        accessibilityHint="Hold to edit or delete"
+        style={s.wrapper}
+        accessibilityRole="button"
+      >
         <IDCard style={[s.card, isActive ? s.cardActive : undefined]}>
 
           <View style={s.topRow}>

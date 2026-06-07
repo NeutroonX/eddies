@@ -21,6 +21,7 @@ import { GlobalToast } from '@/components/ui/global-toast';
 import { useArchiveCheck } from '@/hooks/use-archive-check';
 import { useInitSettings } from '@/hooks/use-init-settings';
 import { useStore } from '@/store';
+import { useShallow } from 'zustand/react/shallow';
 import { captureError, initTelemetry } from '@/lib/telemetry';
 import { BiometricSetup } from '@/components/biometric/biometric-setup';
 import { BiometricLock } from '@/components/biometric/biometric-lock';
@@ -118,10 +119,14 @@ function InviteGate() {
 // Shows setup prompt on first entry, lock screen on subsequent launches and
 // when app returns from background. Works on both Android and iOS.
 function BiometricGate() {
-  const biometricStatus  = useStore((s) => s.biometricStatus);
-  const inviteValidated  = useStore((s) => s.inviteValidated);
-  const appLocked        = useStore((s) => s.appLocked);
-  const setAppLocked     = useStore((s) => s.setAppLocked);
+  const { biometricStatus, inviteValidated, appLocked, setAppLocked } = useStore(
+    useShallow((s) => ({
+      biometricStatus: s.biometricStatus,
+      inviteValidated: s.inviteValidated,
+      appLocked: s.appLocked,
+      setAppLocked: s.setAppLocked,
+    }))
+  );
   const segments         = useSegments();
 
   const appState = useRef(AppState.currentState);
@@ -173,8 +178,9 @@ function RootLayout() {
     SpaceMono_700Bold,
   });
 
-  const onboardingComplete = useStore((s) => s.onboardingComplete);
-  const inviteValidated    = useStore((s) => s.inviteValidated);
+  const { onboardingComplete, inviteValidated } = useStore(
+    useShallow((s) => ({ onboardingComplete: s.onboardingComplete, inviteValidated: s.inviteValidated }))
+  );
 
   const fontsReady    = loaded || !!error;
   const settingsReady = onboardingComplete !== null && inviteValidated !== null;

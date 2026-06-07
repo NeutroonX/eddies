@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -229,6 +229,17 @@ export default function LedgerScreen() {
     setPendingDeleteId(null);
   }
 
+  const renderItem = useCallback(({ item }: { item: LedgerRow }) => (
+    <EntryRow
+      row={item}
+      isPendingDelete={item.id === pendingDeleteId}
+      onPress={() => router.push(`/(modals)/entry?mode=edit&id=${item.id}`)}
+      onEdit={() => router.push(`/(modals)/entry?mode=edit&id=${item.id}`)}
+      onDelete={() => handleDelete(item)}
+    />
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [pendingDeleteId]);
+
   return (
     <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
       <LedgerHeader
@@ -243,15 +254,7 @@ export default function LedgerScreen() {
         keyExtractor={item => item.id}
         stickySectionHeadersEnabled
         renderSectionHeader={({ section }) => <DayHeader section={section} />}
-        renderItem={({ item }) => (
-          <EntryRow
-            row={item}
-            isPendingDelete={item.id === pendingDeleteId}
-            onPress={() => router.push(`/(modals)/entry?mode=edit&id=${item.id}`)}
-            onEdit={() => router.push(`/(modals)/entry?mode=edit&id=${item.id}`)}
-            onDelete={() => handleDelete(item)}
-          />
-        )}
+        renderItem={renderItem}
         ListFooterComponent={atRowLimit ? <LedgerLimitBanner /> : null}
         ListEmptyComponent={loading ? null : <EmptyState />}
         ItemSeparatorComponent={() => <View style={s.separator} />}
