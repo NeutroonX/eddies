@@ -241,38 +241,35 @@ export default function SettingsModal() {
               </View>
             </View>
 
-            {/* Haptics + App Lock side by side */}
+            {/* Haptics */}
             <View style={s.section}>
-              <View style={s.toggleGrid}>
-                <View style={s.toggleCell}>
-                  <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>HAPTICS</MonoLabel>
-                  <View style={s.toggleRow}>
-                    <Pressable
-                      style={[s.toggle, hapticsEnabled && s.toggleActive]}
-                      onPress={() => handleHapticsChange(!hapticsEnabled)}
-                    >
-                      <View style={[s.toggleThumb, hapticsEnabled && s.toggleThumbActive]} />
-                    </Pressable>
-                    <Text style={s.toggleLabel}>{hapticsEnabled ? 'ON' : 'OFF'}</Text>
-                  </View>
-                </View>
-
-                {Platform.OS === 'android' && (
-                  <View style={s.toggleCell}>
-                    <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>APP LOCK</MonoLabel>
-                    <View style={s.toggleRow}>
-                      <Pressable
-                        style={[s.toggle, biometricStatus === 'enabled' && s.toggleActive]}
-                        onPress={() => handleBiometricChange(biometricStatus !== 'enabled')}
-                      >
-                        <View style={[s.toggleThumb, biometricStatus === 'enabled' && s.toggleThumbActive]} />
-                      </Pressable>
-                      <Text style={s.toggleLabel}>{biometricStatus === 'enabled' ? 'ON' : 'OFF'}</Text>
-                    </View>
-                  </View>
-                )}
+              <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>HAPTICS</MonoLabel>
+              <View style={s.toggleRow}>
+                <Pressable
+                  style={[s.toggle, hapticsEnabled && s.toggleActive]}
+                  onPress={() => handleHapticsChange(!hapticsEnabled)}
+                >
+                  <View style={[s.toggleThumb, hapticsEnabled && s.toggleThumbActive]} />
+                </Pressable>
+                <Text style={s.toggleLabel}>{hapticsEnabled ? 'ENABLED' : 'DISABLED'}</Text>
               </View>
             </View>
+
+            {/* App Lock */}
+            {Platform.OS === 'android' && (
+              <View style={s.section}>
+                <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>APP LOCK</MonoLabel>
+                <View style={s.toggleRow}>
+                  <Pressable
+                    style={[s.toggle, biometricStatus === 'enabled' && s.toggleActive]}
+                    onPress={() => handleBiometricChange(biometricStatus !== 'enabled')}
+                  >
+                    <View style={[s.toggleThumb, biometricStatus === 'enabled' && s.toggleThumbActive]} />
+                  </Pressable>
+                  <Text style={s.toggleLabel}>{biometricStatus === 'enabled' ? 'ENABLED' : 'DISABLED'}</Text>
+                </View>
+              </View>
+            )}
 
             {/* Crash Reporting — always on */}
             <View style={s.section}>
