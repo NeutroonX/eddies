@@ -73,21 +73,21 @@ type BadgeProps = {
 };
 
 function FloatingBadge({ symbol, label, floatPhase, entranceDelay, style }: BadgeProps) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const enterY  = useRef(new Animated.Value(10)).current;
-  const floatY  = useRef(new Animated.Value(0)).current;
+  const opacityRef = useRef(new Animated.Value(0));
+  const enterYRef  = useRef(new Animated.Value(10));
+  const floatYRef  = useRef(new Animated.Value(0));
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 500, delay: entranceDelay, useNativeDriver: true }),
-      Animated.timing(enterY,  { toValue: 0, duration: 500, delay: entranceDelay, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.timing(opacityRef.current, { toValue: 1, duration: 500, delay: entranceDelay, useNativeDriver: true }),
+      Animated.timing(enterYRef.current,  { toValue: 0, duration: 500, delay: entranceDelay, easing: Easing.out(Easing.quad), useNativeDriver: true }),
     ]).start();
 
     const HALF = 2000;
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(floatY, { toValue: -6, duration: HALF, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        Animated.timing(floatY, { toValue:  6, duration: HALF, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(floatYRef.current, { toValue: -6, duration: HALF, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(floatYRef.current, { toValue:  6, duration: HALF, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
       ])
     );
     const t = setTimeout(() => loop.start(), floatPhase * HALF * 2);
@@ -96,7 +96,7 @@ function FloatingBadge({ symbol, label, floatPhase, entranceDelay, style }: Badg
 
   return (
     <Animated.View
-      style={[fb.wrap, style, { opacity, transform: [{ translateY: Animated.add(enterY, floatY) }] }]}
+      style={[fb.wrap, style, { opacity: opacityRef.current, transform: [{ translateY: Animated.add(enterYRef.current, floatYRef.current) }] }]}
       pointerEvents="none"
     >
       <Text style={fb.symbol}>{symbol}</Text>
@@ -121,20 +121,20 @@ const fb = StyleSheet.create({
 
 // ── Gear reticle (rotating ring at corner) ─────────────────────────────────
 function GearRing({ delay = 0 }: { delay?: number }) {
-  const rotate  = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
+  const rotateRef  = useRef(new Animated.Value(0));
+  const opacityRef = useRef(new Animated.Value(0));
 
   useEffect(() => {
-    Animated.timing(opacity, { toValue: 0.5, duration: 800, delay, useNativeDriver: true }).start();
+    Animated.timing(opacityRef.current, { toValue: 0.5, duration: 800, delay, useNativeDriver: true }).start();
     Animated.loop(
-      Animated.timing(rotate, { toValue: 1, duration: 12000, easing: Easing.linear, useNativeDriver: true })
+      Animated.timing(rotateRef.current, { toValue: 1, duration: 12000, easing: Easing.linear, useNativeDriver: true })
     ).start();
   }, []);
 
-  const rot = rotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  const rot = rotateRef.current.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
   return (
-    <Animated.View style={{ opacity, transform: [{ rotate: rot }], width: 38, height: 38 }} pointerEvents="none">
+    <Animated.View style={{ opacity: opacityRef.current, transform: [{ rotate: rot }], width: 38, height: 38 }} pointerEvents="none">
       <View style={{ width: 38, height: 38, borderRadius: 19, borderWidth: 1, borderColor: EddiesColors.steel + '60' }} />
       <View style={{ position: 'absolute', top: 2,  left: 17, width: 4, height: 1,  backgroundColor: EddiesColors.steel + '80' }} />
       <View style={{ position: 'absolute', bottom: 2, left: 17, width: 4, height: 1,  backgroundColor: EddiesColors.steel + '80' }} />
@@ -146,18 +146,18 @@ function GearRing({ delay = 0 }: { delay?: number }) {
 
 // ── Red bar (single, slides in) ────────────────────────────────────────────
 function AnimatedBar({ delay }: { delay: number }) {
-  const tx      = useRef(new Animated.Value(-36)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
+  const txRef      = useRef(new Animated.Value(-36));
+  const opacityRef = useRef(new Animated.Value(0));
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 200, delay, useNativeDriver: true }),
-      Animated.timing(tx,      { toValue: 0, duration: 280, delay, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.timing(opacityRef.current, { toValue: 1, duration: 200, delay, useNativeDriver: true }),
+      Animated.timing(txRef.current,      { toValue: 0, duration: 280, delay, easing: Easing.out(Easing.quad), useNativeDriver: true }),
     ]).start();
   }, []);
 
   return (
-    <Animated.View style={{ width: 28, height: 3, backgroundColor: EddiesColors.alert, opacity, transform: [{ translateX: tx }] }} />
+    <Animated.View style={{ width: 28, height: 3, backgroundColor: EddiesColors.alert, opacity: opacityRef.current, transform: [{ translateX: txRef.current }] }} />
   );
 }
 
@@ -171,12 +171,12 @@ function RedBars({ count = 3, baseDelay = 300 }: { count?: number; baseDelay?: n
 
 // ── Warning triangle icons (stacked column) ────────────────────────────────
 function TriangleItem({ delay }: { delay: number }) {
-  const opacity = useRef(new Animated.Value(0)).current;
+  const opacityRef = useRef(new Animated.Value(0));
   useEffect(() => {
-    Animated.timing(opacity, { toValue: 1, duration: 300, delay, useNativeDriver: true }).start();
+    Animated.timing(opacityRef.current, { toValue: 1, duration: 300, delay, useNativeDriver: true }).start();
   }, []);
   return (
-    <Animated.View style={{ opacity }}>
+    <Animated.View style={{ opacity: opacityRef.current }}>
       <MonoLabel size={9} letterSpacing={0} color={EddiesColors.alert + '80'}>△</MonoLabel>
     </Animated.View>
   );
@@ -192,18 +192,18 @@ function TriangleStack({ count = 3, baseDelay = 400 }: { count?: number; baseDel
 
 // ── Feature row (page 2) ──────────────────────────────────────────────────
 function FeatureRow({ num, title, desc, delay }: { num: string; title: string; desc: string; delay: number }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const ty      = useRef(new Animated.Value(14)).current;
+  const opacityRef = useRef(new Animated.Value(0));
+  const tyRef      = useRef(new Animated.Value(14));
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 450, delay, useNativeDriver: true }),
-      Animated.timing(ty,      { toValue: 0, duration: 450, delay, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.timing(opacityRef.current, { toValue: 1, duration: 450, delay, useNativeDriver: true }),
+      Animated.timing(tyRef.current,      { toValue: 0, duration: 450, delay, easing: Easing.out(Easing.quad), useNativeDriver: true }),
     ]).start();
   }, []);
 
   return (
-    <Animated.View style={{ opacity, transform: [{ translateY: ty }] }}>
+    <Animated.View style={{ opacity: opacityRef.current, transform: [{ translateY: tyRef.current }] }}>
       <View style={fr.row}>
         <MonoLabel size={8} letterSpacing={1} color={EddiesColors.alert + '88'}>{num}</MonoLabel>
         <View style={fr.right}>
@@ -235,17 +235,17 @@ const pg = StyleSheet.create({
 
 // ── PAGE 1 ─────────────────────────────────────────────────────────────────
 function Page1({ height }: { height: number }) {
-  const heroOpacity = useRef(new Animated.Value(0)).current;
-  const heroY       = useRef(new Animated.Value(28)).current;
-  const bodyOpacity = useRef(new Animated.Value(0)).current;
-  const btmOpacity  = useRef(new Animated.Value(0)).current;
+  const heroOpacityRef = useRef(new Animated.Value(0));
+  const heroYRef       = useRef(new Animated.Value(28));
+  const bodyOpacityRef = useRef(new Animated.Value(0));
+  const btmOpacityRef  = useRef(new Animated.Value(0));
   const [subText, setSubText] = useState('');
   const FULL_SUB = 'FINANCIAL OS';
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(heroOpacity, { toValue: 1, duration: 700, delay: 200, useNativeDriver: true }),
-      Animated.timing(heroY,       { toValue: 0, duration: 700, delay: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(heroOpacityRef.current, { toValue: 1, duration: 700, delay: 200, useNativeDriver: true }),
+      Animated.timing(heroYRef.current,       { toValue: 0, duration: 700, delay: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
 
     let tw: ReturnType<typeof setInterval>;
@@ -258,8 +258,8 @@ function Page1({ height }: { height: number }) {
       }, 55);
     }, 700);
 
-    Animated.timing(bodyOpacity, { toValue: 1, duration: 600, delay: 1400, useNativeDriver: true }).start();
-    Animated.timing(btmOpacity,  { toValue: 1, duration: 500, delay: 1900, useNativeDriver: true }).start();
+    Animated.timing(bodyOpacityRef.current, { toValue: 1, duration: 600, delay: 1400, useNativeDriver: true }).start();
+    Animated.timing(btmOpacityRef.current,  { toValue: 1, duration: 500, delay: 1900, useNativeDriver: true }).start();
 
     return () => { clearTimeout(t); clearInterval(tw); };
   }, []);
@@ -293,7 +293,7 @@ function Page1({ height }: { height: number }) {
 
         {/* Hero — centered */}
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Animated.View style={{ opacity: heroOpacity, transform: [{ translateY: heroY }], alignItems: 'center' }}>
+          <Animated.View style={{ opacity: heroOpacityRef.current, transform: [{ translateY: heroYRef.current }], alignItems: 'center' }}>
             <Text style={p1.displayBig}>EDDIES</Text>
             <View style={p1.subRow}>
               <View style={p1.accentBar} />
@@ -304,7 +304,7 @@ function Page1({ height }: { height: number }) {
         </View>
 
         {/* Body copy */}
-        <Animated.View style={[p1.body, { opacity: bodyOpacity }]}>
+        <Animated.View style={[p1.body, { opacity: bodyOpacityRef.current }]}>
           <View style={p1.bodyInner}>
             <Text style={p1.headline}>COMMAND YOUR FINANCES.</Text>
             <MonoLabel size={9} letterSpacing={0.5} color={EddiesColors.steel} style={{ lineHeight: 15 }}>
@@ -317,7 +317,7 @@ function Page1({ height }: { height: number }) {
         </Animated.View>
 
         {/* Bottom row */}
-        <Animated.View style={[p1.bottomRow, { opacity: btmOpacity }]}>
+        <Animated.View style={[p1.bottomRow, { opacity: btmOpacityRef.current }]}>
           <BarcodeMark height={18} style={{ flex: 1 }} />
           <DataBadge lines={['PERSONAL FINANCE', 'V1.0 // LOCAL']} />
         </Animated.View>
@@ -338,13 +338,13 @@ const p1 = StyleSheet.create({
 
 // ── PAGE 2 ─────────────────────────────────────────────────────────────────
 function Page2({ height, onDeploy }: { height: number; onDeploy: () => void }) {
-  const ctaOpacity = useRef(new Animated.Value(0)).current;
-  const ctaY       = useRef(new Animated.Value(16)).current;
+  const ctaOpacityRef = useRef(new Animated.Value(0));
+  const ctaYRef       = useRef(new Animated.Value(16));
 
   useEffect(() => {
     const out = Easing.out(Easing.quad);
-    Animated.timing(ctaOpacity, { toValue: 1, duration: 500, delay: 1050, useNativeDriver: true }).start();
-    Animated.timing(ctaY,       { toValue: 0, duration: 500, delay: 1050, easing: out, useNativeDriver: true }).start();
+    Animated.timing(ctaOpacityRef.current, { toValue: 1, duration: 500, delay: 1050, useNativeDriver: true }).start();
+    Animated.timing(ctaYRef.current,       { toValue: 0, duration: 500, delay: 1050, easing: out, useNativeDriver: true }).start();
   }, []);
 
   return (
@@ -390,7 +390,7 @@ function Page2({ height, onDeploy }: { height: number; onDeploy: () => void }) {
         <View style={{ flex: 1 }} />
 
         {/* CTA */}
-        <Animated.View style={{ opacity: ctaOpacity, transform: [{ translateY: ctaY }] }}>
+        <Animated.View style={{ opacity: ctaOpacityRef.current, transform: [{ translateY: ctaYRef.current }] }}>
           <View style={p2.metaRow}>
             <MonoLabel size={7} letterSpacing={1} color={EddiesColors.steel + '44'}>ALL DATA ON-DEVICE</MonoLabel>
             <MonoLabel size={7} letterSpacing={1} color={EddiesColors.alert + '88'}>USE WITH DISCIPLINE</MonoLabel>
@@ -478,9 +478,11 @@ export default function OnboardingScreen() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [pageHeight, setPageHeight] = useState(0);
 
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
-    if (viewableItems[0]) setActiveIndex(viewableItems[0].index ?? 0);
-  }).current;
+  const onViewableItemsChangedRef = useRef<({ viewableItems }: { viewableItems: ViewToken[] }) => void>(
+    ({ viewableItems }) => {
+      if (viewableItems[0]) setActiveIndex(viewableItems[0].index ?? 0);
+    }
+  );
 
   async function handleDeploy() {
     await setSetting(db, 'onboarding_complete', 'true').catch(console.error);
@@ -509,7 +511,7 @@ export default function OnboardingScreen() {
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
-            onViewableItemsChanged={onViewableItemsChanged}
+            onViewableItemsChanged={onViewableItemsChangedRef.current}
             viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
             scrollEventThrottle={16}
           />

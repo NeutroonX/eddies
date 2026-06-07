@@ -69,17 +69,28 @@ Deno.serve(async (req: Request) => {
     const newUsesCount = usesCount + 1;
     const shouldDeactivate = maxUses !== null && newUsesCount >= maxUses;
 
-    await fetch(
-      `${url}/rest/v1/invite_codes?id=eq.${data.id}`,
+    // Atomic conditional update: filter includes uses_count=eq.{usesCount} so a concurrent
+    // request that already incremented it will cause this PATCH to match 0 rows.
+    const patchRes = await fetch(
+      `${url}/rest/v1/invite_codes?id=eq.${data.id}&uses_count=eq.${usesCount}&is_active=eq.true`,
       {
         method: 'PATCH',
-        headers: { ...headers, 'Prefer': 'return=minimal' },
+        headers: { ...headers, 'Prefer': 'return=representation' },
         body: JSON.stringify({
           uses_count: newUsesCount,
           ...(shouldDeactivate ? { is_active: false } : {}),
         }),
       },
     );
+    const updated: Record<string, unknown>[] = await patchRes.json();
+
+    if (updated.length === 0) {
+      // Another concurrent request won the race — code was already used or exhausted.
+      return new Response(
+        JSON.stringify({ granted: false, error: 'CODE_EXHAUSTED' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
 
     return new Response(
       JSON.stringify({ granted: true }),

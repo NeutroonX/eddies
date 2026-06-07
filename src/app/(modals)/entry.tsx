@@ -55,14 +55,15 @@ export default function EntryModal() {
           setVaultId(entry.account_id);
           setNote(entry.note || '');
         }
-        setLoading(false);
-      }).catch(console.error);
+      }).catch(console.error).finally(() => setLoading(false));
     }
   }, [isEditMode, params.id, db]);
 
   useEffect(() => {
-    if (!isEditMode && !vaultId && accounts.length > 0) setVaultId(accounts[0].id);
-  }, [accounts, vaultId, isEditMode]);
+    if (!isEditMode && accounts.length > 0) {
+      setVaultId(prev => prev ?? accounts[0].id);
+    }
+  }, [accounts, isEditMode]);
 
   function handleKindChange(k: Kind) {
     setKind(k);

@@ -36,12 +36,19 @@ export async function updateAccount(
   id: string,
   data: Partial<NewAccount>
 ): Promise<void> {
-  const entries = Object.entries(data);
-  if (entries.length === 0) return;
-  const set = entries.map(([k]) => `${k} = ?`).join(', ');
+  const ALLOWED_COLS: Array<keyof NewAccount> = ['name', 'type', 'currency', 'opening_balance_minor', 'color'];
+  const updates: string[] = [];
+  const values: (string | number | null)[] = [];
+  for (const col of ALLOWED_COLS) {
+    if (col in data) {
+      updates.push(`${col} = ?`);
+      values.push(data[col] as string | number | null);
+    }
+  }
+  if (updates.length === 0) return;
   await db.runAsync(
-    `UPDATE accounts SET ${set} WHERE id = ?`,
-    ...entries.map(([, v]) => v as string | number),
+    `UPDATE accounts SET ${updates.join(', ')} WHERE id = ?`,
+    ...values,
     id
   );
 }

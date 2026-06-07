@@ -30,12 +30,19 @@ export async function updateCategory(
   id: string,
   data: Partial<NewCategory>
 ): Promise<void> {
-  const entries = Object.entries(data);
-  if (entries.length === 0) return;
-  const set = entries.map(([k]) => `${k} = ?`).join(', ');
+  const ALLOWED_COLS: Array<keyof NewCategory> = ['name', 'kind', 'glyph', 'color', 'sort'];
+  const updates: string[] = [];
+  const values: (string | number | null)[] = [];
+  for (const col of ALLOWED_COLS) {
+    if (col in data) {
+      updates.push(`${col} = ?`);
+      values.push(data[col] as string | number | null);
+    }
+  }
+  if (updates.length === 0) return;
   await db.runAsync(
-    `UPDATE categories SET ${set} WHERE id = ?`,
-    ...entries.map(([, v]) => v as string | number),
+    `UPDATE categories SET ${updates.join(', ')} WHERE id = ?`,
+    ...values,
     id
   );
 }

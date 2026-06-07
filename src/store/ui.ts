@@ -5,8 +5,6 @@ export type ActivePeriod = 'week' | 'month' | 'custom';
 
 export type ToastEntry = { message: string; type: 'ok' | 'err' };
 
-let toastTimer: ReturnType<typeof setTimeout> | null = null;
-
 export type ArchivePrompt = { year: number; month: number };
 
 export type UISlice = {
@@ -14,6 +12,7 @@ export type UISlice = {
   lastVaultId: string | null;
   customRange: { from: number; to: number } | null;
   toast: ToastEntry | null;
+  toastTimerId: ReturnType<typeof setTimeout> | null;
   archivePrompt: ArchivePrompt | null;
   dbVersion: number;
   setActivePeriod: (period: ActivePeriod) => void;
@@ -30,6 +29,7 @@ export const createUISlice: StateCreator<Store, [], [], UISlice> = (set, get) =>
   lastVaultId: null,
   customRange: null,
   toast: null,
+  toastTimerId: null,
   archivePrompt: null,
   dbVersion: 0,
   setActivePeriod: (period) => set({ activePeriod: period }),
@@ -37,17 +37,17 @@ export const createUISlice: StateCreator<Store, [], [], UISlice> = (set, get) =>
   setCustomRange: (range) => set({ customRange: range }),
   bumpDbVersion: () => set({ dbVersion: get().dbVersion + 1 }),
   showToast: (message, type = 'ok') => {
-    if (toastTimer) clearTimeout(toastTimer);
-    set({ toast: { message, type } });
-    toastTimer = setTimeout(() => {
-      set({ toast: null });
-      toastTimer = null;
+    const { toastTimerId } = get();
+    if (toastTimerId) clearTimeout(toastTimerId);
+    const id = setTimeout(() => {
+      set({ toast: null, toastTimerId: null });
     }, 2500);
+    set({ toast: { message, type }, toastTimerId: id });
   },
   hideToast: () => {
-    if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = null;
-    set({ toast: null });
+    const { toastTimerId } = get();
+    if (toastTimerId) clearTimeout(toastTimerId);
+    set({ toast: null, toastTimerId: null });
   },
   setArchivePrompt: (prompt) => set({ archivePrompt: prompt }),
 });

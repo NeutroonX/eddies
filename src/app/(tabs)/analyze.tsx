@@ -87,8 +87,8 @@ export default function AnalyzeScreen() {
       setBurn(b);
       setSpending(sp);
       setCaps(cp);
-    });
-  }, [activePeriod, db]);
+    }).catch(console.error);
+  }, [activePeriod, db, firstDayOfWeek]);
 
   // Single load path: fires on focus and when activePeriod/db changes.
   useFocusEffect(loadData);

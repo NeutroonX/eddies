@@ -69,7 +69,11 @@ export async function getPendingMonths(db: SQLiteDatabase): Promise<PendingMonth
 }
 
 export async function getArchivedMonths(db: SQLiteDatabase): Promise<MonthlyArchive[]> {
-  const rows = await db.getAllAsync<any>(
+  const rows = await db.getAllAsync<{
+    id: string; year: number; month: number; label: string;
+    total_inflow: number; total_outflow: number; tx_count: number;
+    exported_csv: number; exported_pdf: number; archived_at: number | null;
+  }>(
     'SELECT * FROM monthly_archives ORDER BY year DESC, month DESC'
   );
   return rows.map((r) => ({
@@ -231,9 +235,9 @@ export async function exportMonthHTML(
 <h1>EDDIES</h1>
 <div class="sub">MONTHLY STATEMENT // ${label.toUpperCase()}</div>
 <div class="summary">
-  <div class="stat"><label>INFLOW</label><span class="in">+${currencySymbol}${(totalIn/100).toFixed(2)}</span></div>
-  <div class="stat"><label>OUTFLOW</label><span class="out">−${currencySymbol}${(totalOut/100).toFixed(2)}</span></div>
-  <div class="stat"><label>NET</label><span class="net">${net>=0?'+':'−'}${currencySymbol}${(Math.abs(net)/100).toFixed(2)}</span></div>
+  <div class="stat"><label>INFLOW</label><span class="in">+${escapeHtml(currencySymbol)}${(totalIn/100).toFixed(2)}</span></div>
+  <div class="stat"><label>OUTFLOW</label><span class="out">−${escapeHtml(currencySymbol)}${(totalOut/100).toFixed(2)}</span></div>
+  <div class="stat"><label>NET</label><span class="net">${net>=0?'+':'−'}${escapeHtml(currencySymbol)}${(Math.abs(net)/100).toFixed(2)}</span></div>
   <div class="stat"><label>ENTRIES</label><span>${rows.length}</span></div>
 </div>
 <table>

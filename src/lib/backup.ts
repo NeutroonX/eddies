@@ -16,6 +16,19 @@ const BackupTransactionSchema = TransactionSchema.extend({
   archived: z.number().int().optional(),
 });
 
+const MonthlyArchiveRowSchema = z.object({
+  id: z.string(),
+  year: z.number().int().min(2000).max(2100),
+  month: z.number().int().min(1).max(12),
+  label: z.string().max(20),
+  total_inflow: z.number().int().nonnegative(),
+  total_outflow: z.number().int().nonnegative(),
+  tx_count: z.number().int().nonnegative(),
+  exported_csv: z.number().int(),
+  exported_pdf: z.number().int(),
+  archived_at: z.number().int().nullable(),
+});
+
 const BackupSchema = z.object({
   version: z.string(),
   exportedAt: z.string(),
@@ -24,7 +37,7 @@ const BackupSchema = z.object({
   transactions: z.array(BackupTransactionSchema),
   budgets: z.array(BudgetSchema),
   settings: z.record(z.string(), z.string()),
-  monthly_archives: z.array(z.any()).optional(),
+  monthly_archives: z.array(MonthlyArchiveRowSchema).optional(),
 });
 
 export type BackupData = z.infer<typeof BackupSchema>;
@@ -56,8 +69,8 @@ export async function createBackup(db: SQLiteDatabase): Promise<string> {
 export async function validateBackup(data: unknown): Promise<BackupData> {
   try {
     return BackupSchema.parse(data);
-  } catch (err) {
-    throw new Error(`Invalid backup file: ${err}`);
+  } catch {
+    throw new Error('Invalid backup file — check format and version.');
   }
 }
 

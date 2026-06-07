@@ -21,10 +21,10 @@ export default function VaultModal() {
 
   useEffect(() => {
     if (mode === 'edit' && id) {
-      getAccountById(db, id).then(acc => {
-        setInitialData(acc);
-        setLoading(false);
-      }).catch(console.error);
+      getAccountById(db, id)
+        .then(acc => setInitialData(acc))
+        .catch(console.error)
+        .finally(() => setLoading(false));
     }
   }, [mode, id, db]);
 
