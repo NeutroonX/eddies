@@ -172,6 +172,12 @@ export default function SystemScreen() {
           <ActionRow label="CREATE BACKUP" onPress={() => nav('/(modals)/settings')} />
         </View>
 
+        {/* ── Support ──────────────────────────────────── */}
+        <View style={s.section}>
+          <SectionTag label="SUPPORT" />
+          <ActionRow label="SUPPORT DEV" onPress={() => nav('/(modals)/support')} />
+        </View>
+
         {/* ── Build ────────────────────────────────────── */}
         <View style={s.section}>
           <SectionTag label="BUILD" />

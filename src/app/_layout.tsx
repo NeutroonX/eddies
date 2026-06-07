@@ -218,8 +218,9 @@ function RootLayout() {
               <Stack.Screen name="(modals)/vault"   options={modalOptions} />
               <Stack.Screen name="(modals)/settings" options={modalOptions} />
               <Stack.Screen name="(modals)/cap"     options={modalOptions} />
-              <Stack.Screen name="(modals)/export"  options={modalOptions} />
-              <Stack.Screen name="(modals)/archive" options={modalOptions} />
+              <Stack.Screen name="(modals)/export"   options={modalOptions} />
+              <Stack.Screen name="(modals)/archive"  options={modalOptions} />
+              <Stack.Screen name="(modals)/support"  options={modalOptions} />
             </Stack>
             <GlobalToast />
           </ThemeProvider>
