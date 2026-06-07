@@ -241,17 +241,36 @@ export default function SettingsModal() {
               </View>
             </View>
 
-            {/* Haptics */}
+            {/* Haptics + App Lock side by side */}
             <View style={s.section}>
-              <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>HAPTICS</MonoLabel>
-              <View style={s.toggleRow}>
-                <Pressable
-                  style={[s.toggle, hapticsEnabled && s.toggleActive]}
-                  onPress={() => handleHapticsChange(!hapticsEnabled)}
-                >
-                  <View style={[s.toggleThumb, hapticsEnabled && s.toggleThumbActive]} />
-                </Pressable>
-                <Text style={s.toggleLabel}>{hapticsEnabled ? 'ENABLED' : 'DISABLED'}</Text>
+              <View style={s.toggleGrid}>
+                <View style={s.toggleCell}>
+                  <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>HAPTICS</MonoLabel>
+                  <View style={s.toggleRow}>
+                    <Pressable
+                      style={[s.toggle, hapticsEnabled && s.toggleActive]}
+                      onPress={() => handleHapticsChange(!hapticsEnabled)}
+                    >
+                      <View style={[s.toggleThumb, hapticsEnabled && s.toggleThumbActive]} />
+                    </Pressable>
+                    <Text style={s.toggleLabel}>{hapticsEnabled ? 'ON' : 'OFF'}</Text>
+                  </View>
+                </View>
+
+                {Platform.OS === 'android' && (
+                  <View style={s.toggleCell}>
+                    <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>APP LOCK</MonoLabel>
+                    <View style={s.toggleRow}>
+                      <Pressable
+                        style={[s.toggle, biometricStatus === 'enabled' && s.toggleActive]}
+                        onPress={() => handleBiometricChange(biometricStatus !== 'enabled')}
+                      >
+                        <View style={[s.toggleThumb, biometricStatus === 'enabled' && s.toggleThumbActive]} />
+                      </Pressable>
+                      <Text style={s.toggleLabel}>{biometricStatus === 'enabled' ? 'ON' : 'OFF'}</Text>
+                    </View>
+                  </View>
+                )}
               </View>
             </View>
 
@@ -262,25 +281,7 @@ export default function SettingsModal() {
                 <Text style={s.controlText}>ALWAYS ON</Text>
                 <Text style={[s.controlText, s.controlHint]}>🔒</Text>
               </View>
-              <Text style={s.sectionNote}>Anonymous crash logs help fix bugs. No financial data is included.</Text>
             </View>
-
-            {/* Biometric Lock — Android only */}
-            {Platform.OS === 'android' && (
-              <View style={s.section}>
-                <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>APP LOCK</MonoLabel>
-                <View style={s.toggleRow}>
-                  <Pressable
-                    style={[s.toggle, biometricStatus === 'enabled' && s.toggleActive]}
-                    onPress={() => handleBiometricChange(biometricStatus !== 'enabled')}
-                  >
-                    <View style={[s.toggleThumb, biometricStatus === 'enabled' && s.toggleThumbActive]} />
-                  </Pressable>
-                  <Text style={s.toggleLabel}>{biometricStatus === 'enabled' ? 'ENABLED' : 'DISABLED'}</Text>
-                </View>
-                <Text style={s.sectionNote}>Require fingerprint, face or PIN when opening the app.</Text>
-              </View>
-            )}
 
             {/* Theme Lock */}
             <View style={s.section}>
@@ -289,7 +290,6 @@ export default function SettingsModal() {
                 <Text style={[s.controlText, s.controlValue]}>Dark only</Text>
                 <Text style={[s.controlText, s.controlHint]}>🔒</Text>
               </View>
-              <Text style={s.sectionNote}>EDDIES is dark-only by design. Light mode is not supported.</Text>
             </View>
 
             {/* Backup & Restore */}
@@ -445,6 +445,20 @@ const s = StyleSheet.create({
     color: EddiesColors.steel,
   },
   segmentTextActive: { color: EddiesColors.bone },
+  toggleGrid: {
+    flexDirection: 'row',
+    gap: EddiesSpacing.sm,
+  },
+  toggleCell: {
+    flex: 1,
+    backgroundColor: EddiesColors.surface,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: EddiesColors.steel + '1A',
+    paddingHorizontal: EddiesSpacing.md,
+    paddingVertical: EddiesSpacing.sm,
+    gap: EddiesSpacing.sm,
+  },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
