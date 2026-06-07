@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, View, Keyboard, ActivityIndicator } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View, Keyboard, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -15,12 +15,13 @@ import { useStore } from '@/store';
 import { getSetting, setSetting } from '@/lib/db/repos/settings-repo';
 import { setTelemetryEnabled } from '@/lib/telemetry';
 import { createBackup } from '@/lib/backup';
+import { isBiometricAvailable, authenticate } from '@/lib/biometric';
 
 const APP_VERSION = '1.0.0';
 
 export default function SettingsModal() {
   const db = useSQLiteContext();
-  const { currency, firstDayOfWeek, hapticsEnabled, crashReportingEnabled, setCurrency, setFirstDayOfWeek, setHapticsEnabled, setCrashReportingEnabled, showToast } = useStore();
+  const { currency, firstDayOfWeek, hapticsEnabled, crashReportingEnabled, biometricStatus, setCurrency, setFirstDayOfWeek, setHapticsEnabled, setCrashReportingEnabled, setBiometricStatus, showToast } = useStore();
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [loading, setLoading] = useState(true);
@@ -81,12 +82,21 @@ export default function SettingsModal() {
     }
   }
 
-  async function handleCrashReportingChange(enabled: boolean) {
+  async function handleBiometricChange(enable: boolean) {
     try {
-      setCrashReportingEnabled(enabled);
-      setTelemetryEnabled(enabled);
-      await setSetting(db, 'crash_reporting_enabled', enabled ? 'true' : 'false');
-      showToast(enabled ? 'Crash reports on' : 'Crash reports off');
+      if (enable) {
+        const available = await isBiometricAvailable();
+        if (!available) { showToast('No biometric hardware enrolled', 'err'); return; }
+        const passed = await authenticate('Verify to enable app lock');
+        if (!passed) return;
+        await setSetting(db, 'biometric_lock_enabled', 'true');
+        setBiometricStatus('enabled');
+        showToast('App lock enabled');
+      } else {
+        await setSetting(db, 'biometric_lock_enabled', 'false');
+        setBiometricStatus('disabled');
+        showToast('App lock disabled');
+      }
       if (hapticsEnabled) await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch {
       showToast('Failed to update setting', 'err');
@@ -245,23 +255,32 @@ export default function SettingsModal() {
               </View>
             </View>
 
-            {/* Crash Reporting */}
+            {/* Crash Reporting — always on */}
             <View style={s.section}>
               <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>CRASH REPORTS</MonoLabel>
-              <View style={s.toggleRow}>
-                <Pressable
-                  style={[s.toggle, crashReportingEnabled && s.toggleActive]}
-                  onPress={() => handleCrashReportingChange(!crashReportingEnabled)}
-                >
-                  <View style={[s.toggleThumb, crashReportingEnabled && s.toggleThumbActive]} />
-                </Pressable>
-                <Text style={s.toggleLabel}>{crashReportingEnabled ? 'ENABLED' : 'DISABLED'}</Text>
+              <View style={[s.control, s.controlDisabled]}>
+                <Text style={s.controlText}>ALWAYS ON</Text>
+                <Text style={[s.controlText, s.controlHint]}>🔒</Text>
               </View>
-              <Text style={s.sectionNote}>
-                Sends anonymous crash logs and performance data to help fix bugs.{'\n'}
-                No financial data is ever included. You can opt out at any time.
-              </Text>
+              <Text style={s.sectionNote}>Anonymous crash logs help fix bugs. No financial data is included.</Text>
             </View>
+
+            {/* Biometric Lock — Android only */}
+            {Platform.OS === 'android' && (
+              <View style={s.section}>
+                <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>APP LOCK</MonoLabel>
+                <View style={s.toggleRow}>
+                  <Pressable
+                    style={[s.toggle, biometricStatus === 'enabled' && s.toggleActive]}
+                    onPress={() => handleBiometricChange(biometricStatus !== 'enabled')}
+                  >
+                    <View style={[s.toggleThumb, biometricStatus === 'enabled' && s.toggleThumbActive]} />
+                  </Pressable>
+                  <Text style={s.toggleLabel}>{biometricStatus === 'enabled' ? 'ENABLED' : 'DISABLED'}</Text>
+                </View>
+                <Text style={s.sectionNote}>Require fingerprint, face or PIN when opening the app.</Text>
+              </View>
+            )}
 
             {/* Theme Lock */}
             <View style={s.section}>
