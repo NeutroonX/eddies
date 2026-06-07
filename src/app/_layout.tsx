@@ -12,8 +12,8 @@ import { router, Stack, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { SQLiteProvider } from 'expo-sqlite';
-import { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { AppState, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { runMigrations } from '@/lib/db/migrations';
@@ -22,6 +22,8 @@ import { useArchiveCheck } from '@/hooks/use-archive-check';
 import { useInitSettings } from '@/hooks/use-init-settings';
 import { useStore } from '@/store';
 import { captureError, initTelemetry } from '@/lib/telemetry';
+import { BiometricSetup } from '@/components/biometric/biometric-setup';
+import { BiometricLock } from '@/components/biometric/biometric-lock';
 
 // Initialise Sentry before any React render so native crash handler is ready.
 initTelemetry();
@@ -29,8 +31,6 @@ initTelemetry();
 SplashScreen.preventAutoHideAsync();
 
 // ── Error boundary ─────────────────────────────────────────────────────────
-// Catches render errors (e.g. Zod parse throw on schema drift) so a single
-// bad row never white-screens the entire app.
 class AppErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { error: Error | null }
@@ -94,8 +94,6 @@ function OnboardingGate() {
 }
 
 // ── Invite gate ────────────────────────────────────────────────────────────
-// Bidirectional: sends validated users to tabs, unvalidated users to auth.
-// null = still loading from SQLite — do nothing to avoid premature redirects.
 function InviteGate() {
   const onboardingComplete = useStore((s) => s.onboardingComplete);
   const inviteValidated    = useStore((s) => s.inviteValidated);
@@ -112,6 +110,57 @@ function InviteGate() {
       router.replace('/(auth)');
     }
   }, [onboardingComplete, inviteValidated, segments]);
+
+  return null;
+}
+
+// ── Biometric gate ─────────────────────────────────────────────────────────
+// Android-only. Shows setup prompt on first entry, lock screen on subsequent
+// launches and when app returns from background.
+function BiometricGate() {
+  const biometricStatus  = useStore((s) => s.biometricStatus);
+  const inviteValidated  = useStore((s) => s.inviteValidated);
+  const appLocked        = useStore((s) => s.appLocked);
+  const setAppLocked     = useStore((s) => s.setAppLocked);
+  const segments         = useSegments();
+
+  const appState = useRef(AppState.currentState);
+
+  // Lock when app moves to background, unlock prompt when it returns.
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    if (biometricStatus !== 'enabled') return;
+
+    const sub = AppState.addEventListener('change', (next) => {
+      if (appState.current === 'active' && next === 'background') {
+        setAppLocked(true);
+      }
+      appState.current = next;
+    });
+    return () => sub.remove();
+  }, [biometricStatus, setAppLocked]);
+
+  // Lock on first mount when biometric is enabled.
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    if (biometricStatus === 'enabled') {
+      setAppLocked(true);
+    }
+  }, [biometricStatus, setAppLocked]);
+
+  if (Platform.OS !== 'android') return null;
+
+  const inTabs = segments[0] === '(tabs)';
+
+  // Setup prompt: shown after invite validation, before user enters tabs.
+  if (biometricStatus === 'pending' && inviteValidated === true && inTabs) {
+    return <BiometricSetup />;
+  }
+
+  // Lock screen: blurs the underlying app and requests verification.
+  if (biometricStatus === 'enabled' && appLocked) {
+    return <BiometricLock />;
+  }
 
   return null;
 }
@@ -151,6 +200,7 @@ function RootLayout() {
             <ArchiveWatcher />
             <OnboardingGate />
             <InviteGate />
+            <BiometricGate />
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(tabs)" />
               <Stack.Screen
