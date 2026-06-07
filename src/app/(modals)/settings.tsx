@@ -287,6 +287,7 @@ export default function SettingsModal() {
                 <Text style={[s.controlText, s.controlValue]}>Dark only</Text>
                 <Text style={[s.controlText, s.controlHint]}>🔒</Text>
               </View>
+              <Text style={s.sectionNote}>Eddies only supports dark mode.</Text>
             </View>
 
             {/* Backup & Restore */}
