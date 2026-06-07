@@ -14,9 +14,11 @@ import { useLedger, type DaySection, type LedgerRow } from '@/hooks/use-ledger';
 import { deleteTransaction } from '@/lib/db/repos/transactions';
 import { formatAmountTabular } from '@/lib/money';
 import { useCurrencySymbol } from '@/hooks/use-currency-symbol';
+import { useStore } from '@/store';
 
 function LedgerHeader({ balance, sections, hasMixedCurrencies, pendingRow }: { balance: number; sections: DaySection[]; hasMixedCurrencies: boolean; pendingRow: LedgerRow | null }) {
-  const sym = useCurrencySymbol();
+  const sym        = useCurrencySymbol();
+  const appLocked  = useStore((s) => s.appLocked);
 
   // Optimistically subtract the pending-delete entry from the displayed balance.
   const effectiveBalance = useMemo(() => {
@@ -64,19 +66,19 @@ function LedgerHeader({ balance, sections, hasMixedCurrencies, pendingRow }: { b
         </MonoLabel>
       )}
       <Numerals size={56} weight="bold" color={effectiveBalance < 0 ? EddiesColors.alert : EddiesColors.bone}>
-        {effectiveBalance < 0 ? '−' : ''}{sym}{formatAmountTabular(Math.abs(effectiveBalance))}
+        {appLocked ? '••••••' : `${effectiveBalance < 0 ? '−' : ''}${sym}${formatAmountTabular(Math.abs(effectiveBalance))}`}
       </Numerals>
 
       {/* Month stat row */}
       <View style={hs.statRow}>
         <View style={hs.stat}>
           <MonoLabel size={8} letterSpacing={1.5} color={EddiesColors.steel}>IN</MonoLabel>
-          <Text style={hs.statVal}>+{sym}{formatAmountTabular(monthIn)}</Text>
+          <Text style={hs.statVal}>{appLocked ? '••••' : `+${sym}${formatAmountTabular(monthIn)}`}</Text>
         </View>
         <View style={hs.statDivider} />
         <View style={hs.stat}>
           <MonoLabel size={8} letterSpacing={1.5} color={EddiesColors.steel}>OUT</MonoLabel>
-          <Text style={[hs.statVal, { color: EddiesColors.alert }]}>−{sym}{formatAmountTabular(monthOut)}</Text>
+          <Text style={[hs.statVal, { color: EddiesColors.alert }]}>{appLocked ? '••••' : `−${sym}${formatAmountTabular(monthOut)}`}</Text>
         </View>
         <View style={hs.statDivider} />
         <View style={hs.stat}>
