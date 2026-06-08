@@ -44,20 +44,6 @@ export function BiometricSetup() {
 
       <View style={s.center}>
         <Text style={s.brand}>EDDIES</Text>
-        <View style={s.accentLine} />
-        <MonoLabel size={9} letterSpacing={3} color={EddiesColors.steel}>
-          ENABLE APP LOCK
-        </MonoLabel>
-
-        <View style={s.infoBlock}>
-          {(['FINGERPRINT · FACE · PIN SUPPORTED', 'BALANCES HIDDEN WHEN LOCKED', 'TOGGLE ANYTIME IN SETTINGS'] as const).map((line) => (
-            <View key={line} style={s.infoRow}>
-              <MonoLabel size={8} letterSpacing={0} color={EddiesColors.alert + '99'}>—</MonoLabel>
-              <MonoLabel size={8} letterSpacing={1} color={EddiesColors.steel + 'AA'}>{line}</MonoLabel>
-            </View>
-          ))}
-        </View>
-
         {noHardware && (
           <MonoLabel size={8} letterSpacing={1} color={EddiesColors.alert + 'CC'}>
             ▲ NO BIOMETRIC HARDWARE ENROLLED
@@ -112,20 +98,6 @@ const s = StyleSheet.create({
     fontSize: 64,
     color: EddiesColors.bone,
     letterSpacing: 12,
-  },
-  accentLine: {
-    width: 48,
-    height: 1,
-    backgroundColor: EddiesColors.alert,
-  },
-  infoBlock: {
-    gap: EddiesSpacing.sm,
-    alignSelf: 'stretch',
-  },
-  infoRow: {
-    flexDirection: 'row',
-    gap: EddiesSpacing.sm,
-    alignItems: 'center',
   },
   actions: {
     alignSelf: 'stretch',

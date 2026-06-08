@@ -3,12 +3,10 @@ import {
   Animated,
   Dimensions,
   Easing,
-  FlatList,
   Pressable,
   StyleSheet,
   Text,
   View,
-  type ViewToken,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -190,38 +188,6 @@ function TriangleStack({ count = 3, baseDelay = 400 }: { count?: number; baseDel
   );
 }
 
-// ── Feature row (page 2) ──────────────────────────────────────────────────
-function FeatureRow({ num, title, desc, delay }: { num: string; title: string; desc: string; delay: number }) {
-  const opacityRef = useRef(new Animated.Value(0));
-  const tyRef      = useRef(new Animated.Value(14));
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(opacityRef.current, { toValue: 1, duration: 450, delay, useNativeDriver: true }),
-      Animated.timing(tyRef.current,      { toValue: 0, duration: 450, delay, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-    ]).start();
-  }, []);
-
-  return (
-    <Animated.View style={{ opacity: opacityRef.current, transform: [{ translateY: tyRef.current }] }}>
-      <View style={fr.row}>
-        <MonoLabel size={8} letterSpacing={1} color={EddiesColors.alert + '88'}>{num}</MonoLabel>
-        <View style={fr.right}>
-          <Text style={fr.title}>{title}</Text>
-          <MonoLabel size={9} letterSpacing={0.5} color={EddiesColors.steel} style={{ lineHeight: 14 }}>{desc}</MonoLabel>
-        </View>
-      </View>
-      <View style={fr.divider} />
-    </Animated.View>
-  );
-}
-const fr = StyleSheet.create({
-  row:     { flexDirection: 'row', gap: EddiesSpacing.md, alignItems: 'center', paddingVertical: EddiesSpacing.md },
-  right:   { flex: 1, gap: 3 },
-  title:   { fontFamily: EddiesFonts.displayBold, fontSize: 36, color: EddiesColors.bone, letterSpacing: 3, lineHeight: 36 },
-  divider: { height: 1, backgroundColor: EddiesColors.steel + '1A' },
-});
-
 // ── Shared top-bar style ───────────────────────────────────────────────────
 const pg = StyleSheet.create({
   topBar: {
@@ -336,154 +302,12 @@ const p1 = StyleSheet.create({
   bottomRow:  { flexDirection: 'row', alignItems: 'center', gap: EddiesSpacing.md, marginTop: EddiesSpacing.md },
 });
 
-// ── PAGE 2 ─────────────────────────────────────────────────────────────────
-function Page2({ height, onDeploy }: { height: number; onDeploy: () => void }) {
-  const ctaOpacityRef = useRef(new Animated.Value(0));
-  const ctaYRef       = useRef(new Animated.Value(16));
-
-  useEffect(() => {
-    const out = Easing.out(Easing.quad);
-    Animated.timing(ctaOpacityRef.current, { toValue: 1, duration: 500, delay: 1050, useNativeDriver: true }).start();
-    Animated.timing(ctaYRef.current,       { toValue: 0, duration: 500, delay: 1050, easing: out, useNativeDriver: true }).start();
-  }, []);
-
-  return (
-    <View style={{ width: SCREEN_W, height, backgroundColor: EddiesColors.ink }}>
-      <CornerBrackets />
-
-      <View style={{ position: 'absolute', right: 16, top: height * 0.68 }} pointerEvents="none">
-        <TriangleStack count={3} baseDelay={350} />
-      </View>
-      <View style={{ position: 'absolute', top: 52, left: 14 }} pointerEvents="none">
-        <GearRing delay={50} />
-      </View>
-
-      <View style={{ flex: 1, paddingHorizontal: EddiesSpacing.md, paddingBottom: EddiesSpacing.md }}>
-        <View style={pg.topBar}>
-          <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel}>MISSION BRIEF // 02</MonoLabel>
-          <MonoLabel size={8} letterSpacing={1} color={EddiesColors.steel + '55'}>SYS INIT</MonoLabel>
-        </View>
-
-        {/* Cyberpunk quote — fish shell terminal */}
-        <View style={p2.quoteBlock}>
-          <View style={p2.termPrompt}>
-            <Text style={p2.promptSymbol}>❯</Text>
-            <Text style={p2.quoteText}>
-              "Spend big, live fast, whatever. But at the end of the run, the eddies you track are the only score that matters."
-            </Text>
-          </View>
-          <View style={p2.quoteMeta}>
-            <MonoLabel size={7} letterSpacing={1} color={EddiesColors.steel + '50'}>NIGHT CITY STREET CODE 605185</MonoLabel>
-            <BarcodeMark height={14} color={EddiesColors.steel} style={{ width: 56 }} />
-          </View>
-        </View>
-
-        <View style={p2.divider} />
-
-        {/* Feature rows */}
-        <View style={p2.rows}>
-          <FeatureRow num="01" title="LOG"    desc="INFLOW. OUTFLOW. EVERY CENT." delay={480} />
-          <FeatureRow num="02" title="INTEL"  desc="BURN RATE. SPEND CAPS."       delay={630} />
-          <FeatureRow num="03" title="VAULTS" desc="ORGANIZE BY ACCOUNT."         delay={780} />
-        </View>
-
-        <View style={{ flex: 1 }} />
-
-        {/* CTA */}
-        <Animated.View style={{ opacity: ctaOpacityRef.current, transform: [{ translateY: ctaYRef.current }] }}>
-          <View style={p2.metaRow}>
-            <MonoLabel size={7} letterSpacing={1} color={EddiesColors.steel + '44'}>ALL DATA ON-DEVICE</MonoLabel>
-            <MonoLabel size={7} letterSpacing={1} color={EddiesColors.alert + '88'}>USE WITH DISCIPLINE</MonoLabel>
-          </View>
-          <Pressable
-            style={({ pressed }) => [p2.ctaWrap, pressed && p2.ctaWrapPressed]}
-            onPress={onDeploy}
-            accessibilityRole="button"
-            accessibilityLabel="Enter the app"
-          >
-            <View style={p2.ctaLeft}>
-              <Text style={p2.ctaText}>ENTER SYSTEM</Text>
-            </View>
-            <View style={p2.ctaRight}>
-              <Text style={p2.ctaArrow}>›</Text>
-            </View>
-          </Pressable>
-        </Animated.View>
-      </View>
-    </View>
-  );
-}
-const p2 = StyleSheet.create({
-  quoteBlock: { marginBottom: EddiesSpacing.sm },
-  divider: { height: 1, backgroundColor: EddiesColors.steel + '22', marginBottom: EddiesSpacing.sm },
-  termPrompt: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: EddiesSpacing.sm,
-    marginBottom: EddiesSpacing.sm,
-  },
-  promptSymbol: {
-    fontFamily: EddiesFonts.mono,
-    fontSize: 11,
-    color: EddiesColors.alert,
-    lineHeight: 18,
-  },
-  quoteText: {
-    flex: 1,
-    fontSize: 13,
-    color: EddiesColors.bone + 'BB',
-    letterSpacing: 0.1,
-    lineHeight: 19,
-  },
-  quoteMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  rows: { gap: 0 },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: EddiesSpacing.sm,
-  },
-  ctaWrap: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: EddiesColors.alert,
-    overflow: 'hidden',
-  },
-  ctaWrapPressed: { opacity: 0.85 },
-  ctaLeft: {
-    flex: 1,
-    paddingVertical: EddiesSpacing.md + 2,
-    paddingHorizontal: EddiesSpacing.md,
-    backgroundColor: EddiesColors.alert + '10',
-    justifyContent: 'center',
-  },
-  ctaRight: {
-    width: 56,
-    backgroundColor: EddiesColors.alert,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  ctaText: { fontFamily: EddiesFonts.displayBold, fontSize: 22, color: EddiesColors.bone, letterSpacing: 5 },
-  ctaArrow: { fontFamily: EddiesFonts.displayBold, fontSize: 32, color: EddiesColors.ink, lineHeight: 34 },
-});
-
 // ── Root ───────────────────────────────────────────────────────────────────
 export default function OnboardingScreen() {
   const db = useSQLiteContext();
   const setOnboardingComplete = useStore((s) => s.setOnboardingComplete);
   const showToast = useStore((s) => s.showToast);
-  const listRef = useRef<FlatList>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
   const [pageHeight, setPageHeight] = useState(0);
-
-  const onViewableItemsChangedRef = useRef<({ viewableItems }: { viewableItems: ViewToken[] }) => void>(
-    ({ viewableItems }) => {
-      if (viewableItems[0]) setActiveIndex(viewableItems[0].index ?? 0);
-    }
-  );
 
   async function handleDeploy() {
     try {
@@ -496,53 +320,23 @@ export default function OnboardingScreen() {
     router.replace('/(auth)');
   }
 
-  function handleNext() {
-    listRef.current?.scrollToIndex({ index: 1, animated: true });
-  }
-
-  const pages = [
-    <Page1 key="p1" height={pageHeight} />,
-    <Page2 key="p2" height={pageHeight} onDeploy={handleDeploy} />,
-  ];
-
   return (
     <SafeAreaView style={s.root} edges={['top', 'bottom', 'left', 'right']}>
       <View style={{ flex: 1 }} onLayout={(e) => setPageHeight(e.nativeEvent.layout.height)}>
-        {pageHeight > 0 && (
-          <FlatList
-            ref={listRef}
-            data={pages}
-            renderItem={({ item }) => item}
-            keyExtractor={(_, i) => String(i)}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onViewableItemsChanged={onViewableItemsChangedRef.current}
-            viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
-            scrollEventThrottle={16}
-          />
-        )}
+        {pageHeight > 0 && <Page1 height={pageHeight} />}
       </View>
 
       <View style={s.nav}>
-        <View style={s.dots}>
-          {pages.map((_, i) => (
-            <View key={i} style={[s.dot, i === activeIndex && s.dotActive]} />
-          ))}
-        </View>
-        {activeIndex === 0 ? (
-          <Pressable
-            style={({ pressed }) => [s.nextBtn, pressed && s.nextBtnPressed]}
-            onPress={handleNext}
-            accessibilityRole="button"
-            accessibilityLabel="Go to next page"
-          >
-            <MonoLabel size={10} letterSpacing={3} color={EddiesColors.bone}>NEXT</MonoLabel>
-            <View style={s.arrow} />
-          </Pressable>
-        ) : (
-          <View style={s.nextBtn} />
-        )}
+        <View style={s.dots} />
+        <Pressable
+          style={({ pressed }) => [s.nextBtn, pressed && s.nextBtnPressed]}
+          onPress={handleDeploy}
+          accessibilityRole="button"
+          accessibilityLabel="Enter the app"
+        >
+          <MonoLabel size={10} letterSpacing={3} color={EddiesColors.bone}>ENTER</MonoLabel>
+          <View style={s.arrow} />
+        </Pressable>
       </View>
     </SafeAreaView>
   );

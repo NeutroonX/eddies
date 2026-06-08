@@ -13,24 +13,24 @@ export function BiometricLock() {
   const [attempts, setAttempts]   = useState(0);
 
   async function tryUnlock() {
+    if (loading) return;
     setLoading(true);
     setFailed(false);
-    const result = await authenticate('Verify to access Eddies');
-    setLoading(false);
-    if (result.success) {
-      setAppLocked(false);
-    } else if (result.error !== 'user_cancel' && result.error !== 'system_cancel') {
+    try {
+      const result = await authenticate('Verify to access Eddies');
+      if (result.success) {
+        setAppLocked(false);
+      } else if (result.error !== 'user_cancel' && result.error !== 'system_cancel') {
+        setFailed(true);
+        setAttempts((a) => a + 1);
+      }
+    } catch {
       setFailed(true);
       setAttempts((a) => a + 1);
+    } finally {
+      setLoading(false);
     }
-    // user_cancel / system_cancel: stay on lock screen silently, no error state
   }
-
-  useEffect(() => {
-    tryUnlock();
-  // runs once on mount to trigger the immediate auth prompt on app open
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const statusLabel = loading ? 'VERIFYING...' : failed ? `FAILED${attempts > 1 ? ` (${attempts}×)` : ''} — TRY AGAIN` : 'AUTHENTICATE TO UNLOCK';
 

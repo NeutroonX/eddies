@@ -273,6 +273,15 @@ export default function SettingsModal() {
             <View style={s.section}>
               <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>DATA</MonoLabel>
               <Pressable
+                style={s.control}
+                onPress={() => router.push('/(modals)/export')}
+                accessibilityRole="button"
+                accessibilityLabel="Export data"
+              >
+                <Text style={s.controlText}>EXPORT DATA</Text>
+              </Pressable>
+              <View style={s.hairline} />
+              <Pressable
                 style={[s.control, backupLoading && s.controlDisabled]}
                 onPress={handleCreateBackup}
                 disabled={backupLoading}

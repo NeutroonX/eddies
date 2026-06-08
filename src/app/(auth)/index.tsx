@@ -102,6 +102,10 @@ function InviteInput({
 
   return (
     <View style={ii.wrap}>
+      <View style={ii.fieldHeader}>
+        <View style={ii.fieldTag}><Text style={ii.fieldTagText}>INVITE CODE</Text></View>
+        <View style={ii.fieldRule} />
+      </View>
       <TextInput
         style={ii.input}
         value={value}
@@ -112,24 +116,24 @@ function InviteInput({
         returnKeyType="go"
         editable={!loading}
         placeholder="XXXX-YYYY-ZZZZ"
-        placeholderTextColor={EddiesColors.steel + "77"}
+        placeholderTextColor={EddiesColors.steel + "40"}
         autoCorrect={false}
         spellCheck={false}
       />
       <Pressable
-        style={({ pressed }) => [
-          ii.btn,
-          isComplete ? ii.btnReady : ii.btnIdle,
-          pressed && ii.btnPressed,
-        ]}
+        style={({ pressed }) => [ii.btn, pressed && ii.btnPressed]}
         onPress={onSubmit}
+        disabled={loading}
         accessibilityRole="button"
         accessibilityLabel="Validate invite code"
       >
         {loading ? (
-          <ActivityIndicator size="small" color={EddiesColors.ink} />
+          <ActivityIndicator size="small" color={isComplete ? EddiesColors.alert : EddiesColors.steel} />
         ) : (
-          <Text style={ii.btnLabel}>VALIDATE</Text>
+          <>
+            <View style={[ii.rule, isComplete && ii.ruleReady]} />
+            <Text style={[ii.btnLabel, !isComplete && ii.btnLabelIdle]}>V A L I D A T E</Text>
+          </>
         )}
       </Pressable>
     </View>
@@ -138,36 +142,61 @@ function InviteInput({
 
 const ii = StyleSheet.create({
   wrap: {
+    gap: 0,
+  },
+  fieldHeader: {
     flexDirection: "row",
-    alignItems: "stretch",
+    alignItems: "center",
+    marginBottom: 2,
+  },
+  fieldTag: {
+    backgroundColor: EddiesColors.alert + "18",
     borderWidth: 1,
-    borderColor: EddiesColors.steel + "30",
-    backgroundColor: EddiesColors.surface,
-    overflow: "hidden",
+    borderColor: EddiesColors.alert + "55",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  fieldTagText: {
+    fontFamily: EddiesFonts.mono,
+    fontSize: 8,
+    color: EddiesColors.alert + "BB",
+    letterSpacing: 1,
+  },
+  fieldRule: {
+    flex: 1,
+    height: 1,
+    backgroundColor: EddiesColors.steel + "25",
   },
   input: {
-    flex: 1,
-    paddingVertical: 18,
-    paddingLeft: EddiesSpacing.md,
-    paddingRight: EddiesSpacing.sm,
+    paddingVertical: 14,
+    paddingHorizontal: 2,
     fontFamily: "SpaceMono_400Regular",
-    fontSize: 13,
+    fontSize: 14,
     color: EddiesColors.bone,
-    letterSpacing: 2,
+    letterSpacing: 3,
   },
   btn: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    width: 100,
+    gap: EddiesSpacing.sm,
+    paddingVertical: 4,
   },
-  btnIdle: { backgroundColor: EddiesColors.alert + "70" },
-  btnReady: { backgroundColor: EddiesColors.alert },
-  btnPressed: { opacity: 0.82 },
+  btnPressed: { opacity: 0.6 },
   btnLabel: {
     fontFamily: EddiesFonts.displayBold,
-    fontSize: 14,
-    color: EddiesColors.ink,
-    letterSpacing: 3,
+    fontSize: 11,
+    color: EddiesColors.alert,
+  },
+  btnLabelIdle: {
+    color: EddiesColors.steel + "70",
+  },
+  rule: {
+    flex: 1,
+    height: 1,
+    backgroundColor: EddiesColors.steel + "28",
+  },
+  ruleReady: {
+    backgroundColor: EddiesColors.alert + "55",
   },
 });
 
@@ -205,43 +234,46 @@ function AccessRequest() {
 
   return (
     <View style={ar.wrap}>
-      <MonoLabel size={7} letterSpacing={3} color={EddiesColors.steel}>
-        NO CODE?
-      </MonoLabel>
-      <View style={[ar.bar, focused && ar.barFocused]}>
-        <TextInput
-          style={ar.input}
-          value={email}
-          onChangeText={(t) => {
-            setEmail(t);
-            setErrMsg(null);
-            setStatus("idle");
-          }}
-          onSubmitEditing={handleRequest}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          placeholder="your@email.com"
-          placeholderTextColor={EddiesColors.steel + "77"}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-          returnKeyType="send"
-          editable={status !== "sending"}
-        />
-        <View style={ar.divider} />
-        <Pressable
-          style={({ pressed }) => [ar.btn, pressed && ar.btnPressed]}
-          onPress={handleRequest}
-          accessibilityRole="button"
-          accessibilityLabel="Request beta access"
-        >
-          {status === "sending" ? (
-            <ActivityIndicator size="small" color={EddiesColors.ink} />
-          ) : (
-            <Text style={ar.btnLabel}>REQUEST</Text>
-          )}
-        </Pressable>
+      <View style={ar.fieldHeader}>
+        <View style={ar.fieldTag}>
+          <Text style={ar.fieldTagText}>EMAIL</Text>
+        </View>
+        <View style={ar.fieldRule} />
       </View>
+      <TextInput
+        style={ar.input}
+        value={email}
+        onChangeText={(t) => {
+          setEmail(t);
+          setErrMsg(null);
+          setStatus("idle");
+        }}
+        onSubmitEditing={handleRequest}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholder="your@email.com"
+        placeholderTextColor={EddiesColors.steel + "40"}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoCorrect={false}
+        returnKeyType="send"
+        editable={status !== "sending"}
+      />
+      <Pressable
+        style={({ pressed }) => [ar.btn, pressed && ar.btnPressed]}
+        onPress={handleRequest}
+        accessibilityRole="button"
+        accessibilityLabel="Request beta access"
+      >
+        {status === "sending" ? (
+          <ActivityIndicator size="small" color={email.includes("@") ? EddiesColors.alert : EddiesColors.steel} />
+        ) : (
+          <>
+            <View style={[ar.rule, email.includes("@") && ar.ruleReady]} />
+            <Text style={[ar.btnLabel, email.includes("@") && ar.btnLabelReady]}>R E Q U E S T  A C C E S S</Text>
+          </>
+        )}
+      </Pressable>
       {errMsg !== null && (
         <MonoLabel size={7} letterSpacing={1} color={EddiesColors.alert + "BB"}>
           ▲ {errMsg}
@@ -252,45 +284,62 @@ function AccessRequest() {
 }
 
 const ar = StyleSheet.create({
-  wrap: { gap: EddiesSpacing.xs },
-  bar: {
+  wrap: { gap: 0 },
+  fieldHeader: {
     flexDirection: "row",
-    alignItems: "stretch",
-    borderWidth: 1,
-    borderColor: EddiesColors.steel + "25",
-    backgroundColor: EddiesColors.surface,
-    overflow: "hidden",
+    alignItems: "center",
+    marginBottom: 2,
   },
-  barFocused: { borderColor: EddiesColors.steel + "45" },
-  input: {
+  fieldTag: {
+    borderWidth: 1,
+    borderColor: EddiesColors.steel + "35",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  fieldTagText: {
+    fontFamily: EddiesFonts.mono,
+    fontSize: 8,
+    color: EddiesColors.steel + "99",
+    letterSpacing: 1,
+  },
+  fieldRule: {
     flex: 1,
-    paddingVertical: 14,
-    paddingLeft: EddiesSpacing.md,
-    paddingRight: EddiesSpacing.sm,
+    height: 1,
+    backgroundColor: EddiesColors.steel + "22",
+  },
+  fieldRuleFocused: {
+    backgroundColor: EddiesColors.steel + "50",
+  },
+  input: {
+    paddingVertical: 12,
+    paddingHorizontal: 2,
     fontFamily: "SpaceMono_400Regular",
-    fontSize: 11,
+    fontSize: 12,
     color: EddiesColors.bone + "CC",
     letterSpacing: 0.5,
   },
-  divider: {
-    width: 1,
-    alignSelf: "stretch",
-    backgroundColor: EddiesColors.steel + "22",
-    marginVertical: 8,
-  },
   btn: {
-    backgroundColor: EddiesColors.bone,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: EddiesSpacing.md,
-    width: 100,
+    gap: EddiesSpacing.sm,
+    paddingVertical: 4,
   },
-  btnPressed: { opacity: 0.82 },
+  btnPressed: { opacity: 0.6 },
   btnLabel: {
     fontFamily: EddiesFonts.displayBold,
-    fontSize: 13,
-    color: EddiesColors.ink,
-    letterSpacing: 3,
+    fontSize: 11,
+    color: EddiesColors.steel + "AA",
+  },
+  rule: {
+    flex: 1,
+    height: 1,
+    backgroundColor: EddiesColors.steel + "22",
+  },
+  ruleReady: {
+    backgroundColor: EddiesColors.alert + "55",
+  },
+  btnLabelReady: {
+    color: EddiesColors.alert,
   },
   sentWrap: { alignItems: "center", paddingVertical: EddiesSpacing.sm },
 });
@@ -426,14 +475,6 @@ export default function InviteScreen() {
 
           {/* Invite code section */}
           <View style={s.authSection}>
-            <View style={s.dividerRow}>
-              <View style={s.dividerLine} />
-              <MonoLabel size={8} letterSpacing={3} color={EddiesColors.steel}>
-                ENTER INVITE CODE
-              </MonoLabel>
-              <View style={s.dividerLine} />
-            </View>
-
             <InviteInput
               value={code}
               onChangeText={(t) => {

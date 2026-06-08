@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -166,13 +167,6 @@ export default function SystemScreen() {
           <ActionRow label="APP SETTINGS" onPress={() => nav('/(modals)/settings')} />
         </View>
 
-        {/* ── Data ─────────────────────────────────────── */}
-        <View style={s.section}>
-          <SectionTag label="DATA" />
-          <ActionRow label="EXPORT DATA" onPress={() => nav('/(modals)/export')} />
-          <ActionRow label="CREATE BACKUP" onPress={() => nav('/(modals)/settings')} />
-        </View>
-
         {/* ── Feedback ─────────────────────────────────── */}
         <View style={s.section}>
           <SectionTag label="FEEDBACK" />
@@ -187,8 +181,8 @@ export default function SystemScreen() {
           <SectionTag label="BUILD" />
           <View style={s.infoGroup}>
             <InfoRow label="VERSION" value={APP_VERSION} />
-            <InfoRow label="THEME" value="DARK-ONLY" />
-            <InfoRow label="ENGINE" value="SQLite" />
+            <InfoRow label="PLATFORM" value={Platform.OS.toUpperCase()} />
+            <InfoRow label="DB VERSION" value={String(dbVersion)} />
           </View>
         </View>
 
