@@ -16,6 +16,9 @@ export type PreferencesSlice = {
   inviteValidated: boolean | null;
   biometricStatus: BiometricStatus;
   appLocked: boolean;
+  // Cloud backup — opt-in, default OFF (free-tier + privacy posture).
+  autoBackupEnabled: boolean;
+  autoBackupWifiOnly: boolean;
   setCurrency: (currency: string) => void;
   setFirstDayOfWeek: (day: number) => void;
   setHapticsEnabled: (enabled: boolean) => void;
@@ -25,7 +28,9 @@ export type PreferencesSlice = {
   setInviteValidated: (v: boolean) => void;
   setBiometricStatus: (v: BiometricStatus) => void;
   setAppLocked: (v: boolean) => void;
-  setPreferences: (prefs: Partial<Omit<PreferencesSlice, 'setCurrency' | 'setFirstDayOfWeek' | 'setHapticsEnabled' | 'setCrashReportingEnabled' | 'setUserName' | 'setOnboardingComplete' | 'setInviteValidated' | 'setBiometricStatus' | 'setAppLocked' | 'setPreferences'>>) => void;
+  setAutoBackupEnabled: (v: boolean) => void;
+  setAutoBackupWifiOnly: (v: boolean) => void;
+  setPreferences: (prefs: Partial<Omit<PreferencesSlice, 'setCurrency' | 'setFirstDayOfWeek' | 'setHapticsEnabled' | 'setCrashReportingEnabled' | 'setUserName' | 'setOnboardingComplete' | 'setInviteValidated' | 'setBiometricStatus' | 'setAppLocked' | 'setAutoBackupEnabled' | 'setAutoBackupWifiOnly' | 'setPreferences'>>) => void;
 };
 
 export const createPreferencesSlice: StateCreator<Store, [], [], PreferencesSlice> = (set) => ({
@@ -38,6 +43,8 @@ export const createPreferencesSlice: StateCreator<Store, [], [], PreferencesSlic
   inviteValidated: null,
   biometricStatus: null,
   appLocked: false,
+  autoBackupEnabled: false,
+  autoBackupWifiOnly: true,
   setCurrency: (currency) => set({ currency }),
   setFirstDayOfWeek: (day) => set({ firstDayOfWeek: day }),
   setHapticsEnabled: (enabled) => set({ hapticsEnabled: enabled }),
@@ -47,5 +54,7 @@ export const createPreferencesSlice: StateCreator<Store, [], [], PreferencesSlic
   setInviteValidated: (v) => set({ inviteValidated: v }),
   setBiometricStatus: (v) => set({ biometricStatus: v }),
   setAppLocked: (v) => set({ appLocked: v }),
+  setAutoBackupEnabled: (v) => set({ autoBackupEnabled: v }),
+  setAutoBackupWifiOnly: (v) => set({ autoBackupWifiOnly: v }),
   setPreferences: (prefs) => set(prefs),
 });

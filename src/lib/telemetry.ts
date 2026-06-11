@@ -74,3 +74,14 @@ export function captureError(error: unknown, context?: Record<string, string>): 
   if (!_enabled) return;
   Sentry.captureException(error, context ? { extra: context } : undefined);
 }
+
+/**
+ * Lightweight product-analytics event as a Sentry breadcrumb. Data is scrubbed of
+ * any financial-looking keys; never pass amounts, balances, or message content.
+ * No-ops when telemetry is disabled.
+ */
+export function trackEvent(name: string, data?: Record<string, string | number>): void {
+  if (!_enabled) return;
+  const safe = data ? scrubFinancialKeys(data) : undefined;
+  Sentry.addBreadcrumb({ category: 'event', type: 'info', message: name, data: safe, level: 'info' });
+}

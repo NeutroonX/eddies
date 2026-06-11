@@ -14,7 +14,9 @@ import { SQLiteProvider } from 'expo-sqlite';
 import { useEffect, useRef } from 'react';
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { QueryClientProvider } from '@tanstack/react-query';
 
+import { queryClient } from '@/lib/cloud/query-client';
 import { runMigrations } from '@/lib/db/migrations';
 import { GlobalToast } from '@/components/ui/global-toast';
 import { useArchiveCheck } from '@/hooks/use-archive-check';
@@ -197,6 +199,7 @@ function RootLayout() {
   return (
     <AppErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
+        <QueryClientProvider client={queryClient}>
         <SQLiteProvider databaseName="eddies.db" onInit={runMigrations}>
           <ThemeProvider value={DarkTheme}>
             <StatusBar style="light" />
@@ -222,10 +225,12 @@ function RootLayout() {
               <Stack.Screen name="(modals)/archive"  options={modalOptions} />
               <Stack.Screen name="(modals)/recurring"      options={modalOptions} />
               <Stack.Screen name="(modals)/recurring-edit" options={modalOptions} />
+              <Stack.Screen name="(modals)/cloud-backup"  options={modalOptions} />
             </Stack>
             <GlobalToast />
           </ThemeProvider>
         </SQLiteProvider>
+        </QueryClientProvider>
       </GestureHandlerRootView>
     </AppErrorBoundary>
   );
