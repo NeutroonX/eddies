@@ -1,14 +1,19 @@
-import { useRef } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { useState, useRef } from 'react';
+import { Alert, Platform, Pressable, StyleSheet, View, Share, Text } from 'react-native';
 import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SymbolView } from 'expo-symbols';
+import * as Clipboard from 'expo-clipboard';
+import * as Sharing from 'expo-sharing';
+import * as Haptics from 'expo-haptics';
+import { captureRef } from 'react-native-view-shot';
 
 import { IDCard } from '@/components/ui/id-card';
 import { BarcodeMark } from '@/components/ui/barcode-mark';
 import { MonoLabel } from '@/components/ui/mono-label';
 import { Numerals } from '@/components/ui/numerals';
 import { CautionStripe } from '@/components/ui/caution-stripe';
-import { EddiesColors, EddiesSpacing } from '@/constants/theme';
+import { VaultShareCard, vaultShareText } from '@/components/vaults/vault-share-card';
+import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
 import { formatAmountTabular } from '@/lib/money';
 import { useCurrencySymbol } from '@/hooks/use-currency-symbol';
 import type { Account } from '@/lib/schemas';
@@ -17,7 +22,7 @@ const TYPE_LABELS: Record<string, string> = {
   cash: 'CASH',
   bank: 'BANK',
   card: 'CARD',
-  savings: 'SAVINGS',
+  upi: 'UPI',
 };
 
 interface VaultCardProps {
@@ -34,7 +39,7 @@ function TypeIcon({ type }: { type: string }) {
     cash: 'banknote.fill',
     bank: 'building.2.fill',
     card: 'creditcard.fill',
-    savings: 'piggybank.fill',
+    upi: 'qrcode',
   };
   if (Platform.OS === 'ios') {
     return <SymbolView name={iconMap[type] as any} size={12} tintColor={EddiesColors.steel} type="monochrome" />;
@@ -53,6 +58,10 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
   const serial = serialFromId(account.id);
   const typeLabel = TYPE_LABELS[account.type] ?? account.type.toUpperCase();
   const swipeRef = useRef<SwipeableMethods>(null);
+  const shareCardRef = useRef<View>(null);
+  const [detailsVisible, setDetailsVisible] = useState(false);
+
+  const balanceLabel = `${isNegative ? '−' : ''}${sym}${formatAmountTabular(Math.abs(balance))}`;
 
   function triggerEdit() {
     swipeRef.current?.close();
@@ -64,7 +73,49 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
     onDelete();
   }
 
+  async function handleCopy() {
+    try {
+      await Clipboard.setStringAsync(vaultShareText(account));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      Alert.alert('Copied', `${account.name} details copied to clipboard.`);
+    } catch (err) {
+      console.error('Copy error:', err);
+      Alert.alert('Copy failed', 'Could not copy vault details.');
+    }
+  }
+
+  async function handleShare() {
+    try {
+      const uri = await captureRef(shareCardRef, {
+        format: 'png',
+        quality: 1,
+        result: 'tmpfile',
+      });
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: `Eddies Vault: ${account.name}`,
+          UTI: 'public.png',
+        });
+      } else {
+        // Fallback: share the plaintext details if the OS share sheet is unavailable.
+        await Share.share({
+          message: vaultShareText(account),
+          title: `Eddies Vault: ${account.name}`,
+        });
+      }
+    } catch (err) {
+      console.error('Sharing error:', err);
+      Alert.alert('Share failed', 'Could not generate the share image.');
+    }
+  }
+
   return (
+    <>
+      <View style={s.offscreen} pointerEvents="none" aria-hidden>
+        <VaultShareCard ref={shareCardRef} account={account} balanceLabel={balanceLabel} />
+      </View>
     <ReanimatedSwipeable
       ref={swipeRef}
       overshootFriction={8}
@@ -78,10 +129,6 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
           <MonoLabel size={11} weight="bold" color={EddiesColors.bone}>DELETE</MonoLabel>
         </Pressable>
       )}
-      onSwipeableOpen={(direction) => {
-        if (direction === 'right') triggerEdit();
-        else if (direction === 'left') triggerDelete();
-      }}
     >
       <Pressable
         onPress={onPress}
@@ -96,7 +143,6 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
             ]
           )
         }
-        accessibilityHint="Hold to edit or delete"
         style={s.wrapper}
         accessibilityRole="button"
       >
@@ -112,19 +158,76 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
             <View style={[s.colorDot, { backgroundColor: account.color }]} />
           </View>
 
-
           <Numerals size={20} weight="bold" color={EddiesColors.ink} style={s.name}>
             {account.name.toUpperCase()}
           </Numerals>
 
-          <Numerals
-            size={34}
-            weight="bold"
-            color={isNegative ? EddiesColors.alert : EddiesColors.ink}
-            style={s.balance}
-          >
-            {isNegative ? '−' : ''}{sym}{formatAmountTabular(Math.abs(balance))}
-          </Numerals>
+          {!detailsVisible ? (
+            <View style={s.mainBalance}>
+              <Numerals
+                size={34}
+                weight="bold"
+                color={isNegative ? EddiesColors.alert : EddiesColors.ink}
+                style={s.balance}
+              >
+                {isNegative ? '−' : ''}{sym}{formatAmountTabular(Math.abs(balance))}
+              </Numerals>
+              <Pressable style={s.showBtn} onPress={() => setDetailsVisible(true)}>
+                <MonoLabel size={9} weight="bold" color={EddiesColors.steel}>[ SHOW ]</MonoLabel>
+              </Pressable>
+            </View>
+          ) : (
+            <View style={s.detailsBlock}>
+              <View style={s.detailsRow}>
+                <View style={{ flex: 1 }}>
+                  {account.type === 'bank' && (
+                    <>
+                      <MonoLabel size={8} color={EddiesColors.steel}>A/C NO</MonoLabel>
+                      <Text style={s.detailText} selectable>{account.bank_account_number || '—'}</Text>
+                      <MonoLabel size={8} color={EddiesColors.steel} style={{ marginTop: 4 }}>A/C TYPE</MonoLabel>
+                      <Text style={s.detailText}>{account.bank_account_type || 'SAVINGS'}</Text>
+                    </>
+                  )}
+                  {account.type === 'card' && (
+                    <>
+                      <MonoLabel size={8} color={EddiesColors.steel}>CARD NO</MonoLabel>
+                      <Text style={s.detailText} selectable>{account.card_full_number || '—'}</Text>
+                      <View style={s.minimalGridSmall}>
+                        <View style={{ flex: 1.5 }}>
+                          <MonoLabel size={8} color={EddiesColors.steel}>CVV</MonoLabel>
+                          <Text style={s.detailText} selectable>{account.card_cvv || '—'}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <MonoLabel size={8} color={EddiesColors.steel}>EXP</MonoLabel>
+                          <Text style={s.detailText}>{account.card_expiry || '—'}</Text>
+                        </View>
+                      </View>
+                    </>
+                  )}
+                  {account.type === 'upi' && (
+                    <>
+                      <MonoLabel size={8} color={EddiesColors.steel}>UPI ID</MonoLabel>
+                      <Text style={s.detailText} selectable>{account.upi_id || '—'}</Text>
+                    </>
+                  )}
+                  {account.type === 'cash' && (
+                    <MonoLabel size={9} color={EddiesColors.ink}>PHYSICAL CASH VAULT</MonoLabel>
+                  )}
+                </View>
+                <View style={s.detailActions}>
+                  <Pressable style={s.actionBtn} onPress={handleCopy}>
+                    <MonoLabel size={8} weight="bold" color={EddiesColors.ink}>COPY</MonoLabel>
+                  </Pressable>
+                  <Pressable style={s.actionBtn} onPress={handleShare}>
+                    <MonoLabel size={8} weight="bold" color={EddiesColors.ink}>SHARE</MonoLabel>
+                  </Pressable>
+                  <Pressable style={s.hideBtn} onPress={() => setDetailsVisible(false)}>
+                    <MonoLabel size={8} weight="bold" color={EddiesColors.alert}>HIDE</MonoLabel>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          )}
 
           {isNegative && <CautionStripe height={6} style={s.cautionStripe} />}
 
@@ -144,10 +247,16 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
         </IDCard>
       </Pressable>
     </ReanimatedSwipeable>
+    </>
   );
 }
 
 const s = StyleSheet.create({
+  offscreen: {
+    position: 'absolute',
+    left: -9999,
+    top: 0,
+  },
   wrapper: {
     paddingHorizontal: EddiesSpacing.md,
     paddingVertical: EddiesSpacing.xs,
@@ -158,7 +267,6 @@ const s = StyleSheet.create({
     overflow: 'hidden',
   },
   cardActive: {
-    // slight shadow tint to show selection — stock bg handles itself
     opacity: 1,
   },
   topRow: {
@@ -180,9 +288,58 @@ const s = StyleSheet.create({
     marginTop: EddiesSpacing.xs,
     letterSpacing: 1,
   },
-  balance: {
+  mainBalance: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: EddiesSpacing.xs,
+  },
+  balance: {
     letterSpacing: -0.5,
+  },
+  showBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: EddiesColors.steel + '44',
+    borderRadius: 2,
+  },
+  detailsBlock: {
+    marginTop: EddiesSpacing.xs,
+    minHeight: 50,
+    justifyContent: 'center',
+  },
+  minimalGridSmall: {
+    flexDirection: 'row',
+    gap: EddiesSpacing.sm,
+    marginTop: 4,
+  },
+  detailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  detailText: {
+    fontFamily: EddiesFonts.monoBold,
+    fontSize: 13,
+    color: EddiesColors.ink,
+    letterSpacing: 0.5,
+  },
+  detailActions: {
+    gap: 6,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  actionBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    backgroundColor: EddiesColors.bone + '44',
+    borderWidth: 1,
+    borderColor: EddiesColors.ink + '22',
+    borderRadius: 2,
+  },
+  hideBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
   cautionStripe: {
     marginTop: EddiesSpacing.xs,
