@@ -259,7 +259,6 @@ export default function LedgerScreen() {
         ListFooterComponent={atRowLimit ? <LedgerLimitBanner /> : null}
         ListEmptyComponent={loading ? null : <EmptyState />}
         ItemSeparatorComponent={() => <View style={s.separator} />}
-        removeClippedSubviews
         initialNumToRender={12}
         maxToRenderPerBatch={12}
         windowSize={11}

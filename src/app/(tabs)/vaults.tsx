@@ -127,7 +127,6 @@ export default function VaultsScreen() {
         extraData={`${lastVaultId}:${displayAccounts.length}`}
         ListHeaderComponent={<VaultsHeader />}
         scrollEnabled={displayAccounts.length > 0}
-        removeClippedSubviews
         initialNumToRender={8}
         maxToRenderPerBatch={8}
         windowSize={11}
