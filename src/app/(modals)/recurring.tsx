@@ -10,6 +10,7 @@ import { useAccounts } from '@/hooks/use-accounts';
 import { useCategories } from '@/hooks/use-categories';
 import { useCurrencySymbol } from '@/hooks/use-currency-symbol';
 import { archiveRule, getRules, pauseRule } from '@/lib/db/repos/recurring';
+import { materializeDueRules } from '@/lib/recurring/materialize';
 import { monthlyEquivalentMinor, nextRunAt, scheduleSummary } from '@/lib/recurring/describe';
 import { formatAmountTabular } from '@/lib/money';
 import { useStore } from '@/store';
@@ -101,7 +102,10 @@ export default function RecurringListModal() {
     id ? list.find(x => x.id === id)?.name ?? fallback : fallback;
 
   async function handlePause(rule: RecurringRule) {
-    await pauseRule(db, rule.id, rule.paused === 0);
+    const willPause = rule.paused === 0;
+    await pauseRule(db, rule.id, willPause);
+    // Resuming may have missed occurrences while paused — catch them up now.
+    if (!willPause) await materializeDueRules(db);
     await reload();
     bumpDbVersion();
   }

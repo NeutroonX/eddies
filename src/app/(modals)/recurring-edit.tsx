@@ -15,6 +15,7 @@ import { useAccounts } from '@/hooks/use-accounts';
 import { useCategories } from '@/hooks/use-categories';
 import { useCurrencySymbol } from '@/hooks/use-currency-symbol';
 import { createRule, getRuleById, updateRule } from '@/lib/db/repos/recurring';
+import { materializeDueRules } from '@/lib/recurring/materialize';
 import { toMinorUnits, formatAmountTabular } from '@/lib/money';
 import { useStore } from '@/store';
 import type { RecurringRule } from '@/lib/schemas';
@@ -164,6 +165,9 @@ export default function RecurringEditModal() {
       } else {
         await createRule(db, payload);
       }
+      // Post any now-due occurrences immediately so an auto rule shows up in the
+      // Ledger right away, rather than waiting for the focus-pass debounce.
+      await materializeDueRules(db);
       bumpDbVersion();
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       Keyboard.dismiss();
