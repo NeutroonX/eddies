@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { memo, useState, useRef } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, View, Share, Text } from 'react-native';
 import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SymbolView } from 'expo-symbols';
@@ -52,7 +52,7 @@ function serialFromId(id: string): string {
   return clean.slice(-6).padStart(6, '0');
 }
 
-export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelete }: VaultCardProps) {
+export const VaultCard = memo(function VaultCard({ account, balance, isActive, onPress, onEdit, onDelete }: VaultCardProps) {
   const isNegative = balance < 0;
   const sym = useCurrencySymbol();
   const serial = serialFromId(account.id);
@@ -117,9 +117,11 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
 
   return (
     <>
-      <View style={s.offscreen} pointerEvents="none" aria-hidden>
-        <VaultShareCard ref={shareCardRef} account={account} />
-      </View>
+      {detailsVisible && (
+        <View style={s.offscreen} pointerEvents="none" aria-hidden>
+          <VaultShareCard ref={shareCardRef} account={account} />
+        </View>
+      )}
     <ReanimatedSwipeable
       ref={swipeRef}
       overshootFriction={8}
@@ -259,7 +261,7 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
     </ReanimatedSwipeable>
     </>
   );
-}
+});
 
 const s = StyleSheet.create({
   offscreen: {

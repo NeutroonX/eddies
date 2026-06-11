@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { memo, useRef } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { SymbolView } from 'expo-symbols';
@@ -32,7 +32,7 @@ type Props = {
   onDelete: () => void;
 };
 
-export function EntryRow({ row, isPendingDelete = false, onPress, onEdit, onDelete }: Props) {
+export const EntryRow = memo(function EntryRow({ row, isPendingDelete = false, onPress, onEdit, onDelete }: Props) {
   const sym = useCurrencySymbol();
   const swipeRef = useRef<Swipeable>(null);
   const isOutflow = row.kind === 'outflow';
@@ -112,7 +112,7 @@ export function EntryRow({ row, isPendingDelete = false, onPress, onEdit, onDele
       </Pressable>
     </Swipeable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   row: {

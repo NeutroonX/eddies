@@ -179,6 +179,7 @@ function UndoBar({ label, onUndo }: { label: string; onUndo: () => void }) {
 
 export default function LedgerScreen() {
   const db = useSQLiteContext();
+  const bumpDbVersion = useStore(s => s.bumpDbVersion);
   const { sections, totalBalance, hasMixedCurrencies, atRowLimit, loading, reload } = useLedger();
 
   const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -206,7 +207,7 @@ export default function LedgerScreen() {
   function handleDelete(row: LedgerRow) {
     if (deleteTimerRef.current && pendingIdRef.current) {
       clearTimeout(deleteTimerRef.current);
-      deleteTransaction(db, pendingIdRef.current).then(() => reload()).catch(console.error);
+      deleteTransaction(db, pendingIdRef.current).then(() => { reload(); bumpDbVersion(); }).catch(console.error);
     }
     const label = (row.note?.trim() || row.category_name).slice(0, 28);
     pendingIdRef.current = row.id;
@@ -216,7 +217,7 @@ export default function LedgerScreen() {
       deleteTimerRef.current = null;
       pendingIdRef.current = null;
       deleteTransaction(db, row.id)
-        .then(() => reload())
+        .then(() => { reload(); bumpDbVersion(); })
         .then(() => setPendingDeleteId(prev => (prev === row.id ? null : prev)))
         .catch(console.error);
     }, 4000);
@@ -258,6 +259,10 @@ export default function LedgerScreen() {
         ListFooterComponent={atRowLimit ? <LedgerLimitBanner /> : null}
         ListEmptyComponent={loading ? null : <EmptyState />}
         ItemSeparatorComponent={() => <View style={s.separator} />}
+        removeClippedSubviews
+        initialNumToRender={12}
+        maxToRenderPerBatch={12}
+        windowSize={11}
         contentContainerStyle={{ paddingBottom: 100 }}
       />
       {pendingDeleteId !== null && (
