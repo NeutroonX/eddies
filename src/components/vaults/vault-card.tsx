@@ -59,14 +59,20 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
   const typeLabel = TYPE_LABELS[account.type] ?? account.type.toUpperCase();
   const swipeRef = useRef<SwipeableMethods>(null);
   const shareCardRef = useRef<View>(null);
+  const actionFiredRef = useRef(false);
   const [detailsVisible, setDetailsVisible] = useState(false);
 
+  // Guards against double-firing when both the swipe-open and a button tap land.
   function triggerEdit() {
+    if (actionFiredRef.current) return;
+    actionFiredRef.current = true;
     swipeRef.current?.close();
     onEdit();
   }
 
   function triggerDelete() {
+    if (actionFiredRef.current) return;
+    actionFiredRef.current = true;
     swipeRef.current?.close();
     onDelete();
   }
@@ -117,6 +123,11 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
     <ReanimatedSwipeable
       ref={swipeRef}
       overshootFriction={8}
+      onSwipeableOpen={(direction) => {
+        if (direction === 'left') triggerEdit();
+        else triggerDelete();
+      }}
+      onSwipeableClose={() => { actionFiredRef.current = false; }}
       renderLeftActions={() => (
         <Pressable style={s.editAction} onPress={triggerEdit} accessibilityRole="button" accessibilityLabel={`Edit ${account.name}`}>
           <MonoLabel size={11} weight="bold" color={EddiesColors.bone}>EDIT</MonoLabel>
