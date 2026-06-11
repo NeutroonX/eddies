@@ -69,15 +69,15 @@ export function vaultShareText(account: Account): string {
 
 interface VaultShareCardProps {
   account: Account;
-  balanceLabel: string;
 }
 
 /**
  * Off-screen render target captured by react-native-view-shot into a
  * shareable social image. Fixed width so the exported PNG is consistent.
+ * Intentionally omits balance — only identity/account details are shared.
  */
 export const VaultShareCard = forwardRef<View, VaultShareCardProps>(
-  function VaultShareCard({ account, balanceLabel }, ref) {
+  function VaultShareCard({ account }, ref) {
     const typeLabel = TYPE_LABELS[account.type] ?? account.type.toUpperCase();
     const rows = vaultShareRows(account);
 
@@ -96,13 +96,6 @@ export const VaultShareCard = forwardRef<View, VaultShareCardProps>(
         <MonoLabel size={11} letterSpacing={2} color={EddiesColors.steel}>
           {typeLabel} // {account.currency}
         </MonoLabel>
-
-        <View style={s.balanceBlock}>
-          <MonoLabel size={9} letterSpacing={2} color={EddiesColors.steel}>BALANCE</MonoLabel>
-          <Numerals size={44} weight="bold" color={EddiesColors.ink} style={s.balance}>
-            {balanceLabel}
-          </Numerals>
-        </View>
 
         <View style={s.divider} />
 
@@ -151,17 +144,11 @@ const s = StyleSheet.create({
     marginTop: EddiesSpacing.sm,
     letterSpacing: 1,
   },
-  balanceBlock: {
-    marginTop: EddiesSpacing.md,
-    gap: 2,
-  },
-  balance: {
-    letterSpacing: -1,
-  },
   divider: {
     height: 1,
     backgroundColor: EddiesColors.ink + '22',
-    marginVertical: EddiesSpacing.sm,
+    marginTop: EddiesSpacing.md,
+    marginBottom: EddiesSpacing.sm,
   },
   rows: {
     gap: EddiesSpacing.sm,

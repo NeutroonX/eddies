@@ -61,8 +61,6 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
   const shareCardRef = useRef<View>(null);
   const [detailsVisible, setDetailsVisible] = useState(false);
 
-  const balanceLabel = `${isNegative ? '−' : ''}${sym}${formatAmountTabular(Math.abs(balance))}`;
-
   function triggerEdit() {
     swipeRef.current?.close();
     onEdit();
@@ -114,7 +112,7 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
   return (
     <>
       <View style={s.offscreen} pointerEvents="none" aria-hidden>
-        <VaultShareCard ref={shareCardRef} account={account} balanceLabel={balanceLabel} />
+        <VaultShareCard ref={shareCardRef} account={account} />
       </View>
     <ReanimatedSwipeable
       ref={swipeRef}
