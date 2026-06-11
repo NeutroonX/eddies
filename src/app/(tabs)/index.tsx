@@ -11,6 +11,8 @@ import { SectionTag } from '@/components/ui/section-tag';
 import { EntryRow } from '@/components/ledger/entry-row';
 import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
 import { useLedger, type DaySection, type LedgerRow } from '@/hooks/use-ledger';
+import { useMaterializeOnFocus } from '@/hooks/use-materialize-on-focus';
+import { useUpcoming } from '@/hooks/use-upcoming';
 import { deleteTransaction } from '@/lib/db/repos/transactions';
 import { formatAmountTabular } from '@/lib/money';
 import { useCurrencySymbol } from '@/hooks/use-currency-symbol';
@@ -19,6 +21,7 @@ import { useStore } from '@/store';
 function LedgerHeader({ balance, sections, hasMixedCurrencies, pendingRow }: { balance: number; sections: DaySection[]; hasMixedCurrencies: boolean; pendingRow: LedgerRow | null }) {
   const sym        = useCurrencySymbol();
   const appLocked  = useStore((s) => s.appLocked);
+  const upcoming   = useUpcoming();
 
   // Optimistically subtract the pending-delete entry from the displayed balance.
   const effectiveBalance = useMemo(() => {
@@ -88,6 +91,29 @@ function LedgerHeader({ balance, sections, hasMixedCurrencies, pendingRow }: { b
           </Text>
         </View>
       </View>
+
+      {/* Upcoming auto-posts (next 7 days) — taps through to Recurring rules. */}
+      <Pressable
+        style={hs.upcomingRow}
+        onPress={() => router.push('/(modals)/recurring')}
+        accessibilityRole="button"
+        accessibilityLabel={
+          upcoming.count > 0
+            ? `${upcoming.count} scheduled in the next 7 days. View recurring rules.`
+            : 'Set up recurring transactions'
+        }
+      >
+        <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.steel}>
+          {upcoming.count > 0 ? `↻ UPCOMING 7D · ${upcoming.count}` : '↻ RECURRING'}
+        </MonoLabel>
+        {upcoming.count > 0 ? (
+          <Text style={[hs.upcomingVal, { color: upcoming.netMinor >= 0 ? EddiesColors.bone : EddiesColors.alert }]}>
+            {appLocked ? '••••' : `${upcoming.netMinor >= 0 ? '+' : '−'}${sym}${formatAmountTabular(Math.abs(upcoming.netMinor))}`}
+          </Text>
+        ) : (
+          <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel + '88'}>SET UP →</MonoLabel>
+        )}
+      </Pressable>
 
       <View style={hs.hairline} />
     </View>
@@ -180,6 +206,8 @@ function UndoBar({ label, onUndo }: { label: string; onUndo: () => void }) {
 export default function LedgerScreen() {
   const db = useSQLiteContext();
   const bumpDbVersion = useStore(s => s.bumpDbVersion);
+  // Post any due recurring transactions when the Ledger gains focus.
+  useMaterializeOnFocus();
   const { sections, totalBalance, hasMixedCurrencies, atRowLimit, loading, reload } = useLedger();
 
   const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -321,6 +349,23 @@ const hs = StyleSheet.create({
     width: 1,
     height: 28,
     backgroundColor: EddiesColors.steel + '33',
+  },
+  upcomingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: EddiesSpacing.sm,
+    paddingVertical: EddiesSpacing.sm,
+    paddingHorizontal: EddiesSpacing.md,
+    backgroundColor: EddiesColors.surface,
+    borderRadius: 4,
+    borderLeftWidth: 2,
+    borderLeftColor: EddiesColors.steel + '55',
+  },
+  upcomingVal: {
+    fontFamily: EddiesFonts.monoBold,
+    fontSize: 11,
+    letterSpacing: 0.5,
   },
   hairline: {
     height: 1,
