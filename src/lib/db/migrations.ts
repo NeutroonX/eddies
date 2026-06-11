@@ -143,4 +143,59 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
     `);
     await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 5);
   }
+
+  if (current < 6) {
+    // 1. Allow NULL account_id in transactions for "No Vault" entries.
+    await db.execAsync(`
+      DROP TABLE IF EXISTS transactions_v6;
+      CREATE TABLE transactions_v6 (
+        id                TEXT    PRIMARY KEY NOT NULL,
+        account_id        TEXT    REFERENCES accounts(id), -- No longer NOT NULL
+        category_id       TEXT    REFERENCES categories(id),
+        kind              TEXT    NOT NULL CHECK(kind IN ('outflow','inflow','transfer')),
+        amount_minor      INTEGER NOT NULL CHECK(amount_minor > 0),
+        note              TEXT,
+        occurred_at       INTEGER NOT NULL,
+        created_at        INTEGER NOT NULL,
+        transfer_group_id TEXT,
+        archived          INTEGER NOT NULL DEFAULT 0
+      );
+      INSERT INTO transactions_v6 SELECT * FROM transactions;
+      DROP TABLE transactions;
+      ALTER TABLE transactions_v6 RENAME TO transactions;
+      CREATE INDEX IF NOT EXISTS idx_tx_occurred_at ON transactions(occurred_at);
+      CREATE INDEX IF NOT EXISTS idx_tx_account_id  ON transactions(account_id);
+      CREATE INDEX IF NOT EXISTS idx_tx_category_id ON transactions(category_id);
+      CREATE INDEX IF NOT EXISTS idx_tx_archived    ON transactions(archived);
+    `);
+
+    // 2. Add columns for Bank, UPI, and Card details to accounts.
+    await db.execAsync(`
+      ALTER TABLE accounts ADD COLUMN bank_account_number TEXT;
+      ALTER TABLE accounts ADD COLUMN bank_ifsc           TEXT;
+      ALTER TABLE accounts ADD COLUMN bank_branch         TEXT;
+      ALTER TABLE accounts ADD COLUMN upi_id              TEXT;
+      ALTER TABLE accounts ADD COLUMN upi_phone           TEXT;
+      ALTER TABLE accounts ADD COLUMN card_network        TEXT;
+      ALTER TABLE accounts ADD COLUMN card_last_four      TEXT;
+      ALTER TABLE accounts ADD COLUMN card_expiry         TEXT;
+    `);
+
+    await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 6);
+  }
+
+  if (current < 7) {
+    await db.execAsync(`
+      ALTER TABLE accounts ADD COLUMN bank_account_type TEXT;
+      ALTER TABLE accounts ADD COLUMN card_full_number   TEXT;
+    `);
+    await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 7);
+  }
+
+  if (current < 8) {
+    await db.execAsync(`
+      ALTER TABLE accounts ADD COLUMN card_cvv TEXT;
+    `);
+    await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 8);
+  }
 }

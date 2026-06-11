@@ -15,6 +15,17 @@ export const AccountSchema = z.object({
   color: z.string(),
   archived: z.number().int(),
   created_at: z.number().int(),
+  bank_account_number: z.string().nullable().optional(),
+  bank_account_type: z.string().nullable().optional(),
+  bank_ifsc: z.string().nullable().optional(),
+  bank_branch: z.string().nullable().optional(),
+  upi_id: z.string().nullable().optional(),
+  upi_phone: z.string().nullable().optional(),
+  card_network: z.string().nullable().optional(),
+  card_last_four: z.string().nullable().optional(),
+  card_full_number: z.string().nullable().optional(),
+  card_cvv: z.string().nullable().optional(),
+  card_expiry: z.string().nullable().optional(),
 });
 export type Account = z.infer<typeof AccountSchema>;
 export type NewAccount = Omit<Account, 'id' | 'archived' | 'created_at'>;
@@ -35,7 +46,7 @@ export type NewCategory = Omit<Category, 'id' | 'archived'>;
 // ── Transaction ───────────────────────────────────────────────────────────────
 export const TransactionSchema = z.object({
   id: z.string(),
-  account_id: z.string(),
+  account_id: z.string().nullable(),
   category_id: z.string().nullable(),
   kind: TransactionKindSchema,
   amount_minor: z.number().int().positive(),

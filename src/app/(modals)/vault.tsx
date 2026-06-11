@@ -11,10 +11,12 @@ import { MonoLabel } from '@/components/ui/mono-label';
 import { SectionTag } from '@/components/ui/section-tag';
 import { EddiesColors, EddiesSpacing } from '@/constants/theme';
 import { createAccount, updateAccount, getAccountById } from '@/lib/db/repos/accounts';
+import { useStore } from '@/store';
 import type { NewAccount, Account } from '@/lib/schemas';
 
 export default function VaultModal() {
   const db = useSQLiteContext();
+  const bumpDbVersion = useStore(s => s.bumpDbVersion);
   const { mode, id } = useLocalSearchParams<{ mode: 'add' | 'edit'; id?: string }>();
   const [initialData, setInitialData] = useState<Account | null>(null);
   const [loading, setLoading] = useState(mode === 'edit');
@@ -35,6 +37,7 @@ export default function VaultModal() {
       } else if (mode === 'edit' && id) {
         await updateAccount(db, id, data);
       }
+      bumpDbVersion();
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Keyboard.dismiss();
       setTimeout(() => router.back(), 100);

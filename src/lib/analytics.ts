@@ -17,12 +17,14 @@ export type {
 export async function getTotalBalance(db: SQLiteDatabase): Promise<number> {
   const row = await db.getFirstAsync<{ total: number }>(
     `SELECT
-       COALESCE(SUM(a.opening_balance_minor),0) +
-       COALESCE(SUM(CASE WHEN t.kind='inflow'  THEN t.amount_minor ELSE 0 END),0) -
-       COALESCE(SUM(CASE WHEN t.kind='outflow' THEN t.amount_minor ELSE 0 END),0) AS total
-     FROM accounts a
-     LEFT JOIN transactions t ON t.account_id = a.id AND t.transfer_group_id IS NULL
-     WHERE a.archived = 0`
+       (SELECT COALESCE(SUM(opening_balance_minor), 0) FROM accounts WHERE archived = 0) +
+       (SELECT COALESCE(SUM(CASE 
+          WHEN kind = 'inflow' THEN amount_minor 
+          WHEN kind = 'outflow' THEN -amount_minor 
+          ELSE 0 
+        END), 0)
+        FROM transactions
+        WHERE account_id IS NULL OR account_id IN (SELECT id FROM accounts WHERE archived = 0)) AS total`
   );
   return row?.total ?? 0;
 }

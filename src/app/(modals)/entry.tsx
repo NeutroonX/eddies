@@ -29,22 +29,22 @@ export default function EntryModal() {
   const { categories } = useCategories();
   const lastVaultId = useStore(s => s.lastVaultId);
   const setLastVaultId = useStore(s => s.setLastVaultId);
+  const bumpDbVersion = useStore(s => s.bumpDbVersion);
   const showToast = useStore(s => s.showToast);
   const sym = useCurrencySymbol();
   const params = useLocalSearchParams<{ mode?: string; id?: string }>();
+  const isEditMode = params.mode === 'edit' && params.id;
 
   const [rawAmount, setRawAmount] = useState('');
   const [kind, setKind] = useState<Kind>('outflow');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [otherName, setOtherName] = useState('');
   const otherInputRef = useRef<TextInput>(null);
-  const [vaultId, setVaultId] = useState<string | null>(lastVaultId);
+  const [vaultId, setVaultId] = useState<string | null>(isEditMode ? null : lastVaultId);
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(params.mode === 'edit');
   const [existingEntry, setExistingEntry] = useState<Transaction | null>(null);
-
-  const isEditMode = params.mode === 'edit' && params.id;
 
   useEffect(() => {
     if (isEditMode) {
@@ -101,7 +101,6 @@ export default function EntryModal() {
 
   const isValid =
     amountMinor > 0 &&
-    vaultId !== null &&
     categoryId !== null &&
     (!tagIsOther || otherName.trim().length > 0);
 
@@ -134,7 +133,7 @@ export default function EntryModal() {
       }
       if (isEditMode && existingEntry) {
         await updateTransaction(db, existingEntry.id, {
-          account_id: vaultId!,
+          account_id: vaultId,
           category_id: resolvedCategoryId,
           kind,
           amount_minor: amountMinor,
@@ -144,7 +143,7 @@ export default function EntryModal() {
         });
       } else {
         await createTransaction(db, {
-          account_id: vaultId!,
+          account_id: vaultId,
           category_id: resolvedCategoryId,
           kind,
           amount_minor: amountMinor,
@@ -152,8 +151,9 @@ export default function EntryModal() {
           occurred_at: Date.now(),
           transfer_group_id: null,
         });
-        setLastVaultId(vaultId!);
+        if (vaultId) setLastVaultId(vaultId);
       }
+      bumpDbVersion();
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       Keyboard.dismiss();
       setTimeout(() => router.back(), 100);
@@ -309,31 +309,35 @@ export default function EntryModal() {
         {/* ── VAULT ────────────────────────────────────── */}
         <View style={s.section}>
           <MonoLabel size={9} letterSpacing={2}>VAULT</MonoLabel>
-          {accounts.length === 0 ? (
-            <Pressable
-              style={s.vaultEmpty}
-              onPress={() => { Keyboard.dismiss(); setTimeout(() => { router.back(); router.push('/(modals)/vault?mode=add'); }, 100); }}
-              accessibilityRole="button"
-              accessibilityLabel="Add vault to continue"
-            >
-              <MonoLabel size={10} letterSpacing={1.5} color={EddiesColors.alert}>+ ADD VAULT TO CONTINUE</MonoLabel>
-            </Pressable>
-          ) : (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={s.rail}
-            >
-              {accounts.map(a => (
-                <Pill
-                  key={a.id}
-                  label={a.name}
-                  active={a.id === vaultId}
-                  onPress={() => setVaultId(a.id)}
-                />
-              ))}
-            </ScrollView>
-          )}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={s.rail}
+          >
+            <Pill
+              label="// NO VAULT"
+              active={vaultId === null}
+              onPress={() => setVaultId(null)}
+              color={EddiesColors.steel}
+            />
+            {accounts.map(a => (
+              <Pill
+                key={a.id}
+                label={a.name}
+                active={a.id === vaultId}
+                onPress={() => setVaultId(a.id)}
+              />
+            ))}
+            {accounts.length === 0 && (
+              <Pressable
+                onPress={() => { Keyboard.dismiss(); setTimeout(() => { router.back(); router.push('/(modals)/vault?mode=add'); }, 100); }}
+                accessibilityRole="button"
+                accessibilityLabel="Add vault"
+              >
+                <MonoLabel size={10} letterSpacing={1} color={EddiesColors.alert}>+ ADD VAULT</MonoLabel>
+              </Pressable>
+            )}
+          </ScrollView>
         </View>
 
         {/* ── MEMO ─────────────────────────────────────── */}
@@ -371,11 +375,18 @@ export default function EntryModal() {
               </MonoLabel>
             </>
           )}
-          {selectedVault != null && (
+          {selectedVault != null ? (
             <>
               <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel + '66'}>{' · '}</MonoLabel>
               <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.steel}>
                 {selectedVault.name.toUpperCase()}
+              </MonoLabel>
+            </>
+          ) : (
+            <>
+              <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel + '66'}>{' · '}</MonoLabel>
+              <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.steel}>
+                NO VAULT
               </MonoLabel>
             </>
           )}
