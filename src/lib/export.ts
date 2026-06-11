@@ -47,7 +47,7 @@ export async function exportAsCSV(
   for (const tx of transactions) {
     const date = new Date(tx.occurred_at).toISOString().split('T')[0];
     const category = (tx.category_id ? categoryMap.get(tx.category_id) : undefined) || 'Uncategorized';
-    const vault = accountMap.get(tx.account_id) || 'Unknown';
+    const vault = (tx.account_id ? accountMap.get(tx.account_id) : undefined) || 'Unknown';
     const kind = tx.kind.toUpperCase();
     const amount = (tx.amount_minor / 100).toFixed(2);
 

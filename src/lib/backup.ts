@@ -48,7 +48,7 @@ export async function createBackup(db: SQLiteDatabase): Promise<string> {
   const transactions = await getTransactions(db);
   const budgets = await getAllBudgets(db);
   const settings = await getAllSettings(db);
-  const monthly_archives = await db.getAllAsync<Record<string, unknown>>(
+  const monthly_archives = await db.getAllAsync<NonNullable<BackupData['monthly_archives']>[number]>(
     'SELECT * FROM monthly_archives ORDER BY year DESC, month DESC'
   );
 
