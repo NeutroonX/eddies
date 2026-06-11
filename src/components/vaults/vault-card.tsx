@@ -124,7 +124,8 @@ export function VaultCard({ account, balance, isActive, onPress, onEdit, onDelet
       ref={swipeRef}
       overshootFriction={8}
       onSwipeableOpen={(direction) => {
-        if (direction === 'left') triggerEdit();
+        // direction is the swipe direction: 'right' reveals the left (EDIT) actions.
+        if (direction === 'right') triggerEdit();
         else triggerDelete();
       }}
       onSwipeableClose={() => { actionFiredRef.current = false; }}
