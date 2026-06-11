@@ -49,13 +49,20 @@ export async function createTransaction(
   db: SQLiteDatabase,
   data: NewTransaction
 ): Promise<Transaction> {
-  const tx: Transaction = { id: genId(), ...data, created_at: Date.now() };
+  const tx: Transaction = {
+    id: genId(),
+    ...data,
+    source: data.source ?? 'manual',
+    recurring_rule_id: data.recurring_rule_id ?? null,
+    created_at: Date.now(),
+  };
   await db.runAsync(
     `INSERT INTO transactions
-       (id,account_id,category_id,kind,amount_minor,note,occurred_at,created_at,transfer_group_id)
-     VALUES (?,?,?,?,?,?,?,?,?)`,
+       (id,account_id,category_id,kind,amount_minor,note,occurred_at,created_at,transfer_group_id,source,recurring_rule_id)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
     tx.id, tx.account_id, tx.category_id, tx.kind, tx.amount_minor,
-    tx.note, tx.occurred_at, tx.created_at, tx.transfer_group_id
+    tx.note, tx.occurred_at, tx.created_at, tx.transfer_group_id,
+    tx.source, tx.recurring_rule_id ?? null
   );
   return tx;
 }

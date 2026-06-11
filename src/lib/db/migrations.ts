@@ -198,4 +198,40 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
     `);
     await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 8);
   }
+
+  // v9 — Recurring & scheduled transactions (Beta v2, M5).
+  // New recurring_rules table + provenance columns on transactions.
+  if (current < 9) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS recurring_rules (
+        id                TEXT    PRIMARY KEY NOT NULL,
+        account_id        TEXT    REFERENCES accounts(id),
+        category_id       TEXT    REFERENCES categories(id),
+        kind              TEXT    NOT NULL CHECK(kind IN ('outflow','inflow','transfer')),
+        amount_minor      INTEGER NOT NULL CHECK(amount_minor > 0),
+        note              TEXT,
+        freq              TEXT    NOT NULL CHECK(freq IN ('daily','weekly','monthly','yearly')),
+        interval_n        INTEGER NOT NULL DEFAULT 1 CHECK(interval_n > 0),
+        anchor_day        INTEGER,
+        start_date        INTEGER NOT NULL,
+        end_kind          TEXT    NOT NULL DEFAULT 'never' CHECK(end_kind IN ('never','on_date','after_n')),
+        end_date          INTEGER,
+        end_count         INTEGER,
+        occurrences_made  INTEGER NOT NULL DEFAULT 0,
+        mode              TEXT    NOT NULL DEFAULT 'confirm' CHECK(mode IN ('auto','confirm')),
+        last_run_at       INTEGER,
+        paused            INTEGER NOT NULL DEFAULT 0,
+        archived          INTEGER NOT NULL DEFAULT 0,
+        created_at        INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_recurring_active ON recurring_rules(archived, paused);
+    `);
+    // Tag each transaction with its origin; v1 rows default to 'manual'.
+    // ALTER … ADD COLUMN with NOT NULL DEFAULT safely backfills existing rows.
+    await db.execAsync(`
+      ALTER TABLE transactions ADD COLUMN source TEXT NOT NULL DEFAULT 'manual';
+      ALTER TABLE transactions ADD COLUMN recurring_rule_id TEXT;
+    `);
+    await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 9);
+  }
 }

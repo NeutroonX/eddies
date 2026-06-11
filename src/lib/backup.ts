@@ -126,11 +126,12 @@ export async function restoreBackup(
     for (const tx of backup.transactions) {
       await db.runAsync(
         `INSERT INTO transactions
-           (id,account_id,category_id,kind,amount_minor,note,occurred_at,created_at,transfer_group_id,archived)
-         VALUES (?,?,?,?,?,?,?,?,?,?)`,
+           (id,account_id,category_id,kind,amount_minor,note,occurred_at,created_at,transfer_group_id,archived,source,recurring_rule_id)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
         tx.id, tx.account_id, tx.category_id, tx.kind, tx.amount_minor,
         tx.note, tx.occurred_at, tx.created_at, tx.transfer_group_id,
-        (tx as { archived?: number }).archived ?? 0
+        (tx as { archived?: number }).archived ?? 0,
+        tx.source ?? 'manual', tx.recurring_rule_id ?? null
       );
     }
 
