@@ -161,6 +161,12 @@ export default function SystemScreen() {
           </View>
         </View>
 
+        {/* ── Automation ───────────────────────────────── */}
+        <View style={s.section}>
+          <SectionTag label="AUTOMATION" />
+          <ActionRow label="RECURRING RULES" onPress={() => nav('/(modals)/recurring')} />
+        </View>
+
         {/* ── Preferences ──────────────────────────────── */}
         <View style={s.section}>
           <SectionTag label="PREFERENCES" />
