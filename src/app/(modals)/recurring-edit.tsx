@@ -57,7 +57,8 @@ export default function RecurringEditModal() {
   const [rawAmount, setRawAmount] = useState('');
   const [kind, setKind] = useState<Kind>('outflow');
   const [categoryId, setCategoryId] = useState<string | null>(null);
-  const [vaultId, setVaultId] = useState<string | null>(null);
+  // `undefined` = untouched (defaults to first vault); `null` = explicitly no vault.
+  const [vaultId, setVaultId] = useState<string | null | undefined>(undefined);
   const [note, setNote] = useState('');
   const [freq, setFreq] = useState<Freq>('monthly');
   const [intervalN, setIntervalN] = useState('1');
@@ -95,9 +96,8 @@ export default function RecurringEditModal() {
       .finally(() => setLoading(false));
   }, [isEdit, params.id, db]);
 
-  useEffect(() => {
-    if (!isEdit && accounts.length > 0) setVaultId(prev => prev ?? accounts[0].id);
-  }, [accounts, isEdit]);
+  // Default to the first vault until the user explicitly picks one (incl. "no vault").
+  const effectiveVaultId = vaultId === undefined ? (accounts[0]?.id ?? null) : vaultId;
 
   const filteredCats = useMemo(
     () => categories.filter(c => c.kind === (kind === 'outflow' ? 'expense' : 'income')),
@@ -145,7 +145,7 @@ export default function RecurringEditModal() {
             : null;
 
       const payload = {
-        account_id: vaultId,
+        account_id: effectiveVaultId,
         category_id: categoryId,
         kind,
         amount_minor: amountMinor,
@@ -249,10 +249,10 @@ export default function RecurringEditModal() {
         <View style={s.section}>
           <MonoLabel size={9} letterSpacing={2}>VAULT</MonoLabel>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.rail}>
-            <Pill label="// NO VAULT" active={vaultId === null} color={EddiesColors.steel}
+            <Pill label="// NO VAULT" active={effectiveVaultId === null} color={EddiesColors.steel}
               onPress={() => setVaultId(null)} />
             {accounts.map(a => (
-              <Pill key={a.id} label={a.name} active={a.id === vaultId} onPress={() => setVaultId(a.id)} />
+              <Pill key={a.id} label={a.name} active={a.id === effectiveVaultId} onPress={() => setVaultId(a.id)} />
             ))}
           </ScrollView>
         </View>

@@ -78,7 +78,9 @@ export const RecurringRuleSchema = z.object({
   id: z.string(),
   account_id: z.string().nullable(),
   category_id: z.string().nullable(),
-  kind: TransactionKindSchema,
+  // Recurring rules never materialize transfers (single-sided transfers corrupt
+  // balances), so reject 'transfer' at the read/write boundary as defence-in-depth.
+  kind: z.enum(['outflow', 'inflow']),
   amount_minor: z.number().int().positive(),
   note: z.string().nullable(),
   freq: RecurringFreqSchema,

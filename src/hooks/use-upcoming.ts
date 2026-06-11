@@ -42,7 +42,11 @@ export function useUpcoming(): UpcomingForecast {
     setForecast({ count, netMinor });
   }, [db]);
 
+  // Focus recompute keeps the time-sensitive 7d forecast fresh on screen return.
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
+  // `reload` is an async DB read bridging the external dbVersion store into React
+  // state — setState lands in a later microtask, not a synchronous cascading render.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { reload(); }, [dbVersion, reload]);
 
   return forecast;

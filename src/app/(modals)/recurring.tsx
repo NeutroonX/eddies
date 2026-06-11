@@ -87,6 +87,7 @@ export default function RecurringListModal() {
   const { accounts } = useAccounts();
   const { categories } = useCategories();
   const bumpDbVersion = useStore(s => s.bumpDbVersion);
+  const showToast = useStore(s => s.showToast);
   const [rules, setRules] = useState<RecurringRule[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -103,16 +104,26 @@ export default function RecurringListModal() {
 
   async function handlePause(rule: RecurringRule) {
     const willPause = rule.paused === 0;
-    await pauseRule(db, rule.id, willPause);
-    // Resuming may have missed occurrences while paused — catch them up now.
-    if (!willPause) await materializeDueRules(db);
-    await reload();
-    bumpDbVersion();
+    try {
+      await pauseRule(db, rule.id, willPause);
+      // Resuming may have missed occurrences while paused — catch them up now.
+      if (!willPause) await materializeDueRules(db);
+      await reload();
+      bumpDbVersion();
+    } catch (err) {
+      console.error('Pause recurring error:', err);
+      showToast('Failed to update rule', 'err');
+    }
   }
   async function handleDelete(rule: RecurringRule) {
-    await archiveRule(db, rule.id);
-    await reload();
-    bumpDbVersion();
+    try {
+      await archiveRule(db, rule.id);
+      await reload();
+      bumpDbVersion();
+    } catch (err) {
+      console.error('Delete recurring error:', err);
+      showToast('Failed to delete rule', 'err');
+    }
   }
 
   return (
