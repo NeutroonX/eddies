@@ -6,7 +6,7 @@ import { setTelemetryEnabled } from '@/lib/telemetry';
 
 export function useInitSettings() {
   const db = useSQLiteContext();
-  const { setCurrency, setFirstDayOfWeek, setHapticsEnabled, setCrashReportingEnabled, setOnboardingComplete, setInviteValidated, setBiometricStatus, setAutoBackupEnabled, setAutoBackupWifiOnly } = useStore();
+  const { setCurrency, setFirstDayOfWeek, setHapticsEnabled, setCrashReportingEnabled, setOnboardingComplete, setInviteValidated, setBiometricStatus } = useStore();
 
   useEffect(() => {
     getAllSettings(db).then((settings) => {
@@ -28,15 +28,11 @@ export function useInitSettings() {
         // Key absent — user has never been asked
         setBiometricStatus('pending');
       }
-
-      // Cloud auto-backup defaults OFF; Wi-Fi-only defaults ON.
-      setAutoBackupEnabled(settings.auto_backup_enabled === 'true');
-      setAutoBackupWifiOnly(settings.auto_backup_wifi_only !== 'false');
     }).catch((err) => {
       console.error(err);
       setOnboardingComplete(false);
       setInviteValidated(false);
       setBiometricStatus('disabled');
     });
-  }, [db, setCurrency, setFirstDayOfWeek, setHapticsEnabled, setCrashReportingEnabled, setOnboardingComplete, setInviteValidated, setBiometricStatus, setAutoBackupEnabled, setAutoBackupWifiOnly]);
+  }, [db, setCurrency, setFirstDayOfWeek, setHapticsEnabled, setCrashReportingEnabled, setOnboardingComplete, setInviteValidated, setBiometricStatus]);
 }

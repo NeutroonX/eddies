@@ -173,12 +173,6 @@ export default function SystemScreen() {
           <ActionRow label="APP SETTINGS" onPress={() => nav('/(modals)/settings')} />
         </View>
 
-        {/* ── Cloud ────────────────────────────────────── */}
-        <View style={s.section}>
-          <SectionTag label="CLOUD" />
-          <ActionRow label="CLOUD BACKUP" onPress={() => nav('/(modals)/cloud-backup')} />
-        </View>
-
         {/* ── Feedback ─────────────────────────────────── */}
         <View style={s.section}>
           <SectionTag label="FEEDBACK" />
