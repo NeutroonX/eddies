@@ -234,4 +234,33 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
     `);
     await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 9);
   }
+
+  // v10 — On-device SMS import (Beta v2, M7).
+  // `pending_imports` is the shared review queue for parsed SMS *and* confirm-mode
+  // recurring occurrences (§5.1/§5.3). `raw_excerpt` is on-device only and is
+  // explicitly excluded from cloud-backup serialization.
+  if (current < 10) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS pending_imports (
+        id                    TEXT    PRIMARY KEY NOT NULL,
+        origin                TEXT    NOT NULL CHECK(origin IN ('sms','recurring')),
+        amount_minor          INTEGER NOT NULL CHECK(amount_minor > 0),
+        kind                  TEXT    NOT NULL CHECK(kind IN ('outflow','inflow','transfer')),
+        suggested_account_id  TEXT    REFERENCES accounts(id),
+        suggested_category_id TEXT    REFERENCES categories(id),
+        merchant              TEXT,
+        note                  TEXT,
+        occurred_at           INTEGER NOT NULL,
+        raw_excerpt           TEXT,
+        dedup_hash            TEXT    NOT NULL,
+        confidence            REAL    NOT NULL DEFAULT 0,
+        status                TEXT    NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','accepted','dismissed')),
+        recurring_rule_id     TEXT    REFERENCES recurring_rules(id),
+        created_at            INTEGER NOT NULL
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_pending_dedup  ON pending_imports(dedup_hash);
+      CREATE INDEX IF NOT EXISTS        idx_pending_status ON pending_imports(status);
+    `);
+    await db.runAsync('INSERT INTO _migrations (version) VALUES (?)', 10);
+  }
 }

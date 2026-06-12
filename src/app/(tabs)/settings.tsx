@@ -165,6 +165,10 @@ export default function SystemScreen() {
         <View style={s.section}>
           <SectionTag label="AUTOMATION" />
           <ActionRow label="RECURRING RULES" onPress={() => nav('/(modals)/recurring')} />
+          {Platform.OS === 'android' && (
+            <ActionRow label="SMS IMPORT" onPress={() => nav('/(modals)/sms-import')} />
+          )}
+          <ActionRow label="REVIEW INBOX" onPress={() => nav('/(modals)/import-inbox')} />
         </View>
 
         {/* ── Preferences ──────────────────────────────── */}

@@ -4,15 +4,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 
-import { BarcodeMark } from '@/components/ui/barcode-mark';
 import { MonoLabel } from '@/components/ui/mono-label';
 import { Numerals } from '@/components/ui/numerals';
-import { SectionTag } from '@/components/ui/section-tag';
 import { EntryRow } from '@/components/ledger/entry-row';
 import { EddiesColors, EddiesFonts, EddiesRadius, EddiesSpacing } from '@/constants/theme';
 import { useLedger, type DaySection, type LedgerRow } from '@/hooks/use-ledger';
 import { useMaterializeOnFocus } from '@/hooks/use-materialize-on-focus';
 import { useUpcoming } from '@/hooks/use-upcoming';
+import { useInboxCount } from '@/hooks/use-inbox-count';
+import { useSmsAutoScan } from '@/hooks/use-sms-auto-scan';
 import { deleteTransaction } from '@/lib/db/repos/transactions';
 import { formatAmountTabular } from '@/lib/money';
 import { useCurrencySymbol } from '@/hooks/use-currency-symbol';
@@ -27,6 +27,7 @@ function LedgerHeader({ balance, sections, hasMixedCurrencies, pendingRow }: { b
   const sym        = useCurrencySymbol();
   const appLocked  = useStore((s) => s.appLocked);
   const upcoming   = useUpcoming();
+  const inboxCount = useInboxCount();
 
   // Optimistically subtract the pending-delete entry from the displayed balance.
   const effectiveBalance = useMemo(() => {
@@ -53,88 +54,91 @@ function LedgerHeader({ balance, sections, hasMixedCurrencies, pendingRow }: { b
   }, [sections, pendingRow]);
 
   const netPositive = monthNet >= 0;
+  const netArrow = netPositive ? '▲' : '▼';
+  const netColor = netPositive ? EddiesColors.bone : EddiesColors.alert;
 
-  const upcomingAccent = upcoming.count > 0
-    ? (upcoming.netMinor >= 0 ? EddiesColors.bone : EddiesColors.alert)
-    : EddiesColors.steel + '55';
+  const monthYear = new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase();
+  const balanceStr = appLocked ? '••••••' : `${effectiveBalance < 0 ? '−' : ''}${sym}${formatAmountTabular(Math.abs(effectiveBalance))}`;
+  const inStr  = appLocked ? '••••' : `+${sym}${formatAmountTabular(monthIn)}`;
+  const outStr = appLocked ? '••••' : `−${sym}${formatAmountTabular(monthOut)}`;
+  const netStr = appLocked ? '••••' : `${netPositive ? '+' : '−'}${sym}${formatAmountTabular(Math.abs(monthNet))}`;
+  const upNetStr = appLocked ? '••••' : `${upcoming.netMinor >= 0 ? '+' : '−'}${sym}${formatAmountTabular(Math.abs(upcoming.netMinor))}`;
+
+  const goInbox = () => router.push('/(modals)/import-inbox');
+  const goRecurring = () => router.push('/(modals)/recurring');
+
+  const hasInbox = inboxCount > 0;
+
+  // Right-hand month figure: tap to cycle NET → OUT → IN. NET leads by default.
+  const [statIdx, setStatIdx] = useState(0);
+  const stats = [
+    { label: 'NET', value: netStr, color: netColor, arrow: appLocked ? '' : netArrow },
+    { label: 'OUT', value: outStr, color: EddiesColors.alert, arrow: '' },
+    { label: 'IN',  value: inStr,  color: EddiesColors.bone,  arrow: '' },
+  ];
+  const stat = stats[statIdx];
+  const cycleStat = () => setStatIdx(i => (i + 1) % stats.length);
 
   return (
     <View style={hs.wrap}>
       <View style={hs.topRow}>
-        <SectionTag label="EDDIES // LEDGER 02-A" />
-        <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel}>
-          {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase()}
-        </MonoLabel>
+        <MonoLabel size={11} letterSpacing={3} weight="bold" color={EddiesColors.bone}>LEDGER</MonoLabel>
+        <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel}>{monthYear}</MonoLabel>
       </View>
 
-      <BarcodeMark height={28} />
-
-      <MonoLabel size={9} letterSpacing={2} color={EddiesColors.steel} style={hs.balanceLabel}>
-        TOTAL BALANCE{hasMixedCurrencies ? ' *' : ''}
-      </MonoLabel>
-      {hasMixedCurrencies && (
-        <MonoLabel size={8} letterSpacing={1} color={EddiesColors.steel + '88'}>
-          * VAULTS HAVE MIXED CURRENCIES — SUM IS APPROXIMATE
+      {/* Balance block, then the tap-to-cycle month figure stacked below it. */}
+      <View>
+        <MonoLabel size={9} letterSpacing={2} color={EddiesColors.steel} style={hs.balanceLabel}>
+          TOTAL BALANCE{hasMixedCurrencies ? ' *' : ''}
         </MonoLabel>
-      )}
-      <Numerals size={56} weight="bold" color={effectiveBalance < 0 ? EddiesColors.alert : EddiesColors.bone}>
-        {appLocked ? '••••••' : `${effectiveBalance < 0 ? '−' : ''}${sym}${formatAmountTabular(Math.abs(effectiveBalance))}`}
-      </Numerals>
-
-      {/* Month stat row */}
-      <View style={hs.statRow}>
-        <View style={hs.stat}>
-          <MonoLabel size={8} letterSpacing={1.5} color={EddiesColors.steel}>IN</MonoLabel>
-          <Text style={hs.statVal}>{appLocked ? '••••' : `+${sym}${formatAmountTabular(monthIn)}`}</Text>
-        </View>
-        <View style={hs.statDivider} />
-        <View style={hs.stat}>
-          <MonoLabel size={8} letterSpacing={1.5} color={EddiesColors.steel}>OUT</MonoLabel>
-          <Text style={[hs.statVal, { color: EddiesColors.alert }]}>{appLocked ? '••••' : `−${sym}${formatAmountTabular(monthOut)}`}</Text>
-        </View>
-        <View style={hs.statDivider} />
-        <View style={hs.stat}>
-          <MonoLabel size={8} letterSpacing={1.5} color={EddiesColors.steel}>NET</MonoLabel>
-          <Text style={[hs.statVal, { color: netPositive ? EddiesColors.bone : EddiesColors.alert }]}>
-            {netPositive ? '+' : '−'}{sym}{formatAmountTabular(Math.abs(monthNet))}
-          </Text>
-        </View>
+        {hasMixedCurrencies && (
+          <MonoLabel size={8} letterSpacing={1} color={EddiesColors.steel + '88'}>
+            * VAULTS HAVE MIXED CURRENCIES — SUM IS APPROXIMATE
+          </MonoLabel>
+        )}
+        <Numerals size={hasInbox ? 40 : 52} weight="bold" color={effectiveBalance < 0 ? EddiesColors.alert : EddiesColors.bone}>
+          {balanceStr}
+        </Numerals>
       </View>
 
-      {/* Upcoming auto-posts (next 7 days) — taps through to Recurring rules. */}
-      <Pressable
-        style={hs.upcomingCard}
-        onPress={() => router.push('/(modals)/recurring')}
-        accessibilityRole="button"
-        accessibilityLabel={
-          upcoming.count > 0
-            ? `${upcoming.count} scheduled in the next 7 days. View recurring rules.`
-            : 'Set up recurring transactions'
-        }
-      >
-        <View style={[hs.upcomingSpine, { backgroundColor: upcomingAccent }]} />
-        <View style={hs.upcomingBody}>
-          <View style={hs.upcomingLeft}>
-            <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.steel}>
-              {upcoming.count > 0 ? '↻ UPCOMING · 7 DAYS' : '↻ RECURRING'}
-            </MonoLabel>
-            <MonoLabel size={8} letterSpacing={1} color={EddiesColors.steel + '88'}>
-              {upcoming.count > 0
-                ? `${upcoming.count} AUTO-POST${upcoming.count === 1 ? '' : 'S'} SCHEDULED`
-                : 'AUTOMATE RENT · SALARY · BILLS'}
-            </MonoLabel>
-          </View>
-          {upcoming.count > 0 ? (
-            <View style={hs.upcomingRight}>
-              <Text style={[hs.upcomingVal, { color: upcoming.netMinor >= 0 ? EddiesColors.bone : EddiesColors.alert }]}>
-                {appLocked ? '••••' : `${upcoming.netMinor >= 0 ? '+' : '−'}${sym}${formatAmountTabular(Math.abs(upcoming.netMinor))}`}
-              </Text>
-              <MonoLabel size={8} letterSpacing={1} color={EddiesColors.steel + '88'}>MANAGE ›</MonoLabel>
+      {/* Month figure below the balance — header's own row gap separates them. */}
+      <Pressable onPress={cycleStat} hitSlop={8} style={hs.statTap} accessibilityRole="button"
+        accessibilityLabel={`${stat.label} this month ${stat.value}. Tap to cycle month totals.`}>
+        <View style={hs.statHead}>
+          <MonoLabel size={8} letterSpacing={1.5} color={EddiesColors.steel}>{stat.label}</MonoLabel>
+          <MonoLabel size={9} color={EddiesColors.steel + '88'}>›</MonoLabel>
+        </View>
+        <Text style={[hs.statVal, { color: stat.color }]}>
+          {stat.value}{stat.arrow ? ` ${stat.arrow}` : ''}
+        </Text>
+      </Pressable>
+
+      {/* Priority review card with a direct CTA, only when work waits. */}
+      {hasInbox && (
+        <Pressable style={hs.cCard} onPress={goInbox} accessibilityRole="button"
+          accessibilityLabel={`${inboxCount} ${inboxCount === 1 ? 'entry' : 'entries'} to review`}>
+          <View style={hs.tileTop}>
+            <MonoLabel size={9} letterSpacing={1.5} weight="bold" color={EddiesColors.bone}>☑ REVIEW INBOX</MonoLabel>
+            <View style={hs.inboxBadge}>
+              <MonoLabel size={11} weight="bold" color={EddiesColors.ink}>{inboxCount > 99 ? '99+' : inboxCount}</MonoLabel>
             </View>
-          ) : (
-            <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel + '88'}>SET UP →</MonoLabel>
-          )}
-        </View>
+          </View>
+          <MonoLabel size={8} letterSpacing={1} color={EddiesColors.steel + 'aa'}>
+            {inboxCount} ENTR{inboxCount === 1 ? 'Y' : 'IES'} WAITING
+          </MonoLabel>
+          <View style={hs.cCta}>
+            <MonoLabel size={10} letterSpacing={1.5} weight="bold" color={EddiesColors.ink}>REVIEW ALL  →</MonoLabel>
+          </View>
+        </Pressable>
+      )}
+
+      {/* Quiet navigation line into recurring rules. */}
+      <Pressable style={hs.upLine} onPress={goRecurring} accessibilityRole="button"
+        accessibilityLabel={upcoming.count > 0 ? `${upcoming.count} scheduled in the next 7 days. View recurring rules.` : 'Set up recurring transactions'}>
+        <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel}>
+          {upcoming.count > 0 ? `↻ ${upcoming.count} UPCOMING · ${upNetStr}` : '↻ SET UP RECURRING'}
+        </MonoLabel>
+        <MonoLabel size={10} color={EddiesColors.steel + '88'}>›</MonoLabel>
       </Pressable>
 
       <View style={hs.hairline} />
@@ -230,6 +234,8 @@ export default function LedgerScreen() {
   const bumpDbVersion = useStore(s => s.bumpDbVersion);
   // Post any due recurring transactions when the Ledger gains focus.
   useMaterializeOnFocus();
+  // Pull new bank/UPI SMS into the review inbox (Android, opt-in, on focus).
+  useSmsAutoScan();
   const { sections, totalBalance, hasMixedCurrencies, atRowLimit, loading, reload } = useLedger();
 
   const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -334,75 +340,42 @@ const s = StyleSheet.create({
 const hs = StyleSheet.create({
   wrap: {
     paddingHorizontal: EddiesSpacing.md,
-    paddingTop: EddiesSpacing.lg,
+    paddingTop: EddiesSpacing.md,
     paddingBottom: EddiesSpacing.sm,
-    gap: EddiesSpacing.xs,
+    gap: EddiesSpacing.sm,
   },
   topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
-  balanceLabel: {
-    marginTop: EddiesSpacing.sm,
+  balanceLabel: { marginBottom: 2 },
+  // Balance block, then the tap-to-cycle month figure stacked below (NET · OUT · IN)
+  statTap: { alignItems: 'flex-end', gap: 3, marginTop: -EddiesSpacing.md },
+  statHead: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  statVal: { fontFamily: EddiesFonts.displayBold, fontSize: 22, lineHeight: 26, letterSpacing: -0.3 },
+  // Quiet navigation line into recurring
+  upLine: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: EddiesSpacing.xs,
   },
-  statRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: EddiesSpacing.sm,
-    backgroundColor: EddiesColors.surface,
-    borderRadius: 4,
-    paddingVertical: EddiesSpacing.sm,
-    paddingHorizontal: EddiesSpacing.md,
-    gap: EddiesSpacing.md,
-  },
-  stat: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 3,
-  },
-  statVal: {
-    fontFamily: EddiesFonts.displayBold,
-    fontSize: 14,
-    color: EddiesColors.bone,
-    letterSpacing: 0.3,
-  },
-  statDivider: {
-    width: 1,
-    height: 28,
-    backgroundColor: EddiesColors.steel + '33',
-  },
-  upcomingCard: {
-    flexDirection: 'row',
-    marginTop: EddiesSpacing.sm,
-    backgroundColor: CARD_BG,
-    borderRadius: EddiesRadius.card,
+  tileTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  // Priority review card
+  cCard: {
+    backgroundColor: CARD_BG, borderRadius: EddiesRadius.card,
+    paddingHorizontal: EddiesSpacing.md, paddingVertical: EddiesSpacing.sm + 2, gap: 6,
     shadowColor: '#000000', shadowOpacity: 0.5, shadowRadius: 10,
     shadowOffset: { width: 0, height: 3 }, elevation: 6,
   },
-  upcomingSpine: {
-    width: 5, alignSelf: 'stretch',
-    borderTopLeftRadius: EddiesRadius.card, borderBottomLeftRadius: EddiesRadius.card,
+  cCta: {
+    marginTop: 2, alignSelf: 'flex-start', backgroundColor: EddiesColors.bone,
+    borderRadius: EddiesRadius.chip, paddingHorizontal: EddiesSpacing.md, paddingVertical: EddiesSpacing.xs + 2,
   },
-  upcomingBody: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: EddiesSpacing.sm + 2,
-    paddingHorizontal: EddiesSpacing.md,
-  },
-  upcomingLeft: { gap: 3 },
-  upcomingRight: { alignItems: 'flex-end', gap: 2 },
-  upcomingVal: {
-    fontFamily: EddiesFonts.monoBold,
-    fontSize: 13,
-    letterSpacing: 0.5,
+  inboxBadge: {
+    minWidth: 26, paddingHorizontal: 7, paddingVertical: 3,
+    borderRadius: EddiesRadius.chip, backgroundColor: EddiesColors.alert,
+    alignItems: 'center', justifyContent: 'center',
   },
   hairline: {
-    height: 1,
-    backgroundColor: EddiesColors.steel + '22',
-    marginTop: EddiesSpacing.sm,
+    height: 1, backgroundColor: EddiesColors.steel + '22', marginTop: EddiesSpacing.xs,
   },
 });
 

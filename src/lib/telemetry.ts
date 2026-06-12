@@ -74,3 +74,22 @@ export function captureError(error: unknown, context?: Record<string, string>): 
   if (!_enabled) return;
   Sentry.captureException(error, context ? { extra: context } : undefined);
 }
+
+/**
+ * Record a product analytics event as a breadcrumb. Data is restricted to
+ * numbers/booleans (counts, flags) — never strings that could carry SMS or
+ * financial content. Financial-sounding keys are scrubbed defensively.
+ */
+export function trackEvent(
+  name: string,
+  data?: Record<string, number | boolean>
+): void {
+  if (!_enabled) return;
+  Sentry.addBreadcrumb({
+    category: 'event',
+    type: 'info',
+    message: name,
+    level: 'info',
+    data: data ? scrubFinancialKeys(data) : undefined,
+  });
+}

@@ -7,8 +7,10 @@
  */
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { insertPending } from '@/lib/db/repos/pending-imports';
 import { getActiveRules, setLastRun } from '@/lib/db/repos/recurring';
 import { createTransaction } from '@/lib/db/repos/transactions';
+import { dedupHash } from '@/lib/sms/dedup';
 import { occurrencesBetween } from '@/lib/recurring/schedule';
 
 // Cap catch-up after a long gap so we never post thousands of rows on one focus.
@@ -56,9 +58,36 @@ export async function materializeDueRules(
       });
       autoPosted += due.length;
     } else {
-      // confirm mode: routed into the review inbox (pending_imports) in M7.
-      // Until then we leave the watermark untouched so nothing is lost — the
-      // occurrences simply surface once the inbox ships.
+      // confirm mode (M7): each due occurrence is routed into the review inbox
+      // (pending_imports, origin 'recurring'). dedup_hash is keyed on rule+ts so
+      // re-running a pass never enqueues the same occurrence twice; the watermark
+      // then advances exactly as in auto mode.
+      const watermark = due[due.length - 1];
+      await db.withTransactionAsync(async () => {
+        for (const ts of due) {
+          await insertPending(db, {
+            origin: 'recurring',
+            amount_minor: rule.amount_minor,
+            kind: rule.kind,
+            suggested_account_id: rule.account_id,
+            suggested_category_id: rule.category_id,
+            merchant: null,
+            note: rule.note,
+            occurred_at: ts,
+            raw_excerpt: null,
+            dedup_hash: dedupHash({
+              amount_minor: rule.amount_minor,
+              occurred_at: ts,
+              account_tail: null,
+              ref_id: `rr_${rule.id}_${ts}`,
+              kind: rule.kind,
+            }),
+            confidence: 1,
+            recurring_rule_id: rule.id,
+          });
+        }
+        await setLastRun(db, rule.id, watermark, rule.occurrences_made + due.length);
+      });
       confirmDue += due.length;
     }
   }

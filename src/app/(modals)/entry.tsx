@@ -14,6 +14,7 @@ import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
 import { useAccounts } from '@/hooks/use-accounts';
 import { useCategories } from '@/hooks/use-categories';
 import { createTransaction, updateTransaction, getTransactionById } from '@/lib/db/repos/transactions';
+import { dismissPending } from '@/lib/db/repos/pending-imports';
 import { findOrCreateCategory } from '@/lib/db/repos/categories';
 import { toMinorUnits, formatAmountTabular } from '@/lib/money';
 import { useStore } from '@/store/index';
@@ -32,16 +33,29 @@ export default function EntryModal() {
   const bumpDbVersion = useStore(s => s.bumpDbVersion);
   const showToast = useStore(s => s.showToast);
   const sym = useCurrencySymbol();
-  const params = useLocalSearchParams<{ mode?: string; id?: string }>();
+  // `pendingId` + prefill params arrive when editing an item from the import
+  // inbox — the form opens pre-filled and consumes the pending row on save.
+  const params = useLocalSearchParams<{
+    mode?: string;
+    id?: string;
+    pendingId?: string;
+    amount?: string;
+    kind?: string;
+    vaultId?: string;
+    categoryId?: string;
+    note?: string;
+  }>();
   const isEditMode = params.mode === 'edit' && params.id;
 
-  const [rawAmount, setRawAmount] = useState('');
-  const [kind, setKind] = useState<Kind>('outflow');
-  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [rawAmount, setRawAmount] = useState(params.amount ?? '');
+  const [kind, setKind] = useState<Kind>(params.kind === 'inflow' ? 'inflow' : 'outflow');
+  const [categoryId, setCategoryId] = useState<string | null>(params.categoryId ?? null);
   const [otherName, setOtherName] = useState('');
   const otherInputRef = useRef<TextInput>(null);
-  const [vaultId, setVaultId] = useState<string | null>(isEditMode ? null : lastVaultId);
-  const [note, setNote] = useState('');
+  const [vaultId, setVaultId] = useState<string | null>(
+    isEditMode ? null : (params.vaultId ?? lastVaultId)
+  );
+  const [note, setNote] = useState(params.note ?? '');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(params.mode === 'edit');
   const [existingEntry, setExistingEntry] = useState<Transaction | null>(null);
@@ -152,6 +166,9 @@ export default function EntryModal() {
           transfer_group_id: null,
         });
         if (vaultId) setLastVaultId(vaultId);
+        // Consume the inbox item this edit originated from so it isn't re-shown
+        // or double-counted.
+        if (params.pendingId) await dismissPending(db, params.pendingId);
       }
       bumpDbVersion();
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);

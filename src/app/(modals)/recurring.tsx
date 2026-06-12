@@ -87,8 +87,6 @@ function StockRuleCard({
   return (
     <Pressable style={[c.card, paused && c.paused]} onPress={onEdit}
       accessibilityRole="button" accessibilityLabel={`Edit ${categoryName} rule`}>
-      <View style={[c.spine, { backgroundColor: categoryColor }]} />
-
       <View style={c.body}>
         {/* Tag + mode */}
         <View style={c.top}>
@@ -132,11 +130,13 @@ function StockRuleCard({
           <View style={c.actions}>
             <Pressable onPress={onPause} hitSlop={10} style={c.actBtn} accessibilityRole="button"
               accessibilityLabel={paused ? 'Resume rule' : 'Pause rule'}>
-              <MonoLabel size={11} color={TXT_SECONDARY}>{paused ? '▶' : '❙❙'}</MonoLabel>
+              <MonoLabel size={9} letterSpacing={1.5} weight="bold" color={TXT_SECONDARY}>
+                {paused ? 'RESUME' : 'PAUSE'}
+              </MonoLabel>
             </Pressable>
             <Pressable onPress={onDelete} hitSlop={10} style={c.actBtn} accessibilityRole="button"
-              accessibilityLabel="Delete rule">
-              <MonoLabel size={11} color={EddiesColors.alert}>✕</MonoLabel>
+              accessibilityLabel="Stop rule">
+              <MonoLabel size={9} letterSpacing={1.5} weight="bold" color={EddiesColors.alert}>STOP</MonoLabel>
             </Pressable>
           </View>
         </View>
@@ -298,7 +298,6 @@ const n = StyleSheet.create({
 // Cream stock card
 const c = StyleSheet.create({
   card: {
-    flexDirection: 'row',
     marginHorizontal: EddiesSpacing.md,
     backgroundColor: CARD_BG,
     borderRadius: EddiesRadius.card,
@@ -306,11 +305,7 @@ const c = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 }, elevation: 6,
   },
   paused: { opacity: 0.5 },
-  spine: {
-    width: 5, alignSelf: 'stretch',
-    borderTopLeftRadius: EddiesRadius.card, borderBottomLeftRadius: EddiesRadius.card,
-  },
-  body: { flex: 1, paddingHorizontal: EddiesSpacing.md, paddingVertical: EddiesSpacing.md, gap: 6 },
+  body: { paddingHorizontal: EddiesSpacing.md, paddingVertical: EddiesSpacing.md, gap: 6 },
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   tag: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   tagDot: { width: 7, height: 7, borderRadius: 4 },

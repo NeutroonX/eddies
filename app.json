@@ -24,7 +24,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.eddies.app"
+      "package": "com.eddies.app",
+      "permissions": ["android.permission.READ_SMS"]
     },
     "web": {
       "output": "static",

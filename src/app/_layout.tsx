@@ -222,6 +222,8 @@ function RootLayout() {
               <Stack.Screen name="(modals)/archive"  options={modalOptions} />
               <Stack.Screen name="(modals)/recurring"      options={modalOptions} />
               <Stack.Screen name="(modals)/recurring-edit" options={modalOptions} />
+              <Stack.Screen name="(modals)/import-inbox"   options={modalOptions} />
+              <Stack.Screen name="(modals)/sms-import"     options={modalOptions} />
             </Stack>
             <GlobalToast />
           </ThemeProvider>

@@ -8,6 +8,8 @@ export const TransactionSourceSchema = z.enum(['manual', 'recurring', 'sms']);
 export const RecurringFreqSchema = z.enum(['daily', 'weekly', 'monthly', 'yearly']);
 export const RecurringEndKindSchema = z.enum(['never', 'on_date', 'after_n']);
 export const RecurringModeSchema = z.enum(['auto', 'confirm']);
+export const PendingImportOriginSchema = z.enum(['sms', 'recurring']);
+export const PendingImportStatusSchema = z.enum(['pending', 'accepted', 'dismissed']);
 
 // ── Account ──────────────────────────────────────────────────────────────────
 export const AccountSchema = z.object({
@@ -114,6 +116,36 @@ export const BudgetSchema = z.object({
 });
 export type Budget = z.infer<typeof BudgetSchema>;
 export type NewBudget = Omit<Budget, 'id'>;
+
+// ── Pending import (review inbox) ───────────────────────────────────────────────
+// Shared queue for parsed SMS (origin 'sms') and confirm-mode recurring
+// occurrences (origin 'recurring'). `raw_excerpt` is on-device only — never
+// serialized into cloud backups.
+export const PendingImportSchema = z.object({
+  id: z.string(),
+  origin: PendingImportOriginSchema,
+  amount_minor: z.number().int().positive(),
+  kind: TransactionKindSchema,
+  suggested_account_id: z.string().nullable(),
+  suggested_category_id: z.string().nullable(),
+  merchant: z.string().nullable(),
+  note: z.string().nullable(),
+  occurred_at: z.number().int(),
+  raw_excerpt: z.string().nullable(),
+  dedup_hash: z.string(),
+  confidence: z.number(),
+  status: PendingImportStatusSchema,
+  recurring_rule_id: z.string().nullable(),
+  created_at: z.number().int(),
+});
+export type PendingImport = z.infer<typeof PendingImportSchema>;
+export type PendingImportOrigin = z.infer<typeof PendingImportOriginSchema>;
+export type PendingImportStatus = z.infer<typeof PendingImportStatusSchema>;
+// id/status/created_at are assigned by the repo on insert.
+export type NewPendingImport = Omit<
+  PendingImport,
+  'id' | 'status' | 'created_at'
+>;
 
 // ── Analytics ─────────────────────────────────────────────────────────────────
 export type CategorySpend = {
