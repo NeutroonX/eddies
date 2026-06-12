@@ -48,3 +48,19 @@ export function nextRunAt(rule: RecurringRule, now: number = Date.now()): number
   const after = Math.max(now, rule.last_run_at ?? rule.start_date - 1);
   return nextOccurrence(rule, after);
 }
+
+const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+/**
+ * Short uppercase run date, e.g. "12 JUN". Returns "ENDED" for null. When the
+ * date falls in a future year, the year is appended ("12 JUN '27") so a yearly
+ * rule's next run is never ambiguous.
+ */
+export function formatRunDate(ms: number | null, now: number = Date.now()): string {
+  if (ms === null) return 'ENDED';
+  const d = new Date(ms);
+  const base = `${String(d.getDate()).padStart(2, '0')} ${MONTHS[d.getMonth()]}`;
+  return d.getFullYear() !== new Date(now).getFullYear()
+    ? `${base} '${String(d.getFullYear()).slice(-2)}`
+    : base;
+}

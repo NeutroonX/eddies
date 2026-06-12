@@ -9,7 +9,7 @@ import { MonoLabel } from '@/components/ui/mono-label';
 import { Numerals } from '@/components/ui/numerals';
 import { SectionTag } from '@/components/ui/section-tag';
 import { EntryRow } from '@/components/ledger/entry-row';
-import { EddiesColors, EddiesFonts, EddiesSpacing } from '@/constants/theme';
+import { EddiesColors, EddiesFonts, EddiesRadius, EddiesSpacing } from '@/constants/theme';
 import { useLedger, type DaySection, type LedgerRow } from '@/hooks/use-ledger';
 import { useMaterializeOnFocus } from '@/hooks/use-materialize-on-focus';
 import { useUpcoming } from '@/hooks/use-upcoming';
@@ -17,6 +17,11 @@ import { deleteTransaction } from '@/lib/db/repos/transactions';
 import { formatAmountTabular } from '@/lib/money';
 import { useCurrencySymbol } from '@/hooks/use-currency-symbol';
 import { useStore } from '@/store';
+
+// Graphite "stock card" surface — matches the recurring-rules cards: a raised
+// dark panel that lifts off pure-black via its shadow (not a border), with a
+// category/state-colored spine carrying the accent.
+const CARD_BG = '#1A1B1E';
 
 function LedgerHeader({ balance, sections, hasMixedCurrencies, pendingRow }: { balance: number; sections: DaySection[]; hasMixedCurrencies: boolean; pendingRow: LedgerRow | null }) {
   const sym        = useCurrencySymbol();
@@ -48,6 +53,10 @@ function LedgerHeader({ balance, sections, hasMixedCurrencies, pendingRow }: { b
   }, [sections, pendingRow]);
 
   const netPositive = monthNet >= 0;
+
+  const upcomingAccent = upcoming.count > 0
+    ? (upcoming.netMinor >= 0 ? EddiesColors.bone : EddiesColors.alert)
+    : EddiesColors.steel + '55';
 
   return (
     <View style={hs.wrap}>
@@ -94,7 +103,7 @@ function LedgerHeader({ balance, sections, hasMixedCurrencies, pendingRow }: { b
 
       {/* Upcoming auto-posts (next 7 days) — taps through to Recurring rules. */}
       <Pressable
-        style={hs.upcomingRow}
+        style={hs.upcomingCard}
         onPress={() => router.push('/(modals)/recurring')}
         accessibilityRole="button"
         accessibilityLabel={
@@ -103,16 +112,29 @@ function LedgerHeader({ balance, sections, hasMixedCurrencies, pendingRow }: { b
             : 'Set up recurring transactions'
         }
       >
-        <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.steel}>
-          {upcoming.count > 0 ? `↻ UPCOMING 7D · ${upcoming.count}` : '↻ RECURRING'}
-        </MonoLabel>
-        {upcoming.count > 0 ? (
-          <Text style={[hs.upcomingVal, { color: upcoming.netMinor >= 0 ? EddiesColors.bone : EddiesColors.alert }]}>
-            {appLocked ? '••••' : `${upcoming.netMinor >= 0 ? '+' : '−'}${sym}${formatAmountTabular(Math.abs(upcoming.netMinor))}`}
-          </Text>
-        ) : (
-          <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel + '88'}>SET UP →</MonoLabel>
-        )}
+        <View style={[hs.upcomingSpine, { backgroundColor: upcomingAccent }]} />
+        <View style={hs.upcomingBody}>
+          <View style={hs.upcomingLeft}>
+            <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.steel}>
+              {upcoming.count > 0 ? '↻ UPCOMING · 7 DAYS' : '↻ RECURRING'}
+            </MonoLabel>
+            <MonoLabel size={8} letterSpacing={1} color={EddiesColors.steel + '88'}>
+              {upcoming.count > 0
+                ? `${upcoming.count} AUTO-POST${upcoming.count === 1 ? '' : 'S'} SCHEDULED`
+                : 'AUTOMATE RENT · SALARY · BILLS'}
+            </MonoLabel>
+          </View>
+          {upcoming.count > 0 ? (
+            <View style={hs.upcomingRight}>
+              <Text style={[hs.upcomingVal, { color: upcoming.netMinor >= 0 ? EddiesColors.bone : EddiesColors.alert }]}>
+                {appLocked ? '••••' : `${upcoming.netMinor >= 0 ? '+' : '−'}${sym}${formatAmountTabular(Math.abs(upcoming.netMinor))}`}
+              </Text>
+              <MonoLabel size={8} letterSpacing={1} color={EddiesColors.steel + '88'}>MANAGE ›</MonoLabel>
+            </View>
+          ) : (
+            <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel + '88'}>SET UP →</MonoLabel>
+          )}
+        </View>
       </Pressable>
 
       <View style={hs.hairline} />
@@ -350,21 +372,31 @@ const hs = StyleSheet.create({
     height: 28,
     backgroundColor: EddiesColors.steel + '33',
   },
-  upcomingRow: {
+  upcomingCard: {
+    flexDirection: 'row',
+    marginTop: EddiesSpacing.sm,
+    backgroundColor: CARD_BG,
+    borderRadius: EddiesRadius.card,
+    shadowColor: '#000000', shadowOpacity: 0.5, shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 }, elevation: 6,
+  },
+  upcomingSpine: {
+    width: 5, alignSelf: 'stretch',
+    borderTopLeftRadius: EddiesRadius.card, borderBottomLeftRadius: EddiesRadius.card,
+  },
+  upcomingBody: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: EddiesSpacing.sm,
-    paddingVertical: EddiesSpacing.sm,
+    paddingVertical: EddiesSpacing.sm + 2,
     paddingHorizontal: EddiesSpacing.md,
-    backgroundColor: EddiesColors.surface,
-    borderRadius: 4,
-    borderLeftWidth: 2,
-    borderLeftColor: EddiesColors.steel + '55',
   },
+  upcomingLeft: { gap: 3 },
+  upcomingRight: { alignItems: 'flex-end', gap: 2 },
   upcomingVal: {
     fontFamily: EddiesFonts.monoBold,
-    fontSize: 11,
+    fontSize: 13,
     letterSpacing: 0.5,
   },
   hairline: {
