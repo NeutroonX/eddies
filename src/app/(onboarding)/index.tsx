@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Animated,
   Dimensions,
@@ -71,21 +71,23 @@ type BadgeProps = {
 };
 
 function FloatingBadge({ symbol, label, floatPhase, entranceDelay, style }: BadgeProps) {
-  const opacityRef = useRef(new Animated.Value(0));
-  const enterYRef  = useRef(new Animated.Value(10));
-  const floatYRef  = useRef(new Animated.Value(0));
+  // Animated.Value held in state (stable across renders) so it can be read in
+  // render without tripping react-hooks/refs.
+  const [opacity] = useState(() => new Animated.Value(0));
+  const [enterY]  = useState(() => new Animated.Value(10));
+  const [floatY]  = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(opacityRef.current, { toValue: 1, duration: 500, delay: entranceDelay, useNativeDriver: true }),
-      Animated.timing(enterYRef.current,  { toValue: 0, duration: 500, delay: entranceDelay, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: 500, delay: entranceDelay, useNativeDriver: true }),
+      Animated.timing(enterY,  { toValue: 0, duration: 500, delay: entranceDelay, easing: Easing.out(Easing.quad), useNativeDriver: true }),
     ]).start();
 
     const HALF = 2000;
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(floatYRef.current, { toValue: -6, duration: HALF, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        Animated.timing(floatYRef.current, { toValue:  6, duration: HALF, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(floatY, { toValue: -6, duration: HALF, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(floatY, { toValue:  6, duration: HALF, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
       ])
     );
     const t = setTimeout(() => loop.start(), floatPhase * HALF * 2);
@@ -94,7 +96,7 @@ function FloatingBadge({ symbol, label, floatPhase, entranceDelay, style }: Badg
 
   return (
     <Animated.View
-      style={[fb.wrap, style, { opacity: opacityRef.current, transform: [{ translateY: Animated.add(enterYRef.current, floatYRef.current) }] }]}
+      style={[fb.wrap, style, { opacity, transform: [{ translateY: Animated.add(enterY, floatY) }] }]}
       pointerEvents="none"
     >
       <Text style={fb.symbol}>{symbol}</Text>
@@ -119,20 +121,20 @@ const fb = StyleSheet.create({
 
 // ── Gear reticle (rotating ring at corner) ─────────────────────────────────
 function GearRing({ delay = 0 }: { delay?: number }) {
-  const rotateRef  = useRef(new Animated.Value(0));
-  const opacityRef = useRef(new Animated.Value(0));
+  const [rotate]  = useState(() => new Animated.Value(0));
+  const [opacity] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
-    Animated.timing(opacityRef.current, { toValue: 0.5, duration: 800, delay, useNativeDriver: true }).start();
+    Animated.timing(opacity, { toValue: 0.5, duration: 800, delay, useNativeDriver: true }).start();
     Animated.loop(
-      Animated.timing(rotateRef.current, { toValue: 1, duration: 12000, easing: Easing.linear, useNativeDriver: true })
+      Animated.timing(rotate, { toValue: 1, duration: 12000, easing: Easing.linear, useNativeDriver: true })
     ).start();
   }, []);
 
-  const rot = rotateRef.current.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  const rot = rotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
   return (
-    <Animated.View style={{ opacity: opacityRef.current, transform: [{ rotate: rot }], width: 38, height: 38 }} pointerEvents="none">
+    <Animated.View style={{ opacity, transform: [{ rotate: rot }], width: 38, height: 38 }} pointerEvents="none">
       <View style={{ width: 38, height: 38, borderRadius: 19, borderWidth: 1, borderColor: EddiesColors.steel + '60' }} />
       <View style={{ position: 'absolute', top: 2,  left: 17, width: 4, height: 1,  backgroundColor: EddiesColors.steel + '80' }} />
       <View style={{ position: 'absolute', bottom: 2, left: 17, width: 4, height: 1,  backgroundColor: EddiesColors.steel + '80' }} />
@@ -144,18 +146,18 @@ function GearRing({ delay = 0 }: { delay?: number }) {
 
 // ── Red bar (single, slides in) ────────────────────────────────────────────
 function AnimatedBar({ delay }: { delay: number }) {
-  const txRef      = useRef(new Animated.Value(-36));
-  const opacityRef = useRef(new Animated.Value(0));
+  const [tx]      = useState(() => new Animated.Value(-36));
+  const [opacity] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(opacityRef.current, { toValue: 1, duration: 200, delay, useNativeDriver: true }),
-      Animated.timing(txRef.current,      { toValue: 0, duration: 280, delay, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: 200, delay, useNativeDriver: true }),
+      Animated.timing(tx,      { toValue: 0, duration: 280, delay, easing: Easing.out(Easing.quad), useNativeDriver: true }),
     ]).start();
   }, []);
 
   return (
-    <Animated.View style={{ width: 28, height: 3, backgroundColor: EddiesColors.alert, opacity: opacityRef.current, transform: [{ translateX: txRef.current }] }} />
+    <Animated.View style={{ width: 28, height: 3, backgroundColor: EddiesColors.alert, opacity, transform: [{ translateX: tx }] }} />
   );
 }
 
@@ -169,12 +171,12 @@ function RedBars({ count = 3, baseDelay = 300 }: { count?: number; baseDelay?: n
 
 // ── Warning triangle icons (stacked column) ────────────────────────────────
 function TriangleItem({ delay }: { delay: number }) {
-  const opacityRef = useRef(new Animated.Value(0));
+  const [opacity] = useState(() => new Animated.Value(0));
   useEffect(() => {
-    Animated.timing(opacityRef.current, { toValue: 1, duration: 300, delay, useNativeDriver: true }).start();
+    Animated.timing(opacity, { toValue: 1, duration: 300, delay, useNativeDriver: true }).start();
   }, []);
   return (
-    <Animated.View style={{ opacity: opacityRef.current }}>
+    <Animated.View style={{ opacity }}>
       <MonoLabel size={9} letterSpacing={0} color={EddiesColors.alert + '80'}>△</MonoLabel>
     </Animated.View>
   );
@@ -201,17 +203,17 @@ const pg = StyleSheet.create({
 
 // ── PAGE 1 ─────────────────────────────────────────────────────────────────
 function Page1({ height }: { height: number }) {
-  const heroOpacityRef = useRef(new Animated.Value(0));
-  const heroYRef       = useRef(new Animated.Value(28));
-  const bodyOpacityRef = useRef(new Animated.Value(0));
-  const btmOpacityRef  = useRef(new Animated.Value(0));
+  const [heroOpacity] = useState(() => new Animated.Value(0));
+  const [heroY]       = useState(() => new Animated.Value(28));
+  const [bodyOpacity] = useState(() => new Animated.Value(0));
+  const [btmOpacity]  = useState(() => new Animated.Value(0));
   const [subText, setSubText] = useState('');
   const FULL_SUB = 'FINANCIAL OS';
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(heroOpacityRef.current, { toValue: 1, duration: 700, delay: 200, useNativeDriver: true }),
-      Animated.timing(heroYRef.current,       { toValue: 0, duration: 700, delay: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(heroOpacity, { toValue: 1, duration: 700, delay: 200, useNativeDriver: true }),
+      Animated.timing(heroY,       { toValue: 0, duration: 700, delay: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
 
     let tw: ReturnType<typeof setInterval>;
@@ -224,8 +226,8 @@ function Page1({ height }: { height: number }) {
       }, 55);
     }, 700);
 
-    Animated.timing(bodyOpacityRef.current, { toValue: 1, duration: 600, delay: 1400, useNativeDriver: true }).start();
-    Animated.timing(btmOpacityRef.current,  { toValue: 1, duration: 500, delay: 1900, useNativeDriver: true }).start();
+    Animated.timing(bodyOpacity, { toValue: 1, duration: 600, delay: 1400, useNativeDriver: true }).start();
+    Animated.timing(btmOpacity,  { toValue: 1, duration: 500, delay: 1900, useNativeDriver: true }).start();
 
     return () => { clearTimeout(t); clearInterval(tw); };
   }, []);
@@ -259,7 +261,7 @@ function Page1({ height }: { height: number }) {
 
         {/* Hero — centered */}
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Animated.View style={{ opacity: heroOpacityRef.current, transform: [{ translateY: heroYRef.current }], alignItems: 'center' }}>
+          <Animated.View style={{ opacity: heroOpacity, transform: [{ translateY: heroY }], alignItems: 'center' }}>
             <Text style={p1.displayBig}>EDDIES</Text>
             <View style={p1.subRow}>
               <View style={p1.accentBar} />
@@ -270,7 +272,7 @@ function Page1({ height }: { height: number }) {
         </View>
 
         {/* Body copy */}
-        <Animated.View style={[p1.body, { opacity: bodyOpacityRef.current }]}>
+        <Animated.View style={[p1.body, { opacity: bodyOpacity }]}>
           <View style={p1.bodyInner}>
             <Text style={p1.headline}>COMMAND YOUR FINANCES.</Text>
             <MonoLabel size={9} letterSpacing={0.5} color={EddiesColors.steel} style={{ lineHeight: 15 }}>
@@ -283,7 +285,7 @@ function Page1({ height }: { height: number }) {
         </Animated.View>
 
         {/* Bottom row */}
-        <Animated.View style={[p1.bottomRow, { opacity: btmOpacityRef.current }]}>
+        <Animated.View style={[p1.bottomRow, { opacity: btmOpacity }]}>
           <BarcodeMark height={18} style={{ flex: 1 }} />
           <DataBadge lines={['PERSONAL FINANCE', 'V1.0 // LOCAL']} />
         </Animated.View>

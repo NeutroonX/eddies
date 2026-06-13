@@ -94,7 +94,7 @@ export const VaultShareCard = forwardRef<View, VaultShareCardProps>(
           {account.name.toUpperCase()}
         </Numerals>
         <MonoLabel size={11} letterSpacing={2} color={EddiesColors.steel}>
-          {typeLabel} // {account.currency}
+          {typeLabel} {'//'} {account.currency}
         </MonoLabel>
 
         <View style={s.divider} />

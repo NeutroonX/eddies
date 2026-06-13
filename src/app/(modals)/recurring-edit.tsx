@@ -223,6 +223,10 @@ export default function RecurringEditModal() {
     try { return nextRunAt(draft); } catch { return null; }
   }, [freq, intervalN, anchorFor, startMs, endKind, endMs, endCount]);
 
+  // Stable mount-time fallback for the NEXT preview when no run date resolves —
+  // keeps Date.now() out of the render body (react-hooks/purity).
+  const [nowFallback] = useState(() => Date.now());
+
   const monthlyEq = monthlyEquivalentMinor({ freq, interval_n: intervalN, amount_minor: amountMinor });
   const amountColor = kind === 'outflow' ? EddiesColors.alert : EddiesColors.bone;
 
@@ -371,7 +375,7 @@ export default function RecurringEditModal() {
       <View style={s.footer}>
         <View style={s.summary}>
           <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.steel}>
-            NEXT {isValid ? friendlyDate(previewNext ?? Date.now()) : '—'}
+            NEXT {isValid ? friendlyDate(previewNext ?? nowFallback) : '—'}
           </MonoLabel>
           <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel + '88'}>
             ≈{sym}{formatAmountTabular(monthlyEq)}/MO
@@ -409,6 +413,7 @@ export default function RecurringEditModal() {
             <TextInput value={otherName} onChangeText={setOtherName} placeholder="E.G. SUBSCRIPTIONS"
               placeholderTextColor={EddiesColors.steel + '55'} style={cs.dateInput}
               autoCapitalize="characters" maxLength={40} returnKeyType="done"
+              /* eslint-disable-next-line jsx-a11y/no-autofocus -- focus the field when this action sheet opens on user tap */
               onSubmitEditing={() => { if (otherName.trim()) setSheet(null); }} autoFocus />
             <Pressable style={cs.setBtn} disabled={!otherName.trim()}
               onPress={() => { if (otherName.trim()) setSheet(null); }}
@@ -504,6 +509,7 @@ export default function RecurringEditModal() {
       <Sheet visible={sheet === 'note'} title="NOTE" onClose={() => setSheet(null)}>
         <TextInput value={note} onChangeText={setNote} style={cs.noteInput} placeholder="— OPTIONAL —"
           placeholderTextColor={EddiesColors.steel + '44'} maxLength={200} returnKeyType="done"
+          /* eslint-disable-next-line jsx-a11y/no-autofocus -- focus the field when this action sheet opens on user tap */
           blurOnSubmit onSubmitEditing={() => setSheet(null)} autoFocus />
         <Pressable style={cs.doneBtn} onPress={() => setSheet(null)} accessibilityRole="button" accessibilityLabel="Done">
           <MonoLabel size={9} letterSpacing={1.5} color={EddiesColors.alert}>DONE</MonoLabel>

@@ -149,6 +149,7 @@ export default function CapModal() {
               value={rawAmount}
               onChangeText={setRawAmount}
               editable={!saving}
+              /* eslint-disable-next-line jsx-a11y/no-autofocus -- focus the amount field when creating a new cap */
               autoFocus={!existingCap}
             />
           </View>

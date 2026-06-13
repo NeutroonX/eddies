@@ -23,6 +23,9 @@ export function StampButton({ label, onPress, disabled = false, loading = false 
   }));
 
   function handlePress() {
+    // Reanimated shared values are designed to be set from event handlers;
+    // react-hooks/immutability misreads this as a render-time mutation.
+    // eslint-disable-next-line react-hooks/immutability
     scale.value = withSequence(
       withTiming(0.93, { duration: 80 }),
       withTiming(1, { duration: 120 })

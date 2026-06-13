@@ -43,6 +43,9 @@ export function VaultForm({ initialData, onSave, onCancel }: VaultFormProps) {
   const [cardExpiry, setCardExpiry] = useState(initialData?.card_expiry ?? '');
 
   useEffect(() => {
+    // preferredCurrency hydrates from the store after mount, so this default
+    // must be applied in an effect rather than a lazy initializer.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!initialData) setCurrency(preferredCurrency);
   }, [preferredCurrency, initialData]);
   

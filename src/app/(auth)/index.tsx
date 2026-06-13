@@ -226,7 +226,7 @@ function AccessRequest() {
     return (
       <View style={ar.sentWrap}>
         <MonoLabel size={8} letterSpacing={1} color={EddiesColors.alert + "CC"}>
-          ▲ REQUEST SENT — WE'LL EMAIL YOUR CODE
+          ▲ REQUEST SENT — WE&apos;LL EMAIL YOUR CODE
         </MonoLabel>
       </View>
     );

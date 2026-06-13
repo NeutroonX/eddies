@@ -142,7 +142,7 @@ export default function ArchiveModal() {
             ! DATA MANAGEMENT
           </MonoLabel>
           <MonoLabel size={10} letterSpacing={0.5} color={EddiesColors.steel} style={s.warningText}>
-            This month's entries will be compressed into a summary and removed from the live ledger.
+            This month&apos;s entries will be compressed into a summary and removed from the live ledger.
             Export before archiving — raw entries cannot be recovered after.
           </MonoLabel>
         </View>
