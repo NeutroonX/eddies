@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSQLiteContext } from 'expo-sqlite';
 
 import { getAllCategories, createCategory, archiveCategory } from '@/lib/db/repos/categories';
+import { captureError } from '@/lib/telemetry';
 import type { Category, NewCategory } from '@/lib/schemas';
 
 export function useCategories() {
@@ -9,10 +10,11 @@ export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const reload = useCallback(async () => {
-    const rows = await getAllCategories(db);
-    setCategories(rows);
-    setLoading(false);
+  const reload = useCallback(() => {
+    return getAllCategories(db).then(rows => {
+      setCategories(rows);
+      setLoading(false);
+    }).catch(err => captureError(err, { feature: 'categories' }));
   }, [db]);
 
   useEffect(() => { reload(); }, [reload]);

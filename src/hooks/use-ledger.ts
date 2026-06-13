@@ -5,6 +5,7 @@ import { useFocusEffect } from 'expo-router';
 import { useStore } from '@/store';
 
 import { getTotalBalance } from '@/lib/analytics';
+import { captureError } from '@/lib/telemetry';
 
 const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
@@ -60,8 +61,8 @@ export function useLedger() {
   const [atRowLimit, setAtRowLimit] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const reload = useCallback(async () => {
-    const [rows, balance, mixedRow] = await Promise.all([
+  const reload = useCallback(() => {
+    return Promise.all([
       db.getAllAsync<LedgerRow>(`
         SELECT
           t.id, t.account_id, t.category_id, t.kind, t.amount_minor,
@@ -81,12 +82,14 @@ export function useLedger() {
       db.getFirstAsync<{ cnt: number }>(
         'SELECT COUNT(DISTINCT currency) AS cnt FROM accounts WHERE archived = 0'
       ),
-    ]);
-    setSections(groupByDay(rows));
-    setTotalBalance(balance);
-    setHasMixedCurrencies((mixedRow?.cnt ?? 1) > 1);
-    setAtRowLimit(rows.length === ROW_LIMIT);
-    setLoading(false);
+    ]).then(([rows, balance, mixedRow]) => {
+      // setState lives in the Promise chain (not synchronous in the effect).
+      setSections(groupByDay(rows));
+      setTotalBalance(balance);
+      setHasMixedCurrencies((mixedRow?.cnt ?? 1) > 1);
+      setAtRowLimit(rows.length === ROW_LIMIT);
+      setLoading(false);
+    }).catch(err => captureError(err, { feature: 'ledger' }));
   }, [db]);
 
   // Reload when the screen regains focus (covers entry saves via modal).

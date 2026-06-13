@@ -48,6 +48,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@react-native/jest-preset": "0.85.3",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.2.2",
     "eas-cli": "^20.1.0",
