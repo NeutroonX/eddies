@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { MonoLabel } from '@/components/ui/mono-label';
 import { Pill } from '@/components/ui/pill';
-import { Sheet, SheetOption } from '@/components/ui/sheet';
+import { Sheet } from '@/components/ui/sheet';
 import { EddiesColors, EddiesFonts, EddiesRadius, EddiesSpacing } from '@/constants/theme';
 import { useAccounts } from '@/hooks/use-accounts';
 import { useCategories } from '@/hooks/use-categories';
@@ -45,6 +45,27 @@ function parseAmount(raw: string): number | null {
 }
 
 const SEARCH_DEBOUNCE_MS = 250;
+
+/** Minimal three-bar "filter" mark, drawn from tokens (no icon dependency). */
+function FilterGlyph({ color }: { color: string }) {
+  return (
+    <View style={s.glyph}>
+      <View style={[s.glyphBar, { width: 13, backgroundColor: color }]} />
+      <View style={[s.glyphBar, { width: 9, backgroundColor: color }]} />
+      <View style={[s.glyphBar, { width: 5, backgroundColor: color }]} />
+    </View>
+  );
+}
+
+/** One labelled block inside the filter sheet — uniform rhythm for every group. */
+function Section({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <View style={s.section}>
+      <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel}>{label}</MonoLabel>
+      {children}
+    </View>
+  );
+}
 
 /**
  * Ledger search + filter (§6.3). Search input is live; structured constraints
@@ -121,13 +142,13 @@ export function LedgerFilterBar() {
     <View style={s.wrap}>
       <View style={s.searchRow}>
         <View style={s.searchBox}>
-          <MonoLabel size={11} color={EddiesColors.steel + '99'}>⌕</MonoLabel>
+          <MonoLabel size={12} color={EddiesColors.steel + '99'}>⌕</MonoLabel>
           <TextInput
             style={s.input}
             value={searchInput}
             onChangeText={setSearchInput}
-            placeholder="SEARCH NOTE OR CATEGORY"
-            placeholderTextColor={EddiesColors.steel + '77'}
+            placeholder="SEARCH"
+            placeholderTextColor={EddiesColors.steel + '66'}
             autoCapitalize="characters"
             autoCorrect={false}
             returnKeyType="search"
@@ -142,11 +163,10 @@ export function LedgerFilterBar() {
         </View>
         <Pressable style={[s.filterBtn, count > 0 && s.filterBtnActive]} onPress={() => setSheetOpen(true)}
           accessibilityRole="button" accessibilityLabel={`Filters${count > 0 ? `, ${count} active` : ''}`}>
-          <MonoLabel size={9} letterSpacing={1.5} weight="bold"
-            color={count > 0 ? EddiesColors.ink : EddiesColors.steel}>FILTER</MonoLabel>
+          <FilterGlyph color={count > 0 ? EddiesColors.ink : EddiesColors.steel} />
           {count > 0 && (
             <View style={s.countBadge}>
-              <MonoLabel size={9} weight="bold" color={EddiesColors.ink}>{count}</MonoLabel>
+              <MonoLabel size={8} weight="bold" color={EddiesColors.bone}>{count}</MonoLabel>
             </View>
           )}
         </Pressable>
@@ -177,71 +197,74 @@ export function LedgerFilterBar() {
       )}
 
       <Sheet visible={sheetOpen} title="FILTER LEDGER" onClose={() => setSheetOpen(false)}>
-        <ScrollView style={s.sheetScroll} keyboardShouldPersistTaps="handled">
-          {/* KIND */}
-          <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel} style={s.secLabel}>KIND</MonoLabel>
-          <View style={s.pillRow}>
-            {(Object.keys(KIND_LABELS) as LedgerKindFilter[]).map(k => (
-              <Pill key={k} label={KIND_LABELS[k]} active={filter.kind === k}
-                onPress={() => patch({ kind: k })} />
-            ))}
-          </View>
+        <ScrollView style={s.sheetScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <Section label="KIND">
+            <View style={s.pillRow}>
+              {(Object.keys(KIND_LABELS) as LedgerKindFilter[]).map(k => (
+                <Pill key={k} label={KIND_LABELS[k]} active={filter.kind === k}
+                  onPress={() => patch({ kind: k })} />
+              ))}
+            </View>
+          </Section>
 
-          {/* DATE */}
-          <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel} style={s.secLabel}>DATE RANGE</MonoLabel>
-          <View style={s.pillRow}>
-            {presets.map(p => (
-              <Pill key={p.key} label={p.label}
-                active={p.key === 'all' ? !filter.dateFrom && !filter.dateTo : activePresetKey === p.key}
-                onPress={() => patch({ dateFrom: p.from, dateTo: p.to })} />
-            ))}
-          </View>
+          <Section label="DATE RANGE">
+            <View style={s.pillRow}>
+              {presets.map(p => (
+                <Pill key={p.key} label={p.label}
+                  active={p.key === 'all' ? !filter.dateFrom && !filter.dateTo : activePresetKey === p.key}
+                  onPress={() => patch({ dateFrom: p.from, dateTo: p.to })} />
+              ))}
+            </View>
+          </Section>
 
-          {/* AMOUNT */}
-          <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel} style={s.secLabel}>AMOUNT ({sym})</MonoLabel>
-          <View style={s.amountRow}>
-            <TextInput
-              style={s.amountInput} value={minStr}
-              onChangeText={(t) => { setMinStr(t); patch({ amountMin: parseAmount(t) }); }}
-              placeholder="MIN" placeholderTextColor={EddiesColors.steel + '77'}
-              keyboardType="decimal-pad" accessibilityLabel="Minimum amount" />
-            <MonoLabel size={11} color={EddiesColors.steel}>–</MonoLabel>
-            <TextInput
-              style={s.amountInput} value={maxStr}
-              onChangeText={(t) => { setMaxStr(t); patch({ amountMax: parseAmount(t) }); }}
-              placeholder="MAX" placeholderTextColor={EddiesColors.steel + '77'}
-              keyboardType="decimal-pad" accessibilityLabel="Maximum amount" />
-          </View>
+          <Section label={`AMOUNT (${sym})`}>
+            <View style={s.amountRow}>
+              <TextInput
+                style={s.amountInput} value={minStr}
+                onChangeText={(t) => { setMinStr(t); patch({ amountMin: parseAmount(t) }); }}
+                placeholder="MIN" placeholderTextColor={EddiesColors.steel + '66'}
+                keyboardType="decimal-pad" accessibilityLabel="Minimum amount" />
+              <MonoLabel size={11} color={EddiesColors.steel}>–</MonoLabel>
+              <TextInput
+                style={s.amountInput} value={maxStr}
+                onChangeText={(t) => { setMaxStr(t); patch({ amountMax: parseAmount(t) }); }}
+                placeholder="MAX" placeholderTextColor={EddiesColors.steel + '66'}
+                keyboardType="decimal-pad" accessibilityLabel="Maximum amount" />
+            </View>
+          </Section>
 
-          {/* VAULT */}
-          <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel} style={s.secLabel}>VAULT</MonoLabel>
-          <SheetOption label="ANY VAULT" selected={filter.vaultId === null}
-            onPress={() => patch({ vaultId: null })} />
-          {accounts.filter(a => a.archived === 0).map(a => (
-            <SheetOption key={a.id} label={a.name} selected={filter.vaultId === a.id}
-              onPress={() => patch({ vaultId: filter.vaultId === a.id ? null : a.id })} />
-          ))}
+          <Section label="VAULT">
+            <View style={s.pillRow}>
+              <Pill label="ANY" active={filter.vaultId === null} onPress={() => patch({ vaultId: null })} />
+              {accounts.filter(a => a.archived === 0).map(a => (
+                <Pill key={a.id} label={a.name} active={filter.vaultId === a.id}
+                  onPress={() => patch({ vaultId: filter.vaultId === a.id ? null : a.id })} />
+              ))}
+            </View>
+          </Section>
 
-          {/* CATEGORY */}
-          <MonoLabel size={8} letterSpacing={2} color={EddiesColors.steel} style={s.secLabelGap}>CATEGORY</MonoLabel>
-          <SheetOption label="ANY CATEGORY" selected={filter.categoryId === null}
-            onPress={() => patch({ categoryId: null })} />
-          {categories.filter(c => c.archived === 0).map(c => (
-            <SheetOption key={c.id} label={c.name} selected={filter.categoryId === c.id}
-              onPress={() => patch({ categoryId: filter.categoryId === c.id ? null : c.id })} />
-          ))}
+          <Section label="CATEGORY">
+            <View style={s.pillRow}>
+              <Pill label="ANY" active={filter.categoryId === null} onPress={() => patch({ categoryId: null })} />
+              {categories.filter(c => c.archived === 0).map(c => (
+                <Pill key={c.id} label={c.name} color={c.color} active={filter.categoryId === c.id}
+                  onPress={() => patch({ categoryId: filter.categoryId === c.id ? null : c.id })} />
+              ))}
+            </View>
+          </Section>
 
-          <View style={s.sheetFooter}>
-            <Pressable style={s.resetBtn} onPress={clearAll}
-              accessibilityRole="button" accessibilityLabel="Reset all filters">
-              <MonoLabel size={10} letterSpacing={1.5} weight="bold" color={EddiesColors.steel}>RESET</MonoLabel>
-            </Pressable>
-            <Pressable style={s.doneBtn} onPress={() => setSheetOpen(false)}
-              accessibilityRole="button" accessibilityLabel="Apply filters">
-              <MonoLabel size={10} letterSpacing={1.5} weight="bold" color={EddiesColors.ink}>DONE</MonoLabel>
-            </Pressable>
-          </View>
         </ScrollView>
+
+        <View style={s.sheetFooter}>
+          <Pressable style={s.resetBtn} onPress={clearAll}
+            accessibilityRole="button" accessibilityLabel="Reset all filters">
+            <MonoLabel size={10} letterSpacing={1.5} weight="bold" color={EddiesColors.steel}>RESET</MonoLabel>
+          </Pressable>
+          <Pressable style={s.doneBtn} onPress={() => setSheetOpen(false)}
+            accessibilityRole="button" accessibilityLabel="Apply filters">
+            <MonoLabel size={10} letterSpacing={1.5} weight="bold" color={EddiesColors.ink}>DONE</MonoLabel>
+          </Pressable>
+        </View>
       </Sheet>
     </View>
   );
@@ -250,6 +273,7 @@ export function LedgerFilterBar() {
 const s = StyleSheet.create({
   wrap: {
     paddingHorizontal: EddiesSpacing.md,
+    paddingTop: EddiesSpacing.xs,
     paddingBottom: EddiesSpacing.sm,
     gap: EddiesSpacing.sm,
   },
@@ -257,29 +281,31 @@ const s = StyleSheet.create({
   searchBox: {
     flex: 1, flexDirection: 'row', alignItems: 'center', gap: EddiesSpacing.sm,
     backgroundColor: EddiesColors.surface, borderRadius: EddiesRadius.panel,
-    borderWidth: 1, borderColor: EddiesColors.steel + '22',
-    paddingHorizontal: EddiesSpacing.sm, height: 38,
+    paddingHorizontal: EddiesSpacing.sm + 2, height: 34,
   },
   input: {
     flex: 1, color: EddiesColors.bone, fontFamily: EddiesFonts.mono,
-    fontSize: 12, letterSpacing: 1, padding: 0,
+    fontSize: 12, letterSpacing: 1.5, padding: 0,
   },
   filterBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    height: 38, paddingHorizontal: EddiesSpacing.md,
-    borderRadius: EddiesRadius.panel, borderWidth: 1, borderColor: EddiesColors.steel + '44',
+    width: 34, height: 34, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: EddiesColors.surface, borderRadius: EddiesRadius.panel,
   },
-  filterBtnActive: { backgroundColor: EddiesColors.bone, borderColor: EddiesColors.bone },
+  filterBtnActive: { backgroundColor: EddiesColors.bone },
+  glyph: { alignItems: 'center', gap: 2.5 },
+  glyphBar: { height: 1.5, borderRadius: 1 },
   countBadge: {
-    minWidth: 16, paddingHorizontal: 4, paddingVertical: 1, alignItems: 'center',
+    position: 'absolute', top: -4, right: -4,
+    minWidth: 14, height: 14, paddingHorizontal: 3,
+    alignItems: 'center', justifyContent: 'center',
     borderRadius: EddiesRadius.chip, backgroundColor: EddiesColors.alert,
+    borderWidth: 1.5, borderColor: EddiesColors.ink,
   },
   chips: { flexDirection: 'row', alignItems: 'center', gap: EddiesSpacing.sm, paddingRight: EddiesSpacing.md },
   clearAll: { paddingHorizontal: EddiesSpacing.sm, paddingVertical: EddiesSpacing.chipV },
 
-  sheetScroll: { maxHeight: 460 },
-  secLabel: { marginTop: EddiesSpacing.sm, marginBottom: EddiesSpacing.xs },
-  secLabelGap: { marginTop: EddiesSpacing.md, marginBottom: EddiesSpacing.xs },
+  sheetScroll: { maxHeight: 480 },
+  section: { marginTop: EddiesSpacing.lg, gap: EddiesSpacing.sm },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: EddiesSpacing.sm },
   amountRow: { flexDirection: 'row', alignItems: 'center', gap: EddiesSpacing.sm },
   amountInput: {
@@ -290,7 +316,7 @@ const s = StyleSheet.create({
   },
   sheetFooter: {
     flexDirection: 'row', gap: EddiesSpacing.sm,
-    marginTop: EddiesSpacing.lg, marginBottom: EddiesSpacing.sm,
+    paddingTop: EddiesSpacing.md, marginTop: EddiesSpacing.xs,
   },
   resetBtn: {
     flex: 1, height: 44, alignItems: 'center', justifyContent: 'center',

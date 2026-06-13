@@ -148,8 +148,6 @@ function LedgerHeader({ balance, sections, hasMixedCurrencies, pendingRow, filte
         </MonoLabel>
         <MonoLabel size={10} color={EddiesColors.steel + '88'}>›</MonoLabel>
       </Pressable>
-
-      <View style={hs.hairline} />
     </View>
   );
 }
@@ -179,7 +177,6 @@ function DayHeader({ section }: { section: DaySection }) {
   const dayOut = section.data
     .filter(r => r.kind === 'outflow')
     .reduce((s, r) => s + r.amount_minor, 0);
-  const count = section.data.length;
 
   // Split title into day-name + date, e.g. "THU" and "05 JUN"
   const parts = section.title.split(' '); // ["THU", "05", "JUN"]
@@ -192,17 +189,11 @@ function DayHeader({ section }: { section: DaySection }) {
         <Text style={dh.dayName}>{dayName}</Text>
         <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel}>{dateStr}</MonoLabel>
       </View>
-      <View style={dh.line} />
-      <View style={dh.right}>
-        {dayOut > 0 && (
-          <MonoLabel size={9} letterSpacing={0.5} color={EddiesColors.alert}>
-            −{sym}{formatAmountTabular(dayOut)}
-          </MonoLabel>
-        )}
-        <MonoLabel size={8} letterSpacing={1} color={EddiesColors.steel + '88'}>
-          {count} {count === 1 ? 'ENTRY' : 'ENTRIES'}
+      {dayOut > 0 && (
+        <MonoLabel size={9} letterSpacing={0.5} color={EddiesColors.steel}>
+          −{sym}{formatAmountTabular(dayOut)}
         </MonoLabel>
-      </View>
+      )}
     </View>
   );
 }
@@ -325,7 +316,6 @@ export default function LedgerScreen() {
         renderItem={renderItem}
         ListFooterComponent={atRowLimit ? <LedgerLimitBanner /> : null}
         ListEmptyComponent={loading ? null : <EmptyState filtered={filterActive} />}
-        ItemSeparatorComponent={() => <View style={s.separator} />}
         initialNumToRender={12}
         maxToRenderPerBatch={12}
         windowSize={11}
@@ -341,11 +331,6 @@ export default function LedgerScreen() {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: EddiesColors.ink },
   list: { flex: 1 },
-  separator: {
-    height: 1,
-    backgroundColor: EddiesColors.steel + '18',
-    marginLeft: 54 + EddiesSpacing.sm * 2,
-  },
 });
 
 const hs = StyleSheet.create({
@@ -385,19 +370,22 @@ const hs = StyleSheet.create({
     borderRadius: EddiesRadius.chip, backgroundColor: EddiesColors.alert,
     alignItems: 'center', justifyContent: 'center',
   },
-  hairline: {
-    height: 1, backgroundColor: EddiesColors.steel + '22', marginTop: EddiesSpacing.xs,
-  },
 });
 
 const dh = StyleSheet.create({
+  // Opaque ink so rows scroll cleanly beneath the sticky header. The single
+  // full-width bottom hairline is the only divider in the list — consistent for
+  // every day. Top padding gives the visual day break (no extra rules needed).
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
     paddingHorizontal: EddiesSpacing.md,
-    paddingVertical: EddiesSpacing.xs + 2,
-    backgroundColor: EddiesColors.surface,
-    gap: EddiesSpacing.sm,
+    paddingTop: EddiesSpacing.lg,
+    paddingBottom: EddiesSpacing.xs + 2,
+    backgroundColor: EddiesColors.ink,
+    borderBottomWidth: 1,
+    borderBottomColor: EddiesColors.steel + '1A',
   },
   left: {
     flexDirection: 'row',
@@ -409,15 +397,6 @@ const dh = StyleSheet.create({
     fontSize: 13,
     color: EddiesColors.bone,
     letterSpacing: 1,
-  },
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: EddiesColors.steel + '33',
-  },
-  right: {
-    alignItems: 'flex-end',
-    gap: 2,
   },
 });
 
