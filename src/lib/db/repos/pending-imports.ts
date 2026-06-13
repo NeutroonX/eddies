@@ -106,16 +106,20 @@ export async function acceptPending(
     Pick<PendingImport, 'amount_minor' | 'kind' | 'suggested_account_id' | 'suggested_category_id' | 'merchant' | 'note' | 'occurred_at'>
   > = {}
 ): Promise<Transaction> {
-  const pending = await getPendingById(db, id);
-  if (!pending) throw new Error(`pending import ${id} not found`);
-  if (pending.status !== 'pending') {
-    throw new Error(`pending import ${id} already ${pending.status}`);
-  }
-
-  const merchant = overrides.merchant ?? pending.merchant;
   let tx: Transaction | undefined;
-  await db.withTransactionAsync(async () => {
-    tx = await createTransaction(db, {
+  // Exclusive transaction so concurrent accepts (bulk "accept all" overlapping a
+  // tap, or a focus-triggered scan) serialize instead of nesting BEGIN/COMMIT.
+  // The read + status guard live INSIDE the lock, making accept atomic: a second
+  // accept of the same row sees 'accepted' and bails before creating a duplicate.
+  await db.withExclusiveTransactionAsync(async (txn) => {
+    const pending = await getPendingById(txn, id);
+    if (!pending) throw new Error(`pending import ${id} not found`);
+    if (pending.status !== 'pending') {
+      throw new Error(`pending import ${id} already ${pending.status}`);
+    }
+
+    const merchant = overrides.merchant ?? pending.merchant;
+    tx = await createTransaction(txn, {
       account_id: overrides.suggested_account_id ?? pending.suggested_account_id,
       category_id: overrides.suggested_category_id ?? pending.suggested_category_id,
       kind: overrides.kind ?? pending.kind,
@@ -126,8 +130,8 @@ export async function acceptPending(
       source: pending.origin === 'recurring' ? 'recurring' : 'sms',
       recurring_rule_id: pending.recurring_rule_id,
     });
-    await db.runAsync(
-      "UPDATE pending_imports SET status = 'accepted' WHERE id = ?",
+    await txn.runAsync(
+      "UPDATE pending_imports SET status = 'accepted' WHERE id = ? AND status = 'pending'",
       id
     );
   });
