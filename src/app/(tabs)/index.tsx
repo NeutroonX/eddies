@@ -7,8 +7,9 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { MonoLabel } from '@/components/ui/mono-label';
 import { Numerals } from '@/components/ui/numerals';
 import { EntryRow } from '@/components/ledger/entry-row';
+import { LedgerFilterBar } from '@/components/ledger/filter-bar';
 import { EddiesColors, EddiesFonts, EddiesRadius, EddiesSpacing } from '@/constants/theme';
-import { useLedger, type DaySection, type LedgerRow } from '@/hooks/use-ledger';
+import { useLedger, type DaySection, type FilteredTotals, type LedgerRow } from '@/hooks/use-ledger';
 import { useMaterializeOnFocus } from '@/hooks/use-materialize-on-focus';
 import { useUpcoming } from '@/hooks/use-upcoming';
 import { useInboxCount } from '@/hooks/use-inbox-count';
@@ -22,7 +23,7 @@ import { useStore } from '@/store';
 // dark panel that lifts off pure-black via its shadow (not a border), with a
 // category/state-colored spine carrying the accent.
 
-function LedgerHeader({ balance, sections, hasMixedCurrencies, pendingRow }: { balance: number; sections: DaySection[]; hasMixedCurrencies: boolean; pendingRow: LedgerRow | null }) {
+function LedgerHeader({ balance, sections, hasMixedCurrencies, pendingRow, filterActive, filteredTotals }: { balance: number; sections: DaySection[]; hasMixedCurrencies: boolean; pendingRow: LedgerRow | null; filterActive: boolean; filteredTotals: FilteredTotals | null }) {
   const sym        = useCurrencySymbol();
   const appLocked  = useStore((s) => s.appLocked);
   const upcoming   = useUpcoming();
@@ -52,15 +53,23 @@ function LedgerHeader({ balance, sections, hasMixedCurrencies, pendingRow }: { b
     return { monthNet: net, monthOut: out, monthIn: inc };
   }, [sections, pendingRow]);
 
-  const netPositive = monthNet >= 0;
+  // When a filter is active, the month figure cycle reflects the filtered set
+  // (computed in SQL over every match, not just the rendered page).
+  const { net: viewNet, out: viewOut, in: viewIn } = filterActive && filteredTotals
+    ? filteredTotals
+    : { net: monthNet, out: monthOut, in: monthIn };
+
+  const netPositive = viewNet >= 0;
   const netArrow = netPositive ? '▲' : '▼';
   const netColor = netPositive ? EddiesColors.bone : EddiesColors.alert;
 
-  const monthYear = new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase();
+  const monthYear = filterActive
+    ? `${filteredTotals?.count ?? 0} RESULT${(filteredTotals?.count ?? 0) === 1 ? '' : 'S'}`
+    : new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase();
   const balanceStr = appLocked ? '••••••' : `${effectiveBalance < 0 ? '−' : ''}${sym}${formatAmountTabular(Math.abs(effectiveBalance))}`;
-  const inStr  = appLocked ? '••••' : `+${sym}${formatAmountTabular(monthIn)}`;
-  const outStr = appLocked ? '••••' : `−${sym}${formatAmountTabular(monthOut)}`;
-  const netStr = appLocked ? '••••' : `${netPositive ? '+' : '−'}${sym}${formatAmountTabular(Math.abs(monthNet))}`;
+  const inStr  = appLocked ? '••••' : `+${sym}${formatAmountTabular(viewIn)}`;
+  const outStr = appLocked ? '••••' : `−${sym}${formatAmountTabular(viewOut)}`;
+  const netStr = appLocked ? '••••' : `${netPositive ? '+' : '−'}${sym}${formatAmountTabular(Math.abs(viewNet))}`;
   const upNetStr = appLocked ? '••••' : `${upcoming.netMinor >= 0 ? '+' : '−'}${sym}${formatAmountTabular(Math.abs(upcoming.netMinor))}`;
 
   const goInbox = () => router.push('/(modals)/import-inbox');
@@ -198,7 +207,7 @@ function DayHeader({ section }: { section: DaySection }) {
   );
 }
 
-function EmptyState() {
+function EmptyState({ filtered }: { filtered: boolean }) {
   return (
     <View style={es.wrap}>
       <View style={es.crosshair}>
@@ -206,10 +215,10 @@ function EmptyState() {
         <View style={es.vLine} />
       </View>
       <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel} style={es.text}>
-        NO ENTRIES LOGGED
+        {filtered ? 'NO MATCHES' : 'NO ENTRIES LOGGED'}
       </MonoLabel>
       <MonoLabel size={9} letterSpacing={1} color={EddiesColors.steel + '66'}>
-        STANDING BY // TAP + TO LOG
+        {filtered ? 'ADJUST OR CLEAR THE FILTER' : 'STANDING BY // TAP + TO LOG'}
       </MonoLabel>
     </View>
   );
@@ -235,7 +244,7 @@ export default function LedgerScreen() {
   useMaterializeOnFocus();
   // Pull new bank/UPI SMS into the review inbox (Android, opt-in, on focus).
   useSmsAutoScan();
-  const { sections, totalBalance, hasMixedCurrencies, atRowLimit, loading, reload } = useLedger();
+  const { sections, totalBalance, hasMixedCurrencies, atRowLimit, filteredTotals, filterActive, loading, reload } = useLedger();
 
   const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingIdRef = useRef<string | null>(null);
@@ -303,7 +312,10 @@ export default function LedgerScreen() {
         sections={sections}
         hasMixedCurrencies={hasMixedCurrencies}
         pendingRow={pendingDeleteRow}
+        filterActive={filterActive}
+        filteredTotals={filteredTotals}
       />
+      <LedgerFilterBar />
       <SectionList
         style={s.list}
         sections={sections}
@@ -312,7 +324,7 @@ export default function LedgerScreen() {
         renderSectionHeader={({ section }) => <DayHeader section={section} />}
         renderItem={renderItem}
         ListFooterComponent={atRowLimit ? <LedgerLimitBanner /> : null}
-        ListEmptyComponent={loading ? null : <EmptyState />}
+        ListEmptyComponent={loading ? null : <EmptyState filtered={filterActive} />}
         ItemSeparatorComponent={() => <View style={s.separator} />}
         initialNumToRender={12}
         maxToRenderPerBatch={12}
