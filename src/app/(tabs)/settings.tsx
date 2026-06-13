@@ -53,7 +53,9 @@ export default function SystemScreen() {
     }
   }, [db]);
 
-  useEffect(() => { loadStats(); }, [dbVersion, loadStats]);
+  // loadStats is async — setState runs inside the Promise, not synchronously.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void loadStats(); }, [dbVersion, loadStats]);
 
   useEffect(() => {
     if (!editingName) return;
@@ -104,6 +106,7 @@ export default function SystemScreen() {
                 {editingName ? (
                   <TextInput
                     ref={inputRef}
+                    accessibilityLabel="Your display name"
                     style={s.nameInput}
                     value={nameInput}
                     onChangeText={setNameInput}

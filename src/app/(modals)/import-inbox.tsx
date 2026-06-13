@@ -18,7 +18,6 @@ import { trackEvent } from '@/lib/telemetry';
 import { useStore } from '@/store';
 import type { PendingImport } from '@/lib/schemas';
 
-const CARD_BG = '#1A1B1E';
 const TXT_PRIMARY = EddiesColors.bone;
 const TXT_SECONDARY = EddiesColors.steel;
 
@@ -290,7 +289,7 @@ const s = StyleSheet.create({
 const c = StyleSheet.create({
   card: {
     marginHorizontal: EddiesSpacing.md,
-    backgroundColor: CARD_BG,
+    backgroundColor: EddiesColors.card,
     borderRadius: EddiesRadius.card,
     paddingHorizontal: EddiesSpacing.md,
     paddingTop: EddiesSpacing.sm + 2,

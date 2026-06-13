@@ -9,6 +9,7 @@
  * account card/number tails directly.
  */
 import type { SQLiteDatabase } from 'expo-sqlite';
+import { z } from 'zod';
 
 import { getSetting, setSetting } from '@/lib/db/repos/settings-repo';
 
@@ -17,12 +18,15 @@ const TAIL_MAP_KEY = 'sms_tail_map';
 
 type StringMap = Record<string, string>;
 
+// Reject arrays / non-string values from a corrupt settings row.
+const StringMapSchema = z.record(z.string(), z.string());
+
 async function readMap(db: SQLiteDatabase, key: string): Promise<StringMap> {
   const raw = await getSetting(db, key);
   if (!raw) return {};
   try {
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? (parsed as StringMap) : {};
+    const result = StringMapSchema.safeParse(JSON.parse(raw));
+    return result.success ? result.data : {};
   } catch {
     return {};
   }

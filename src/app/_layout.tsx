@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import * as Sentry from '@sentry/react-native';
 import {
   Rajdhani_500Medium,
@@ -11,11 +11,11 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { SQLiteProvider } from 'expo-sqlite';
-import { useEffect, useRef } from 'react';
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { runMigrations } from '@/lib/db/migrations';
+import { EddiesColors } from '@/constants/theme';
 import { GlobalToast } from '@/components/ui/global-toast';
 import { useArchiveCheck } from '@/hooks/use-archive-check';
 import { useInitSettings } from '@/hooks/use-init-settings';
@@ -55,11 +55,11 @@ class AppErrorBoundary extends React.Component<
 }
 
 const eb = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  title: { color: '#E24B4A', letterSpacing: 3, fontSize: 13, marginBottom: 12 },
-  msg: { color: '#8A8F98', fontSize: 11, textAlign: 'center', marginBottom: 24, lineHeight: 17 },
-  btn: { borderWidth: 1, borderColor: '#E24B4A', paddingHorizontal: 20, paddingVertical: 10 },
-  btnText: { color: '#E24B4A', letterSpacing: 2, fontSize: 11 },
+  wrap: { flex: 1, backgroundColor: EddiesColors.ink, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  title: { color: EddiesColors.alert, letterSpacing: 3, fontSize: 13, marginBottom: 12 },
+  msg: { color: EddiesColors.steel, fontSize: 11, textAlign: 'center', marginBottom: 24, lineHeight: 17 },
+  btn: { borderWidth: 1, borderColor: EddiesColors.alert, paddingHorizontal: 20, paddingVertical: 10 },
+  btnText: { color: EddiesColors.alert, letterSpacing: 2, fontSize: 11 },
 });
 
 // ── Archive watcher ────────────────────────────────────────────────────────

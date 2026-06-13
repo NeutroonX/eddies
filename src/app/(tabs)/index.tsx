@@ -21,7 +21,6 @@ import { useStore } from '@/store';
 // Graphite "stock card" surface — matches the recurring-rules cards: a raised
 // dark panel that lifts off pure-black via its shadow (not a border), with a
 // category/state-colored spine carrying the accent.
-const CARD_BG = '#1A1B1E';
 
 function LedgerHeader({ balance, sections, hasMixedCurrencies, pendingRow }: { balance: number; sections: DaySection[]; hasMixedCurrencies: boolean; pendingRow: LedgerRow | null }) {
   const sym        = useCurrencySymbol();
@@ -360,7 +359,7 @@ const hs = StyleSheet.create({
   tileTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   // Priority review card
   cCard: {
-    backgroundColor: CARD_BG, borderRadius: EddiesRadius.card,
+    backgroundColor: EddiesColors.card, borderRadius: EddiesRadius.card,
     paddingHorizontal: EddiesSpacing.md, paddingVertical: EddiesSpacing.sm + 2, gap: 6,
     shadowColor: '#000000', shadowOpacity: 0.5, shadowRadius: 10,
     shadowOffset: { width: 0, height: 3 }, elevation: 6,

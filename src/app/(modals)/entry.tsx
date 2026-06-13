@@ -75,8 +75,11 @@ export default function EntryModal() {
     }
   }, [isEditMode, params.id, db]);
 
+  // Default to the first vault once accounts finish loading (async). Only fills
+  // an unset vaultId, so it runs at most once and never overrides user choice.
   useEffect(() => {
     if (!isEditMode && accounts.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVaultId(prev => prev ?? accounts[0].id);
     }
   }, [accounts, isEditMode]);
@@ -223,6 +226,7 @@ export default function EntryModal() {
           {/* Amount input */}
           <View style={s.amountZone}>
             <TextInput
+              accessibilityLabel="Transaction amount"
               value={rawAmount}
               onChangeText={handleAmountChange}
               keyboardType="decimal-pad"
@@ -309,6 +313,7 @@ export default function EntryModal() {
               <MonoLabel size={9} letterSpacing={2}>TAG NAME</MonoLabel>
               <TextInput
                 ref={otherInputRef}
+                accessibilityLabel="New tag name"
                 style={s.otherInput}
                 placeholder="e.g. Subscriptions"
                 placeholderTextColor={EddiesColors.steel + '55'}
@@ -361,6 +366,7 @@ export default function EntryModal() {
         <View style={s.section}>
           <MonoLabel size={9} letterSpacing={2}>MEMO</MonoLabel>
           <TextInput
+            accessibilityLabel="Memo, optional"
             value={note}
             onChangeText={setNote}
             style={s.memoInput}

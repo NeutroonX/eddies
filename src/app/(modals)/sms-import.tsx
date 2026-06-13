@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,7 +28,7 @@ export default function SmsImportModal() {
   const [enabled, setEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const reader = createSmsReader();
+  const reader = useMemo(() => createSmsReader(), []);
   const supported = reader.isSupported();
 
   const reload = useCallback(async () => {
@@ -170,7 +170,7 @@ const s = StyleSheet.create({
   points: {
     alignSelf: 'stretch', marginTop: EddiesSpacing.lg, gap: EddiesSpacing.md,
     paddingVertical: EddiesSpacing.md, paddingHorizontal: EddiesSpacing.md,
-    backgroundColor: '#1A1B1E', borderRadius: EddiesRadius.card,
+    backgroundColor: EddiesColors.card, borderRadius: EddiesRadius.card,
   },
   point: { flexDirection: 'row', gap: EddiesSpacing.sm, alignItems: 'flex-start' },
   pointTxt: { flex: 1, lineHeight: 14 },

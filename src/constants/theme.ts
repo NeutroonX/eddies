@@ -7,6 +7,7 @@ export const EddiesColors = {
   bone: '#FFFFFF',     // primary text, inflow figures
   alert: '#E5484D',    // outflow, over-cap, primary action
   steel: '#8A8F98',    // secondary mono text, hairlines
+  card: '#1A1B1E',     // graphite card surface, raised off ink
   // caution = repeating alert/#000 stripe — rendered as <CautionStripe> component, not a flat hex
 } as const;
 

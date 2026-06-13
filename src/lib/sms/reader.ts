@@ -112,7 +112,10 @@ export class AndroidSmsReader implements SmsReader {
         (_count: number, smsListJson: string) => {
           let list: NativeSms[] = [];
           try {
-            list = JSON.parse(smsListJson);
+            const parsed = JSON.parse(smsListJson);
+            // Native payload is untyped; guard before .map to avoid a TypeError
+            // thrown inside this success callback (escapes the Promise → crash).
+            list = Array.isArray(parsed) ? (parsed as NativeSms[]) : [];
           } catch {
             list = [];
           }

@@ -113,7 +113,7 @@ export async function acceptPending(
   }
 
   const merchant = overrides.merchant ?? pending.merchant;
-  let tx!: Transaction;
+  let tx: Transaction | undefined;
   await db.withTransactionAsync(async () => {
     tx = await createTransaction(db, {
       account_id: overrides.suggested_account_id ?? pending.suggested_account_id,
@@ -131,6 +131,7 @@ export async function acceptPending(
       id
     );
   });
+  if (!tx) throw new Error(`acceptPending(${id}): transaction was not created`);
   return tx;
 }
 

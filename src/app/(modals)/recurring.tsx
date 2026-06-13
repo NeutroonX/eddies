@@ -20,7 +20,6 @@ import type { RecurringRule } from '@/lib/schemas';
 
 // Graphite card surface — a raised dark panel that lifts off pure-black via its
 // shadow (not a border). The category spine + the figure carry the identity.
-const CARD_BG = '#1A1B1E';
 const TXT_PRIMARY = EddiesColors.bone;
 const TXT_SECONDARY = EddiesColors.steel;
 const TXT_FAINT = EddiesColors.steel + '88';
@@ -299,7 +298,7 @@ const n = StyleSheet.create({
 const c = StyleSheet.create({
   card: {
     marginHorizontal: EddiesSpacing.md,
-    backgroundColor: CARD_BG,
+    backgroundColor: EddiesColors.card,
     borderRadius: EddiesRadius.card,
     shadowColor: '#000000', shadowOpacity: 0.5, shadowRadius: 10,
     shadowOffset: { width: 0, height: 3 }, elevation: 6,
