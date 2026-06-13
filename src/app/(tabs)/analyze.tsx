@@ -9,6 +9,7 @@ import { CapProgress } from '@/components/ui/cap-progress';
 import { MonoLabel } from '@/components/ui/mono-label';
 import { Numerals } from '@/components/ui/numerals';
 import { SpendBar } from '@/components/ui/spend-bar';
+import { SubscriptionRadar } from '@/components/intel/subscription-radar';
 import { EddiesColors, EddiesSpacing } from '@/constants/theme';
 import { formatMinor } from '@/lib/format';
 import { useCurrencySymbol } from '@/hooks/use-currency-symbol';
@@ -20,6 +21,7 @@ import {
   type CategorySpend,
   type CapProgress as CapProgressType,
 } from '@/lib/analytics';
+import { detectSubscriptions, ignoreSubscription, type Subscription } from '@/lib/subscriptions';
 import { deleteBudget } from '@/lib/db/repos/budgets';
 import { useStore } from '@/store';
 
@@ -51,12 +53,14 @@ export default function AnalyzeScreen() {
   const activePeriod = useStore((s) => s.activePeriod);
   const setActivePeriod = useStore((s) => s.setActivePeriod);
   const firstDayOfWeek = useStore((s) => s.firstDayOfWeek);
+  const showToast = useStore((s) => s.showToast);
   const sym = useCurrencySymbol();
 
   const [inOut, setInOut] = useState({ inflow: 0, outflow: 0, net: 0 });
   const [burn, setBurn] = useState({ avgDailyMinor: 0, projectedMonthEndMinor: 0, daysInPeriod: 0 });
   const [spending, setSpending] = useState<CategorySpend[]>([]);
   const [caps, setCaps] = useState<CapProgressType[]>([]);
+  const [subs, setSubs] = useState<Subscription[]>([]);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -88,6 +92,12 @@ export default function AnalyzeScreen() {
       setSpending(sp);
       setCaps(cp);
     }).catch(console.error);
+
+    // Radar scans full history, not the selected period. Isolated so a detection
+    // failure degrades gracefully without wiping the core analytics above.
+    detectSubscriptions(db)
+      .then((sub) => { if (mountedRef.current) setSubs(sub); })
+      .catch(console.error);
   }, [activePeriod, db, firstDayOfWeek]);
 
   // Single load path: fires on focus and when activePeriod/db changes.
@@ -116,6 +126,29 @@ export default function AnalyzeScreen() {
     setPendingDelete(null);
     loadData();
   }
+
+  // §6.2 — bridge a detected subscription to the recurring-rule editor (prefilled).
+  const handleCreateRule = useCallback((sub: Subscription) => {
+    const params = new URLSearchParams({
+      pAmount: String(sub.amountMinor),
+      pNote: sub.label,
+      pFreq: sub.cadence,
+    });
+    if (sub.categoryId) params.set('pCategory', sub.categoryId);
+    if (sub.accountId) params.set('pVault', sub.accountId);
+    router.push(`/(modals)/recurring-edit?${params.toString()}`);
+  }, []);
+
+  const handleDismissSub = useCallback(async (sub: Subscription) => {
+    setSubs((prev) => prev.filter((x) => x.key !== sub.key));
+    try {
+      await ignoreSubscription(db, sub.key);
+      showToast(`${sub.label.toUpperCase()} DISMISSED`, 'ok');
+    } catch {
+      setSubs((prev) => [...prev, sub]); // rollback — keep UI honest with the DB
+      showToast('COULD NOT DISMISS', 'err');
+    }
+  }, [db, showToast]);
 
   const netPositive = inOut.net >= 0;
   const totalDays = getPeriodTotalDays(activePeriod as Period);
@@ -243,6 +276,14 @@ export default function AnalyzeScreen() {
             </View>
           </View>
         )}
+
+        {/* ── RADAR ────────────────────────────────────── */}
+        <SubscriptionRadar
+          subscriptions={subs}
+          sym={sym}
+          onCreateRule={handleCreateRule}
+          onDismiss={handleDismissSub}
+        />
 
         {/* ── CAPS ─────────────────────────────────────── */}
         {caps.length > 0 && (

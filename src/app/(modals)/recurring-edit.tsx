@@ -125,17 +125,27 @@ export default function RecurringEditModal() {
   const sym = useCurrencySymbol();
   const bumpDbVersion = useStore(s => s.bumpDbVersion);
   const showToast = useStore(s => s.showToast);
-  const params = useLocalSearchParams<{ mode?: string; id?: string }>();
+  const params = useLocalSearchParams<{
+    mode?: string; id?: string;
+    // §6.2 prefill — subscription radar → "+ RULE".
+    pAmount?: string; pNote?: string; pFreq?: string; pCategory?: string; pVault?: string;
+  }>();
   const isEdit = params.mode === 'edit' && !!params.id;
 
-  const [rawAmount, setRawAmount] = useState('');
+  const [rawAmount, setRawAmount] = useState(
+    () => (params.pAmount ? (Number(params.pAmount) / 100).toString() : ''),
+  );
   const [kind, setKind] = useState<Kind>('outflow');
-  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [categoryId, setCategoryId] = useState<string | null>(() => params.pCategory ?? null);
   // `undefined` = untouched (defaults to first vault); `null` = explicitly no vault.
-  const [vaultId, setVaultId] = useState<string | null | undefined>(undefined);
-  const [note, setNote] = useState('');
+  const [vaultId, setVaultId] = useState<string | null | undefined>(
+    () => (params.pVault ? params.pVault : undefined),
+  );
+  const [note, setNote] = useState(() => params.pNote ?? '');
   const [otherName, setOtherName] = useState('');   // free-text tag when "OTHER" is chosen
-  const [freq, setFreq] = useState<Freq>('monthly');
+  const [freq, setFreq] = useState<Freq>(
+    () => (params.pFreq === 'yearly' || params.pFreq === 'monthly' ? params.pFreq : 'monthly'),
+  );
   const [intervalN, setIntervalN] = useState(1);
   const [anchorDay, setAnchorDay] = useState(() => new Date().getDate());
   const [startMs, setStartMs] = useState(() => atNine(Date.now()));
