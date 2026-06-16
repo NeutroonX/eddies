@@ -357,8 +357,6 @@ const s = StyleSheet.create({
     backgroundColor: EddiesColors.ink,
   },
   dots:         { flexDirection: 'row', gap: EddiesSpacing.sm, alignItems: 'center' },
-  dot:          { width: 20, height: 2, backgroundColor: EddiesColors.steel + '40' },
-  dotActive:    { width: 32, backgroundColor: EddiesColors.alert },
   nextBtn: {
     flexDirection: 'row',
     alignItems: 'center',

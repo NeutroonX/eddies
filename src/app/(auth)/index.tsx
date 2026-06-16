@@ -203,7 +203,6 @@ const ii = StyleSheet.create({
 // ── Request access form ────────────────────────────────────────────────────
 function AccessRequest() {
   const [email, setEmail] = useState("");
-  const [focused, setFocused] = useState(false);
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
     "idle",
   );
@@ -249,8 +248,6 @@ function AccessRequest() {
           setStatus("idle");
         }}
         onSubmitEditing={handleRequest}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
         placeholder="your@email.com"
         placeholderTextColor={EddiesColors.steel + "40"}
         keyboardType="email-address"
@@ -306,9 +303,6 @@ const ar = StyleSheet.create({
     flex: 1,
     height: 1,
     backgroundColor: EddiesColors.steel + "22",
-  },
-  fieldRuleFocused: {
-    backgroundColor: EddiesColors.steel + "50",
   },
   input: {
     paddingVertical: 12,
@@ -577,16 +571,6 @@ const s = StyleSheet.create({
   },
   authSection: {
     gap: EddiesSpacing.md,
-  },
-  dividerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: EddiesSpacing.sm,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: EddiesColors.steel + "18",
   },
   bottomBar: {
     flexDirection: "row",

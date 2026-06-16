@@ -23,7 +23,6 @@ export default function SettingsModal() {
   const { currency, firstDayOfWeek, hapticsEnabled, biometricStatus, setCurrency, setFirstDayOfWeek, setHapticsEnabled, setBiometricStatus, showToast } = useStore();
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [loading] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [backupLoading, setBackupLoading] = useState(false);
 
@@ -158,8 +157,7 @@ export default function SettingsModal() {
         contentContainerStyle={s.bodyContent}
         scrollEnabled={expanded !== 'currency'}
       >
-        {!loading && (
-          <>
+        <>
             {/* Currency */}
             <View style={s.section}>
               <MonoLabel size={10} letterSpacing={2} color={EddiesColors.steel}>CURRENCY</MonoLabel>
@@ -321,8 +319,7 @@ export default function SettingsModal() {
                 <Text style={s.versionValue}>{APP_VERSION}</Text>
               </View>
             </View>
-          </>
-        )}
+        </>
       </ScrollView>
 
       {/* ── Delete confirmation overlay ───────────────────── */}
