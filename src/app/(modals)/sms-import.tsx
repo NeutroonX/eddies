@@ -15,6 +15,14 @@ import { useStore } from '@/store';
 
 const ENABLED_KEY = 'sms_import_enabled';
 
+// Public (Play-compliant) build captures transactions via the Android share
+// sheet, so the screen teaches that flow instead of an in-app permission toggle.
+const SHARE_STEPS = [
+  'Open the bank or UPI SMS in your Messages app.',
+  'Tap Share, then choose Eddies.',
+  'Confirm the entry in your review inbox.',
+];
+
 export default function SmsImportModal() {
   const db = useSQLiteContext();
   const bumpDbVersion = useStore(s => s.bumpDbVersion);
@@ -108,12 +116,29 @@ export default function SmsImportModal() {
           </MonoLabel>
         </View>
 
-        {!supported ? (
+        {unavailableOnAndroidBuild ? (
+          <View style={s.steps}>
+            <MonoLabel size={10} letterSpacing={1.5} weight="bold" color={EddiesColors.bone} style={s.stepsTitle}>
+              SHARE A BANK TEXT TO LOG IT
+            </MonoLabel>
+            {SHARE_STEPS.map((step, i) => (
+              <View key={i} style={s.stepRow}>
+                <View style={s.stepNum}>
+                  <MonoLabel size={10} weight="bold" color={EddiesColors.bone}>{i + 1}</MonoLabel>
+                </View>
+                <MonoLabel size={11} letterSpacing={0.3} color={EddiesColors.steel} style={s.stepTxt}>
+                  {step}
+                </MonoLabel>
+              </View>
+            ))}
+            <MonoLabel size={9} letterSpacing={0.3} color={EddiesColors.steel + 'AA'} style={s.caveat}>
+              Only texts you share are logged — no background scanning, no history import.
+            </MonoLabel>
+          </View>
+        ) : !supported ? (
           <View style={s.note}>
             <MonoLabel size={9} letterSpacing={0.5} color={EddiesColors.steel} style={s.noteTxt}>
-              {unavailableOnAndroidBuild
-                ? 'To log a bank SMS: open it in your Messages app, tap Share, and choose Eddies. It lands in your review inbox.'
-                : 'SMS import is Android-only. On this device, add entries manually.'}
+              SMS import is Android-only. On this device, add entries manually.
             </MonoLabel>
           </View>
         ) : (
@@ -206,4 +231,20 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: EddiesColors.steel + '33', borderRadius: EddiesRadius.card,
   },
   noteTxt: { textAlign: 'center', lineHeight: 15 },
+  // Share-to-log steps (public Play-compliant build)
+  steps: {
+    padding: EddiesSpacing.md,
+    borderWidth: 1, borderColor: EddiesColors.steel + '33', borderRadius: EddiesRadius.card,
+    gap: EddiesSpacing.sm,
+  },
+  stepsTitle: { marginBottom: EddiesSpacing.xs },
+  stepRow: { flexDirection: 'row', alignItems: 'center', gap: EddiesSpacing.sm },
+  stepNum: {
+    width: 24, height: 24, borderRadius: 12,
+    backgroundColor: EddiesColors.surface,
+    borderWidth: 1, borderColor: EddiesColors.steel + '44',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  stepTxt: { flex: 1, lineHeight: 16 },
+  caveat: { lineHeight: 14, marginTop: EddiesSpacing.xs },
 });
