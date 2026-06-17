@@ -20,6 +20,12 @@ export type SmsListOptions = {
 };
 
 export interface SmsReader {
+  /**
+   * How messages reach the app. `pull` readers enumerate history via `list()`;
+   * `push` sources receive messages one at a time (e.g. share sheet) and do not
+   * implement `list()`. Lets callers/UI branch without `instanceof`.
+   */
+  readonly mode?: 'pull' | 'push';
   /** Platform can read SMS at all (Android only). */
   isSupported(): boolean;
   hasPermission(): Promise<boolean>;
@@ -46,6 +52,7 @@ export class NullSmsReader implements SmsReader {
 
 /** In-memory reader for tests and dev seeding. */
 export class MockSmsReader implements SmsReader {
+  readonly mode = 'pull' as const;
   constructor(
     private messages: RawSms[] = [],
     private granted = true
@@ -74,6 +81,7 @@ type NativeSms = { _id?: string; address?: string; body?: string; date?: string 
 
 /** Android implementation over react-native-get-sms-android. */
 export class AndroidSmsReader implements SmsReader {
+  readonly mode = 'pull' as const;
   isSupported(): boolean {
     return Platform.OS === 'android';
   }

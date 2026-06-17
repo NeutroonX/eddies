@@ -1,13 +1,15 @@
 /**
- * SMS scan orchestration: read → parse → suggest → enqueue into pending_imports.
+ * SMS ingest orchestration: parse → suggest → enqueue into pending_imports.
  *
- * Two entry points share one pass:
- *   - backfill: first enable reads the last BACKFILL_DAYS of SMS.
- *   - incremental: on app focus, reads only messages newer than the watermark.
+ * Two entry points share one pass (`ingestRawSms`):
+ *   - pull (`scanSms`): internal builds read the inbox via a READ_SMS reader,
+ *     with a BACKFILL_DAYS first scan and a watermark for incremental re-scans.
+ *   - push (`ingestRawSms` directly): Play-compliant builds feed messages the
+ *     user shares into the app — no history, no watermark.
  *
  * Idempotent end-to-end — the parser is pure, dedup_hash + the UNIQUE index drop
- * duplicates, and the watermark advances so re-scans do no work. Raw SMS text
- * never leaves the device (only a short raw_excerpt is stored locally).
+ * duplicates across both paths. Raw SMS text never leaves the device (only a
+ * short raw_excerpt is stored locally).
  */
 import type { SQLiteDatabase } from 'expo-sqlite';
 
@@ -15,7 +17,7 @@ import { insertManyPending } from '@/lib/db/repos/pending-imports';
 import { getSetting, setSetting } from '@/lib/db/repos/settings-repo';
 import { dedupHash } from '@/lib/sms/dedup';
 import { suggestAccount, suggestCategory } from '@/lib/sms/merchant-learning';
-import { parseSms, type ParsedSms } from '@/lib/sms/parser';
+import { parseSms, type ParsedSms, type RawSms } from '@/lib/sms/parser';
 import type { SmsReader } from '@/lib/sms/reader';
 import type { NewPendingImport } from '@/lib/schemas';
 import { trackEvent } from '@/lib/telemetry';
@@ -56,6 +58,41 @@ export function buildPendingFromParsed(
   };
 }
 
+/**
+ * Shared parse → suggest → dedup → insert pass over a batch of raw messages.
+ * Both entry points funnel through here so dedup (dedup_hash + UNIQUE index)
+ * holds identically across the pull and push paths. No watermark logic lives
+ * here — the push path (share sheet) has no history to watermark.
+ */
+export async function ingestRawSms(
+  db: SQLiteDatabase,
+  messages: RawSms[],
+  opts: { source?: 'pull' | 'push' } = {}
+): Promise<ScanResult> {
+  const rows: NewPendingImport[] = [];
+  for (const m of messages) {
+    const parsed = parseSms(m);
+    if (!parsed) continue;
+    const [accountId, categoryId] = await Promise.all([
+      suggestAccount(db, parsed.account_tail),
+      suggestCategory(db, parsed.merchant),
+    ]);
+    rows.push(buildPendingFromParsed(parsed, { accountId, categoryId }));
+  }
+
+  const inserted = rows.length > 0 ? await insertManyPending(db, rows) : 0;
+
+  trackEvent('sms_scan_completed', {
+    scanned: messages.length,
+    parsed: rows.length,
+    inserted,
+    // string event values aren't allowed; flag the push path as a boolean.
+    push: (opts.source ?? 'pull') === 'push',
+  });
+
+  return { scanned: messages.length, parsed: rows.length, inserted };
+}
+
 export async function scanSms(
   db: SQLiteDatabase,
   reader: SmsReader,
@@ -73,27 +110,15 @@ export async function scanSms(
 
   const messages = await reader.list({ sinceMs, maxCount: MAX_SCAN });
 
-  const rows: NewPendingImport[] = [];
+  // Advance the watermark to the newest message read, even if none parse, so
+  // re-scans never re-walk the same window.
   let maxDate = sinceMs;
   for (const m of messages) {
     if (m.date > maxDate) maxDate = m.date;
-    const parsed = parseSms(m);
-    if (!parsed) continue;
-    const [accountId, categoryId] = await Promise.all([
-      suggestAccount(db, parsed.account_tail),
-      suggestCategory(db, parsed.merchant),
-    ]);
-    rows.push(buildPendingFromParsed(parsed, { accountId, categoryId }));
   }
 
-  const inserted = rows.length > 0 ? await insertManyPending(db, rows) : 0;
+  const result = await ingestRawSms(db, messages, { source: 'pull' });
   await setSetting(db, WATERMARK_KEY, String(maxDate));
 
-  trackEvent('sms_scan_completed', {
-    scanned: messages.length,
-    parsed: rows.length,
-    inserted,
-  });
-
-  return { scanned: messages.length, parsed: rows.length, inserted };
+  return result;
 }
