@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -24,6 +24,10 @@ export default function SmsImportModal() {
 
   const reader = useMemo(() => createSmsReader(), []);
   const supported = reader.isSupported();
+  // On Android the reader is also a no-op when this build ships without the
+  // READ_SMS pull path (Play-compliant preview/production); distinguish that
+  // from genuinely unsupported platforms so the copy isn't misleading.
+  const unavailableOnAndroidBuild = !supported && Platform.OS === 'android';
 
   const reload = useCallback(async () => {
     setEnabled((await getSetting(db, ENABLED_KEY)) === 'true');
@@ -107,7 +111,9 @@ export default function SmsImportModal() {
         {!supported ? (
           <View style={s.note}>
             <MonoLabel size={9} letterSpacing={0.5} color={EddiesColors.steel} style={s.noteTxt}>
-              SMS import is Android-only. On this device, add entries manually.
+              {unavailableOnAndroidBuild
+                ? 'SMS import isn’t available in this build. Add entries manually.'
+                : 'SMS import is Android-only. On this device, add entries manually.'}
             </MonoLabel>
           </View>
         ) : (

@@ -133,7 +133,15 @@ export class AndroidSmsReader implements SmsReader {
   }
 }
 
-/** Factory: the right reader for the current platform. */
+/**
+ * Factory: the right reader for the current platform and build profile.
+ *
+ * The READ_SMS pull path only exists in builds that opt in via
+ * EXPO_PUBLIC_SMS_NATIVE (internal/development). Public builds (preview/
+ * production) ship without the READ_SMS permission for Play compliance, so the
+ * reader degrades to a no-op until the compliant push source lands (Phase 3).
+ */
 export function createSmsReader(): SmsReader {
+  if (process.env.EXPO_PUBLIC_SMS_NATIVE !== '1') return new NullSmsReader();
   return Platform.OS === 'android' ? new AndroidSmsReader() : new NullSmsReader();
 }
