@@ -69,16 +69,22 @@ export async function ingestRawSms(
   messages: RawSms[],
   opts: { source?: 'pull' | 'push' } = {}
 ): Promise<ScanResult> {
-  const rows: NewPendingImport[] = [];
-  for (const m of messages) {
-    const parsed = parseSms(m);
-    if (!parsed) continue;
-    const [accountId, categoryId] = await Promise.all([
-      suggestAccount(db, parsed.account_tail),
-      suggestCategory(db, parsed.merchant),
-    ]);
-    rows.push(buildPendingFromParsed(parsed, { accountId, categoryId }));
-  }
+  // Parse is pure/synchronous; do it up front, then run every message's two
+  // suggestion lookups concurrently rather than serialising 500 messages on a
+  // first-scan backfill (~1k sequential DB round-trips). dedup/order are
+  // unaffected — insertManyPending handles dedup across the whole batch.
+  const parsedBatch = messages
+    .map(parseSms)
+    .filter((p): p is ParsedSms => p !== null);
+  const rows = await Promise.all(
+    parsedBatch.map(async (parsed) => {
+      const [accountId, categoryId] = await Promise.all([
+        suggestAccount(db, parsed.account_tail),
+        suggestCategory(db, parsed.merchant),
+      ]);
+      return buildPendingFromParsed(parsed, { accountId, categoryId });
+    })
+  );
 
   const inserted = rows.length > 0 ? await insertManyPending(db, rows) : 0;
 

@@ -37,6 +37,16 @@ export default function SmsImportModal() {
   // from genuinely unsupported platforms so the copy isn't misleading.
   const unavailableOnAndroidBuild = !supported && Platform.OS === 'android';
 
+  // Hero subcopy + privacy line track the actual capture path so the public
+  // share-sheet build never claims the inbox-scanning ("read-only", "one-tap")
+  // behaviour it deliberately dropped for Play compliance.
+  const heroSub = unavailableOnAndroidBuild
+    ? 'Share a bank or UPI text and Eddies logs it for you.'
+    : 'Bank & UPI texts become one-tap entries.';
+  const privacyTxt = unavailableOnAndroidBuild
+    ? 'Parsed on-device · never uploaded · only the texts you share.'
+    : 'On-device only · never uploaded · read-only, skips OTP & promo.';
+
   const reload = useCallback(async () => {
     setEnabled((await getSetting(db, ENABLED_KEY)) === 'true');
   }, [db]);
@@ -89,9 +99,15 @@ export default function SmsImportModal() {
   }
 
   async function handleDisable() {
-    await setSetting(db, ENABLED_KEY, 'false');
-    setEnabled(false);
-    showToast('SMS import turned off', 'ok');
+    if (busy) return;
+    setBusy(true);
+    try {
+      await setSetting(db, ENABLED_KEY, 'false');
+      setEnabled(false);
+      showToast('SMS import turned off', 'ok');
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -112,7 +128,7 @@ export default function SmsImportModal() {
             AUTO-LOG FROM SMS
           </MonoLabel>
           <MonoLabel size={11} letterSpacing={0.3} color={EddiesColors.steel} style={s.sub}>
-            Bank & UPI texts become one-tap entries.
+            {heroSub}
           </MonoLabel>
         </View>
 
@@ -170,7 +186,7 @@ export default function SmsImportModal() {
         )}
 
         <MonoLabel size={9} letterSpacing={0.3} color={EddiesColors.steel + 'AA'} style={s.privacy}>
-          On-device only · never uploaded · read-only, skips OTP & promo.
+          {privacyTxt}
         </MonoLabel>
       </ScrollView>
 

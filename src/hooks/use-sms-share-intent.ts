@@ -6,7 +6,7 @@
  * fraud bucket), which we feed through the same parser/dedup pipeline as the
  * internal pull path via `ingestRawSms`. See docs/sms-play-compliance-plan.md.
  */
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useShareIntentContext } from 'expo-share-intent';
@@ -21,6 +21,17 @@ export function useSmsShareIntent(): void {
   const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntentContext();
   const bumpDbVersion = useStore((s) => s.bumpDbVersion);
   const showToast = useStore((s) => s.showToast);
+
+  // Tracks the most recent intent so the ingest effect's finally can tell "a
+  // newer share arrived" (skip reset, the new run owns it) from "unmounted"
+  // (still our intent → reset, else it re-fires this effect on next mount).
+  // Mirrored via an effect, not during render (react-hooks/refs); this runs
+  // after the ingest effect's setup, so a superseding intent updates the ref
+  // before the old in-flight run reaches its finally.
+  const latestIntentRef = useRef(shareIntent);
+  useEffect(() => {
+    latestIntentRef.current = shareIntent;
+  }, [shareIntent]);
 
   useEffect(() => {
     if (!hasShareIntent) return;
@@ -56,9 +67,12 @@ export function useSmsShareIntent(): void {
         captureError(err, { feature: 'sms_share_intent' });
         if (!cancelled) showToast('Could not read shared message', 'err');
       } finally {
-        // If this run was superseded (deps changed), let the new run own the
-        // reset — resetting mid-flight churns provider state needlessly.
-        if (!cancelled) resetShareIntent();
+        // Reset unless a newer share intent has already arrived (that run owns
+        // the reset). On unmount the ref still equals our captured intent, so we
+        // reset here — otherwise the stale intent re-fires this effect on the
+        // next mount and reports a false "no transaction" for an already-captured
+        // message. ingestRawSms isn't aborted by `cancelled`, so the row is in.
+        if (latestIntentRef.current === shareIntent) resetShareIntent();
       }
     })();
 
