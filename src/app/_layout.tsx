@@ -11,6 +11,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { SQLiteProvider } from 'expo-sqlite';
+import { ShareIntentProvider } from 'expo-share-intent';
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -22,6 +23,7 @@ import { useInitSettings } from '@/hooks/use-init-settings';
 import { useStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { captureError, initTelemetry } from '@/lib/telemetry';
+import { useSmsShareIntent } from '@/hooks/use-sms-share-intent';
 import { BiometricSetup } from '@/components/biometric/biometric-setup';
 import { BiometricLock } from '@/components/biometric/biometric-lock';
 
@@ -167,6 +169,14 @@ function BiometricGate() {
   return null;
 }
 
+// ── Share-intent watcher ───────────────────────────────────────────────────
+// Handles bank SMS the user shares into Eddies (Play-compliant capture).
+// Lives inside SQLiteProvider + ShareIntentProvider so it has both contexts.
+function ShareIntentWatcher() {
+  useSmsShareIntent();
+  return null;
+}
+
 // ── Root layout ────────────────────────────────────────────────────────────
 function RootLayout() {
   const [loaded, error] = useFonts({
@@ -197,37 +207,40 @@ function RootLayout() {
   return (
     <AppErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <SQLiteProvider databaseName="eddies.db" onInit={runMigrations}>
-          <ThemeProvider value={DarkTheme}>
-            <StatusBar style="light" />
-            <ArchiveWatcher />
-            <OnboardingGate />
-            <InviteGate />
-            <BiometricGate />
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen
-                name="(onboarding)"
-                options={{ animation: 'fade', gestureEnabled: false }}
-              />
-              <Stack.Screen
-                name="(auth)"
-                options={{ animation: 'fade', gestureEnabled: false }}
-              />
-              <Stack.Screen name="(modals)/entry"   options={modalOptions} />
-              <Stack.Screen name="(modals)/vault"   options={modalOptions} />
-              <Stack.Screen name="(modals)/settings" options={modalOptions} />
-              <Stack.Screen name="(modals)/cap"     options={modalOptions} />
-              <Stack.Screen name="(modals)/export"   options={modalOptions} />
-              <Stack.Screen name="(modals)/archive"  options={modalOptions} />
-              <Stack.Screen name="(modals)/recurring"      options={modalOptions} />
-              <Stack.Screen name="(modals)/recurring-edit" options={modalOptions} />
-              <Stack.Screen name="(modals)/import-inbox"   options={modalOptions} />
-              <Stack.Screen name="(modals)/sms-import"     options={modalOptions} />
-            </Stack>
-            <GlobalToast />
-          </ThemeProvider>
-        </SQLiteProvider>
+        <ShareIntentProvider>
+          <SQLiteProvider databaseName="eddies.db" onInit={runMigrations}>
+            <ThemeProvider value={DarkTheme}>
+              <StatusBar style="light" />
+              <ArchiveWatcher />
+              <OnboardingGate />
+              <InviteGate />
+              <BiometricGate />
+              <ShareIntentWatcher />
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen
+                  name="(onboarding)"
+                  options={{ animation: 'fade', gestureEnabled: false }}
+                />
+                <Stack.Screen
+                  name="(auth)"
+                  options={{ animation: 'fade', gestureEnabled: false }}
+                />
+                <Stack.Screen name="(modals)/entry"   options={modalOptions} />
+                <Stack.Screen name="(modals)/vault"   options={modalOptions} />
+                <Stack.Screen name="(modals)/settings" options={modalOptions} />
+                <Stack.Screen name="(modals)/cap"     options={modalOptions} />
+                <Stack.Screen name="(modals)/export"   options={modalOptions} />
+                <Stack.Screen name="(modals)/archive"  options={modalOptions} />
+                <Stack.Screen name="(modals)/recurring"      options={modalOptions} />
+                <Stack.Screen name="(modals)/recurring-edit" options={modalOptions} />
+                <Stack.Screen name="(modals)/import-inbox"   options={modalOptions} />
+                <Stack.Screen name="(modals)/sms-import"     options={modalOptions} />
+              </Stack>
+              <GlobalToast />
+            </ThemeProvider>
+          </SQLiteProvider>
+        </ShareIntentProvider>
       </GestureHandlerRootView>
     </AppErrorBoundary>
   );

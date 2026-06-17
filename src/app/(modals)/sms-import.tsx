@@ -112,7 +112,7 @@ export default function SmsImportModal() {
           <View style={s.note}>
             <MonoLabel size={9} letterSpacing={0.5} color={EddiesColors.steel} style={s.noteTxt}>
               {unavailableOnAndroidBuild
-                ? 'SMS import isn’t available in this build. Add entries manually.'
+                ? 'To log a bank SMS: open it in your Messages app, tap Share, and choose Eddies. It lands in your review inbox.'
                 : 'SMS import is Android-only. On this device, add entries manually.'}
             </MonoLabel>
           </View>
